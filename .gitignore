@@ -33,3 +33,13 @@ uploads/*.json
 
 # 기타
 coverage/
+
+# 클린업 스크립트
+clean-secrets.sh
+clean-uploads.sh
+clean-db.sh
+clean-logs.sh
+clean-node_modules.sh
+clean-build.sh
+clean-dist.sh
+clean-out.sh
