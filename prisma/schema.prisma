@@ -129,3 +129,118 @@ model DataUpdateLog {
   
   @@index([dataType, propertyId])
 }
+
+model ConversionGoal {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  goalType          String   // 'EVENT', 'PAGE_VIEW', 'DURATION', 'REVENUE'
+  eventName         String?  // GA4 이벤트명 (goalType이 EVENT인 경우)
+  pagePath          String?  // 페이지 경로 (goalType이 PAGE_VIEW인 경우)
+  revenueThreshold  Float?   // 수익 임계값 (goalType이 REVENUE인 경우)
+  durationSeconds   Int?     // 체류 시간 임계값 (goalType이 DURATION인 경우)
+  isActive          Boolean  @default(true)
+  priority          Int      @default(1) // 1=높음, 2=중간, 3=낮음
+  propertyId        String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // 관련 전환 경로 데이터
+  conversionPaths   ConversionPath[]
+  
+  @@unique([name, propertyId])
+  @@index([propertyId, isActive])
+}
+
+model GTMGoal {
+  id          String   @id @default(cuid())
+  accountId   String
+  containerId String
+  tagId       String
+  name        String
+  type        String
+  isActive    Boolean  @default(true)
+  priority    Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([accountId, containerId, tagId])
+  @@index([accountId, containerId])
+}
+
+model ConversionPath {
+  id               String   @id @default(cuid())
+  goalId           String
+  goal             ConversionGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  sessionId        String
+  userId           String?
+  propertyId       String
+  conversionDate   DateTime
+  
+  // 전환 경로 정보
+  entryKeyword     String?  // 진입 키워드 (GSC 데이터)
+  entrySource      String?  // 진입 소스
+  entryMedium      String?  // 진입 미디엄
+  entryPage        String?  // 첫 방문 페이지
+  
+  // 경유 경로 (JSON 배열로 저장)
+  pageSequence     String   // JSON: [{"page": "/", "timestamp": "...", "events": [...]}]
+  eventSequence    String   // JSON: [{"event": "page_view", "timestamp": "...", "page": "/"}]
+  
+  // 전환 메트릭
+  sessionDuration  Int      @default(0) // 초 단위
+  pageViews        Int      @default(0)
+  totalEvents      Int      @default(0)
+  revenue          Float    @default(0)
+  
+  createdAt        DateTime @default(now())
+  
+  @@index([goalId, conversionDate])
+  @@index([propertyId, conversionDate])
+  @@index([entryKeyword])
+}
+
+model UserInterestProfile {
+  id                    String   @id @default(cuid())
+  userId                String?  // GA4 사용자 ID (있는 경우)
+  sessionId             String   // 세션 ID
+  propertyId            String
+  profileDate           DateTime
+  
+  // 진입 정보
+  entryKeyword          String?
+  entrySource           String?
+  entryMedium           String?
+  entryPage             String?
+  
+  // 행동 패턴 메트릭
+  sessionDuration       Int      @default(0) // 초 단위
+  pageViews             Int      @default(0)
+  totalEvents           Int      @default(0)
+  scrollDepth           Float    @default(0) // 평균 스크롤 깊이 (0-1)
+  
+  // 관심도 지표
+  goalProximityScore    Float    @default(0) // Goal 페이지 근접도 점수 (0-1)
+  engagementScore       Float    @default(0) // 전체 참여도 점수 (0-1)
+  returnVisitCount      Int      @default(0) // 재방문 횟수
+  
+  // 전환 가능성
+  conversionProbability Float    @default(0) // 전환 가능성 점수 (0-1)
+  riskOfChurn           Float    @default(0) // 이탈 위험도 (0-1)
+  
+  // 방문 패턴 (JSON)
+  pageSequence          String   // 방문한 페이지 순서
+  eventSequence         String   // 발생한 이벤트 순서
+  visitPattern          String   // 방문 패턴 분석 결과
+  
+  // 관심 카테고리 (Goal 기반)
+  interestedGoals       String   // JSON: Goal ID 배열과 관심도 점수
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@unique([sessionId, propertyId])
+  @@index([propertyId, profileDate])
+  @@index([conversionProbability])
+  @@index([userId])
+}

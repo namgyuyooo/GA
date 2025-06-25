@@ -22,21 +22,66 @@ interface MainLayoutProps {
 export default function MainLayout({ user, onLogout }: MainLayoutProps) {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [activeProperty, setActiveProperty] = useState('464147982')
+  const [dataMode, setDataMode] = useState<'realtime' | 'database'>('realtime')
+  const [isDataLoading, setIsDataLoading] = useState(false)
+
+  const handleBulkDataLoad = async () => {
+    setIsDataLoading(true)
+    try {
+      const response = await fetch('/api/analytics/bulk-load', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          propertyId: activeProperty,
+          dateRange: {
+            startDate: '30daysAgo',
+            endDate: 'today'
+          }
+        }),
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        alert(`일괄 데이터 로드 완료!\n트래픽: ${result.data.trafficRows}행\n페이지: ${result.data.pageRows}행\n검색어: ${result.data.searchRows}행`)
+      } else {
+        alert(`오류: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Bulk data load error:', error)
+      alert('일괄 데이터 로드 중 오류가 발생했습니다.')
+    } finally {
+      setIsDataLoading(false)
+    }
+  }
+
+  const handleDataModeChange = (mode: 'realtime' | 'database') => {
+    setDataMode(mode)
+    // 데이터 모드 변경 시 필요한 추가 로직
+    console.log(`Data mode changed to: ${mode}`)
+  }
 
   const renderContent = () => {
+    const commonProps = {
+      propertyId: activeProperty,
+      dataMode: dataMode
+    }
+
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardContent propertyId={activeProperty} />
+        return <DashboardContent {...commonProps} />
       case 'utm-builder':
         return <UTMBuilder />
       case 'utm-list':
         return <UTMList />
       case 'utm-cohort':
-        return <UTMCohortAnalysis propertyId={activeProperty} />
+        return <UTMCohortAnalysis {...commonProps} />
       case 'keyword-cohort':
-        return <KeywordCohortAnalysis propertyId={activeProperty} />
+        return <KeywordCohortAnalysis {...commonProps} />
       case 'traffic-analysis':
-        return <TrafficSourceAnalysis propertyId={activeProperty} />
+        return <TrafficSourceAnalysis {...commonProps} />
       case 'gtm-analysis':
         return <GTMAnalysis />
       case 'settings':
@@ -56,6 +101,10 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
                       <div>
                         <span className="font-medium text-gray-700">사용자:</span>
                         <span className="ml-2 text-gray-600">{user?.name || 'Guest'}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">데이터 모드:</span>
+                        <span className="ml-2 text-gray-600 capitalize">{dataMode}</span>
                       </div>
                     </div>
                   </div>
@@ -112,7 +161,7 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
           </div>
         )
       default:
-        return <IntegratedDashboard propertyId={activeProperty} />
+        return <DashboardContent {...commonProps} />
     }
   }
 
@@ -125,6 +174,10 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
         onPropertyChange={setActiveProperty}
         user={user}
         onLogout={onLogout}
+        onBulkDataLoad={handleBulkDataLoad}
+        isDataLoading={isDataLoading}
+        dataMode={dataMode}
+        onDataModeChange={handleDataModeChange}
       />
 
       {/* Main content */}

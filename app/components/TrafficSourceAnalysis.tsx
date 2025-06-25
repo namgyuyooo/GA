@@ -11,32 +11,11 @@ import {
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
-
-const SourceTag = ({ medium }: { medium: string }) => {
-  const mediumStyles: { [key: string]: string } = {
-    '(none)': 'bg-gray-100 text-gray-800',
-    'organic': 'bg-green-100 text-green-800',
-    'referral': 'bg-blue-100 text-blue-800',
-    'social': 'bg-purple-100 text-purple-800',
-    'cpc': 'bg-yellow-100 text-yellow-800',
-    'ppc': 'bg-yellow-100 text-yellow-800',
-    'email': 'bg-indigo-100 text-indigo-800',
-    'utm': 'bg-primary-100 text-primary-800',
-    'default': 'bg-gray-100 text-gray-700'
-  }
-
-  const style = mediumStyles[medium.toLowerCase()] || mediumStyles.default
-  const text = medium === '(none)' ? 'direct' : medium
-
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${style}`}>
-      {text}
-    </span>
-  )
-}
+import SourceMediumTag from './SourceMediumTag'
 
 interface TrafficSourceAnalysisProps {
   propertyId?: string
+  dataMode?: 'realtime' | 'database'
 }
 
 interface TrafficSource {
@@ -69,7 +48,7 @@ interface KeywordGroup {
   conversions: number
 }
 
-export default function TrafficSourceAnalysis({ propertyId = '464147982' }: TrafficSourceAnalysisProps) {
+export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMode }: TrafficSourceAnalysisProps) {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [period, setPeriod] = useState('30daysAgo')
@@ -278,9 +257,9 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982' }: Traf
                             <h4 className="text-sm font-medium text-gray-900">
                               {source.campaign || source.source}
                             </h4>
-                            <p className="text-xs text-gray-500">
-                              {source.source} / {source.medium}
-                            </p>
+                            <div className="text-sm text-gray-500">
+                              <SourceMediumTag source={source.source} medium={source.medium} />
+                            </div>
                           </div>
                           <div className="text-right">
                             <div className="text-sm font-medium text-gray-900">
@@ -391,13 +370,13 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982' }: Traf
                         <div>
                           <div className="text-sm font-medium text-gray-900">{source.campaign}</div>
                           <div className="text-sm text-gray-500">
-                            {source.source} / <SourceTag medium={source.medium} />
+                            <SourceMediumTag source={source.source} medium={source.medium} />
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center">
                           <span className="text-sm font-medium text-gray-900 mr-2">{source.source}</span>
-                          <SourceTag medium={source.medium} />
+                          <SourceMediumTag source={source.source} medium={source.medium} />
                         </div>
                       )}
                     </td>

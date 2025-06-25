@@ -12,7 +12,10 @@ import {
   PresentationChartLineIcon,
   TagIcon,
   UserIcon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowDownTrayIcon,
+  ServerIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 
@@ -39,6 +42,10 @@ interface SideNavigationProps {
     image?: string | null
   }
   onLogout?: () => void
+  onBulkDataLoad?: () => void
+  isDataLoading?: boolean
+  dataMode: 'realtime' | 'database'
+  onDataModeChange?: (mode: 'realtime' | 'database') => void
 }
 
 const navigation: NavigationItem[] = [
@@ -65,13 +72,30 @@ export default function SideNavigation({
   activeProperty,
   onPropertyChange,
   user,
-  onLogout
+  onLogout,
+  onBulkDataLoad,
+  isDataLoading = false,
+  dataMode = 'realtime',
+  onDataModeChange
 }: SideNavigationProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleTabChange = (tabId: string) => {
     onTabChange(tabId)
     setSidebarOpen(false)
+  }
+
+  const handleBulkDataLoad = () => {
+    if (onBulkDataLoad) {
+      onBulkDataLoad()
+    }
+  }
+
+  const handleDataModeChange = () => {
+    if (onDataModeChange) {
+      const newMode = dataMode === 'realtime' ? 'database' : 'realtime'
+      onDataModeChange(newMode)
+    }
   }
 
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
@@ -100,6 +124,37 @@ export default function SideNavigation({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Data Mode Toggle */}
+        <div className="mt-4 px-4">
+          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+            데이터 모드
+          </label>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleDataModeChange}
+              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                dataMode === 'realtime'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              <BoltIcon className="mr-2 h-4 w-4" />
+              실시간
+            </button>
+            <button
+              onClick={handleDataModeChange}
+              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                dataMode === 'database'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              <ServerIcon className="mr-2 h-4 w-4" />
+              DB
+            </button>
+          </div>
         </div>
 
         <nav className="mt-8 px-2 space-y-1">
@@ -139,6 +194,18 @@ export default function SideNavigation({
             >
               <BuildingOfficeIcon className="mr-3 h-5 w-5" />
               속성 연결 확인
+            </button>
+            <button
+              onClick={handleBulkDataLoad}
+              disabled={isDataLoading}
+              className={`flex items-center w-full px-2 py-2 text-sm rounded-md transition-colors ${
+                isDataLoading
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <ArrowDownTrayIcon className={`mr-3 h-5 w-5 ${isDataLoading ? 'animate-spin' : ''}`} />
+              {isDataLoading ? '데이터 로드 중...' : '일괄 데이터 로드'}
             </button>
           </div>
         </div>

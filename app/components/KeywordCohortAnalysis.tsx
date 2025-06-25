@@ -52,38 +52,14 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
   const [isUpdating, setIsUpdating] = useState(false)
 
   // 그룹 관리 상태
-  const [keywordGroups, setKeywordGroups] = useState<KeywordGroup[]>([
-    {
-      id: '1',
-      name: '브랜드 검색어',
-      keywords: ['rtm', 'rtm.ai', '알티엠', 'RTM'],
-      color: 'bg-blue-100 text-blue-800',
-      description: '회사명 및 브랜드 관련 검색어',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: '2',
-      name: '제품/기능 관련',
-      keywords: ['analytics', 'dashboard', 'utm', 'tracking', '분석', '대시보드'],
-      color: 'bg-green-100 text-green-800',
-      description: '제품 기능 및 관련 용어 검색어',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: '3',
-      name: '경쟁사/비교',
-      keywords: ['vs', 'compare', '비교', 'alternative', '대안'],
-      color: 'bg-purple-100 text-purple-800',
-      description: '경쟁사 비교 및 대안 검색어',
-      createdAt: new Date().toISOString()
-    }
-  ])
+  const [keywordGroups, setKeywordGroups] = useState<KeywordGroup[]>([])
   const [selectedGroup, setSelectedGroup] = useState<string>('all')
   const [searchTerms, setSearchTerms] = useState<{ [key: string]: string }>({});
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   useEffect(() => {
     loadCohortData()
+    loadKeywordGroups()
   }, [propertyId, dateRange])
 
   useEffect(() => {
@@ -200,7 +176,7 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
     setShowCreateGroupModal(true);
   };
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (!newGroupData.name.trim()) {
       toast.error('그룹명을 입력해주세요.');
       return;
@@ -211,64 +187,171 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
       .map(k => k.trim())
       .filter(k => k.length > 0);
 
-    const newGroup: KeywordGroup = {
-      id: Date.now().toString(),
-      name: newGroupData.name.trim(),
-      description: newGroupData.description.trim(),
-      keywords: keywordArray,
-      color: newGroupData.color,
-      createdAt: new Date().toISOString()
-    };
+    if (keywordArray.length === 0) {
+      toast.error('키워드를 입력해주세요.');
+      return;
+    }
 
-    setKeywordGroups(prev => [...prev, newGroup]);
-    setNewGroupData({
-      name: '',
-      description: '',
-      keywords: '',
-      color: 'bg-blue-100 text-blue-800'
-    });
-    setShowCreateGroupModal(false);
-    toast.success(`'${newGroup.name}' 그룹이 생성되었습니다.`);
+    try {
+      const response = await fetch('/api/analytics/keyword-groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          group: {
+            name: newGroupData.name.trim(),
+            description: newGroupData.description.trim(),
+            color: newGroupData.color,
+            keywords: keywordArray
+          }
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setKeywordGroups(prev => [...prev, result.group])
+          setNewGroupData({
+            name: '',
+            description: '',
+            keywords: '',
+            color: 'bg-blue-100 text-blue-800'
+          });
+          setShowCreateGroupModal(false);
+          toast.success(`'${newGroupData.name}' 그룹이 생성되었습니다.`);
+        } else {
+          toast.error(result.message || '그룹 생성에 실패했습니다.');
+        }
+      } else {
+        toast.error('그룹 생성에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Create group error:', error)
+      toast.error('그룹 생성 중 오류가 발생했습니다.');
+    }
   };
 
-  const deleteKeywordGroup = (groupId: string) => {
-    setKeywordGroups(prev => {
-      const updated = prev.filter(g => g.id !== groupId);
-      console.log('[DEBUG] deleteKeywordGroup - 그룹 삭제됨:', updated);
-      return updated;
-    })
-    if (selectedGroup === groupId) {
-      setSelectedGroup('all')
+  const deleteKeywordGroup = async (groupId: string) => {
+    try {
+      const response = await fetch('/api/analytics/keyword-groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          group: { id: groupId }
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setKeywordGroups(prev => prev.filter(g => g.id !== groupId))
+          if (selectedGroup === groupId) {
+            setSelectedGroup('all')
+          }
+          toast.success('키워드 그룹이 삭제되었습니다')
+        } else {
+          toast.error(result.message || '그룹 삭제에 실패했습니다.');
+        }
+      } else {
+        toast.error('그룹 삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Delete group error:', error)
+      toast.error('그룹 삭제 중 오류가 발생했습니다.');
     }
-    toast.success('키워드 그룹이 삭제되었습니다')
   }
 
-  const addKeywordToGroup = (groupId: string, keyword: string) => {
-    setKeywordGroups(groups => {
-      const updated = groups.map(group =>
-        group.id === groupId
-          ? { ...group, keywords: Array.from(new Set([...group.keywords, keyword])) }
-          : group
-      );
-      console.log('[DEBUG] addKeywordToGroup - 키워드 추가됨:', { groupId, keyword, updated });
-      return updated;
-    })
-    setSearchTerms({ ...searchTerms, [groupId]: '' });
-    setOpenDropdownId(null);
-    toast.success(`'${keyword}' 키워드가 그룹에 추가되었습니다.`)
+  const addKeywordToGroup = async (groupId: string, keyword: string) => {
+    try {
+      const group = keywordGroups.find(g => g.id === groupId)
+      if (!group) return
+
+      const updatedKeywords = Array.from(new Set([...group.keywords, keyword]))
+      
+      const response = await fetch('/api/analytics/keyword-groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          group: {
+            id: groupId,
+            name: group.name,
+            description: group.description,
+            color: group.color,
+            keywords: updatedKeywords
+          }
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setKeywordGroups(groups => 
+            groups.map(group =>
+              group.id === groupId
+                ? { ...group, keywords: updatedKeywords }
+                : group
+            )
+          )
+          setSearchTerms({ ...searchTerms, [groupId]: '' });
+          setOpenDropdownId(null);
+          toast.success(`'${keyword}' 키워드가 그룹에 추가되었습니다.`)
+        } else {
+          toast.error(result.message || '키워드 추가에 실패했습니다.');
+        }
+      } else {
+        toast.error('키워드 추가에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Add keyword error:', error)
+      toast.error('키워드 추가 중 오류가 발생했습니다.');
+    }
   }
 
-  const removeKeywordFromGroup = (groupId: string, keyword: string) => {
-    setKeywordGroups(groups => {
-      const updated = groups.map(group =>
-        group.id === groupId
-          ? { ...group, keywords: group.keywords.filter(k => k !== keyword) }
-          : group
-      );
-      console.log('[DEBUG] removeKeywordFromGroup - 키워드 제거됨:', { groupId, keyword, updated });
-      return updated;
-    })
-    toast.success('키워드가 그룹에서 제거되었습니다')
+  const removeKeywordFromGroup = async (groupId: string, keyword: string) => {
+    try {
+      const group = keywordGroups.find(g => g.id === groupId)
+      if (!group) return
+
+      const updatedKeywords = group.keywords.filter(k => k !== keyword)
+      
+      const response = await fetch('/api/analytics/keyword-groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          group: {
+            id: groupId,
+            name: group.name,
+            description: group.description,
+            color: group.color,
+            keywords: updatedKeywords
+          }
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setKeywordGroups(groups =>
+            groups.map(group =>
+              group.id === groupId
+                ? { ...group, keywords: updatedKeywords }
+                : group
+            )
+          )
+          toast.success('키워드가 그룹에서 제거되었습니다')
+        } else {
+          toast.error(result.message || '키워드 제거에 실패했습니다.');
+        }
+      } else {
+        toast.error('키워드 제거에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Remove keyword error:', error)
+      toast.error('키워드 제거 중 오류가 발생했습니다.');
+    }
   }
 
   const getFilteredCohortData = () => {
@@ -459,6 +542,75 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
       setSortDirection('desc');
     }
   };
+
+  const loadKeywordGroups = async () => {
+    try {
+      const response = await fetch('/api/analytics/keyword-groups')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setKeywordGroups(result.groups)
+        } else {
+          // 기본 그룹 설정
+          setKeywordGroups([
+            {
+              id: '1',
+              name: '브랜드 검색어',
+              keywords: ['rtm', 'rtm.ai', '알티엠', 'RTM'],
+              color: 'bg-blue-100 text-blue-800',
+              description: '회사명 및 브랜드 관련 검색어',
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: '2',
+              name: '제품/기능 관련',
+              keywords: ['analytics', 'dashboard', 'utm', 'tracking', '분석', '대시보드'],
+              color: 'bg-green-100 text-green-800',
+              description: '제품 기능 및 관련 용어 검색어',
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: '3',
+              name: '경쟁사/비교',
+              keywords: ['vs', 'compare', '비교', 'alternative', '대안'],
+              color: 'bg-purple-100 text-purple-800',
+              description: '경쟁사 비교 및 대안 검색어',
+              createdAt: new Date().toISOString()
+            }
+          ])
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load keyword groups:', error)
+      // 기본 그룹 설정
+      setKeywordGroups([
+        {
+          id: '1',
+          name: '브랜드 검색어',
+          keywords: ['rtm', 'rtm.ai', '알티엠', 'RTM'],
+          color: 'bg-blue-100 text-blue-800',
+          description: '회사명 및 브랜드 관련 검색어',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: '2',
+          name: '제품/기능 관련',
+          keywords: ['analytics', 'dashboard', 'utm', 'tracking', '분석', '대시보드'],
+          color: 'bg-green-100 text-green-800',
+          description: '제품 기능 및 관련 용어 검색어',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: '3',
+          name: '경쟁사/비교',
+          keywords: ['vs', 'compare', '비교', 'alternative', '대안'],
+          color: 'bg-purple-100 text-purple-800',
+          description: '경쟁사 비교 및 대안 검색어',
+          createdAt: new Date().toISOString()
+        }
+      ])
+    }
+  }
 
   return (
     <div className="space-y-6">

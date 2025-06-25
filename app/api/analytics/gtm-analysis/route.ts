@@ -116,12 +116,32 @@ export async function GET(request: NextRequest) {
 
       const processedData = processGTMData(containerData, tagsData, triggersData, variablesData)
 
+      // 저장된 Goal 설정 로드
+      const savedGoals = await prisma.gTMGoal.findMany({
+        where: {
+          accountId,
+          containerId: publicId
+        },
+        orderBy: {
+          priority: 'asc'
+        }
+      })
+
+      // Goal 설정을 태그에 적용
+      const savedGoalIds = new Set(savedGoals.map(goal => goal.tagId))
+      processedData.tags = processedData.tags.map((tag: any) => ({
+        ...tag,
+        isGoal: savedGoalIds.has(tag.id),
+        goalPriority: savedGoals.find(goal => goal.tagId === tag.id)?.priority || 0
+      }))
+
       return NextResponse.json({
         success: true,
         containerId: publicId,
         accountId: accountId,
         data: processedData,
-        message: `✅ GTM 실제 데이터 로드 완료 (태그 ${processedData?.summary?.totalTags || 0}개)`
+        savedGoals: savedGoals.length,
+        message: `✅ GTM 실제 데이터 로드 완료 (태그 ${processedData?.summary?.totalTags || 0}개, Goal ${savedGoals.length}개)`
       })
 
     } catch (gtmError) {
@@ -147,23 +167,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const fs = require('fs')
-    const path = require('path')
-    const goalPath = path.join(process.cwd(), 'gtm-goals.json')
+    // 기존 Goal 설정 삭제
+    await prisma.gTMGoal.deleteMany({
+      where: {
+        accountId,
+        containerId
+      }
+    })
 
-    const dataToWrite = {
-      accountId,
-      containerId,
-      goals,
-      updatedAt: new Date().toISOString()
-    }
+    // 새로운 Goal 설정 저장
+    const goalPromises = goals.map((goal: any, index: number) => 
+      prisma.gTMGoal.create({
+        data: {
+          accountId,
+          containerId,
+          tagId: goal.tagId,
+          name: goal.name,
+          type: goal.type,
+          priority: index + 1,
+          isActive: true
+        }
+      })
+    )
 
-    fs.writeFileSync(goalPath, JSON.stringify(dataToWrite, null, 2), 'utf8')
+    await Promise.all(goalPromises)
 
-    return NextResponse.json({ success: true, message: 'GTM Goals saved successfully.' })
+    return NextResponse.json({ 
+      success: true, 
+      message: `${goals.length}개의 GTM Goal이 저장되었습니다.`,
+      savedGoals: goals.length
+    })
   } catch (error: any) {
     console.error('Error saving GTM Goals:', error)
-    return NextResponse.json({ error: 'Failed to save GTM Goals', details: error.message }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to save GTM Goals', 
+      details: error.message 
+    }, { status: 500 })
   }
 }
 

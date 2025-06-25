@@ -95,7 +95,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 2. 실제 전환 이벤트별 분석 (conversions > 0인 이벤트만)
+    // 2. 사용자 정의 Goal 기반 전환 이벤트 분석
+    const { PrismaClient } = require('@prisma/client')
+    const prismaLocal = new PrismaClient()
+    
+    // 활성 Goal 목록 조회
+    const activeGoals = await prismaLocal.conversionGoal.findMany({
+      where: {
+        propertyId,
+        isActive: true
+      },
+      orderBy: { priority: 'asc' }
+    })
+
+    if (activeGoals.length === 0) {
+      await prismaLocal.$disconnect()
+      return NextResponse.json({
+        success: false,
+        message: '활성화된 전환 목표가 없습니다. 전환 목표를 먼저 설정해주세요.',
+        needsGoalSetup: true
+      })
+    }
+
+    // Goal별 전환 데이터 조회
     const allEventsResponse = await fetch(
       `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
       {
@@ -112,6 +134,15 @@ export async function GET(request: NextRequest) {
             { name: 'conversions' },
             { name: 'totalRevenue' }
           ],
+          dimensionFilter: {
+            filter: {
+              fieldName: 'eventName',
+              stringFilter: {
+                matchType: 'PARTIAL_REGEXP',
+                value: activeGoals.map(g => g.eventName).filter(Boolean).join('|')
+              }
+            }
+          },
           orderBys: [{ metric: { metricName: 'conversions' }, desc: true }],
           limit: 50
         })
@@ -139,16 +170,26 @@ export async function GET(request: NextRequest) {
         const conversions = Number(row.metricValues[1].value)
         const revenue = Number(row.metricValues[2].value)
         
+        // 매칭되는 Goal 찾기
+        const matchingGoal = activeGoals.find(goal => 
+          goal.eventName && eventName.includes(goal.eventName)
+        )
+        
         return {
           eventName,
-          description: getEventDescription(eventName),
+          goalName: matchingGoal?.name || eventName,
+          goalType: matchingGoal?.goalType || 'EVENT',
+          description: matchingGoal?.description || getEventDescription(eventName),
+          priority: matchingGoal?.priority || 3,
           conversions,
           conversionRate: eventCount > 0 ? conversions / eventCount : 0,
           revenue,
           percentage: ((conversions / totalEventConversions) * 100).toFixed(1),
           color: eventColors[index % eventColors.length]
         }
-      })
+      }).sort((a, b) => a.priority - b.priority) // 우선순위순 정렬
+      
+      await prismaLocal.$disconnect()
     }
 
     // 3. 실제 전환 경로 분석 (소스/미디어 기반)
