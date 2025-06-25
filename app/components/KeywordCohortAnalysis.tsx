@@ -836,34 +836,34 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-300">
+                <table className="min-w-[1100px] divide-y divide-gray-300 text-xs">
                   <thead>
                     <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0 cursor-pointer" onClick={() => handleSort('keyword')}>
+                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-0 cursor-pointer whitespace-nowrap" onClick={() => handleSort('keyword')}>
                         키워드 {sortColumn === 'keyword' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer" onClick={() => handleSort('impressions')}>
+                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('impressions')}>
                         노출 {sortColumn === 'impressions' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer" onClick={() => handleSort('clicks')}>
+                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('clicks')}>
                         클릭 {sortColumn === 'clicks' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer" onClick={() => handleSort('ctr')}>
+                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('ctr')}>
                         CTR {sortColumn === 'ctr' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer" onClick={() => handleSort('position')}>
+                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('position')}>
                         순위 {sortColumn === 'position' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer" onClick={() => handleSort('initialUsers')}>
+                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('initialUsers')}>
                         초기 사용자 {sortColumn === 'initialUsers' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 whitespace-nowrap">
                         주간 리텐션 (1, 2, 4, 8주)
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer" onClick={() => handleSort('conversions')}>
+                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('conversions')}>
                         전환 {sortColumn === 'conversions' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">그룹</th>
+                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 whitespace-nowrap">그룹</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
