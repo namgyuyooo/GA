@@ -8,7 +8,12 @@ import {
   DocumentTextIcon,
   EnvelopeIcon,
   CalendarIcon,
-  SparklesIcon
+  SparklesIcon,
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  EyeSlashIcon
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -31,6 +36,20 @@ interface WeeklyReportSchedule {
     includeAI: boolean
     aiPrompt: string
     propertyIds: string[]
+}
+
+interface PromptTemplate {
+  id: string
+  name: string
+  type: string
+  description?: string
+  prompt: string
+  variables?: string
+  isActive: boolean
+  isDefault: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
 }
 
 export default function Settings() {
@@ -58,10 +77,25 @@ export default function Settings() {
     const [isSaving, setIsSaving] = useState(false)
     const [isBackingUp, setIsBackingUp] = useState(false)
     const [activeTab, setActiveTab] = useState('general')
+    const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([])
+    const [selectedTemplateType, setSelectedTemplateType] = useState<string>('weekly-report')
+    const [showTemplateModal, setShowTemplateModal] = useState(false)
+    const [editingTemplate, setEditingTemplate] = useState<PromptTemplate | null>(null)
+    const [newTemplate, setNewTemplate] = useState({
+        name: '',
+        type: 'weekly-report',
+        description: '',
+        prompt: '',
+        variables: '',
+        isActive: true,
+        isDefault: false,
+        sortOrder: 0
+    })
 
     useEffect(() => {
         fetchSettings()
         fetchWeeklySchedule()
+        fetchPromptTemplates()
     }, [])
 
     const fetchSettings = async () => {
@@ -91,6 +125,20 @@ export default function Settings() {
             }
         } catch (error) {
             console.error('Weekly schedule fetch error:', error)
+        }
+    }
+
+    const fetchPromptTemplates = async () => {
+        try {
+            const response = await fetch('/api/settings/prompt-templates')
+            if (response.ok) {
+                const data = await response.json()
+                if (data.success) {
+                    setPromptTemplates(data.templates)
+                }
+            }
+        } catch (error) {
+            console.error('프롬프트 템플릿 조회 오류:', error)
         }
     }
 
@@ -189,6 +237,166 @@ export default function Settings() {
         }
     }
 
+    const handleCreateTemplate = async () => {
+        try {
+            const response = await fetch('/api/settings/prompt-templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create',
+                    template: newTemplate
+                })
+            })
+            
+            if (response.ok) {
+                const result = await response.json()
+                if (result.success) {
+                    setPromptTemplates(prev => [...prev, result.template])
+                    setShowTemplateModal(false)
+                    setNewTemplate({
+                        name: '',
+                        type: 'weekly-report',
+                        description: '',
+                        prompt: '',
+                        variables: '',
+                        isActive: true,
+                        isDefault: false,
+                        sortOrder: 0
+                    })
+                    toast.success('프롬프트 템플릿이 생성되었습니다.')
+                }
+            }
+        } catch (error) {
+            toast.error('템플릿 생성 중 오류가 발생했습니다.')
+        }
+    }
+
+    const handleUpdateTemplate = async () => {
+        if (!editingTemplate) return
+        
+        try {
+            const response = await fetch('/api/settings/prompt-templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update',
+                    template: editingTemplate
+                })
+            })
+            
+            if (response.ok) {
+                const result = await response.json()
+                if (result.success) {
+                    setPromptTemplates(prev => 
+                        prev.map(t => t.id === editingTemplate.id ? result.template : t)
+                    )
+                    setShowTemplateModal(false)
+                    setEditingTemplate(null)
+                    toast.success('프롬프트 템플릿이 업데이트되었습니다.')
+                }
+            }
+        } catch (error) {
+            toast.error('템플릿 업데이트 중 오류가 발생했습니다.')
+        }
+    }
+
+    const handleDeleteTemplate = async (templateId: string) => {
+        if (!confirm('정말로 이 템플릿을 삭제하시겠습니까?')) return
+        
+        try {
+            const response = await fetch('/api/settings/prompt-templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'delete',
+                    template: { id: templateId }
+                })
+            })
+            
+            if (response.ok) {
+                setPromptTemplates(prev => prev.filter(t => t.id !== templateId))
+                toast.success('프롬프트 템플릿이 삭제되었습니다.')
+            }
+        } catch (error) {
+            toast.error('템플릿 삭제 중 오류가 발생했습니다.')
+        }
+    }
+
+    const handleToggleTemplateActive = async (template: PromptTemplate) => {
+        try {
+            const response = await fetch('/api/settings/prompt-templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'toggle-active',
+                    template
+                })
+            })
+            
+            if (response.ok) {
+                const result = await response.json()
+                if (result.success) {
+                    setPromptTemplates(prev => 
+                        prev.map(t => t.id === template.id ? result.template : t)
+                    )
+                    toast.success(`템플릿이 ${result.template.isActive ? '활성화' : '비활성화'}되었습니다.`)
+                }
+            }
+        } catch (error) {
+            toast.error('템플릿 상태 변경 중 오류가 발생했습니다.')
+        }
+    }
+
+    const handleSetDefaultTemplate = async (template: PromptTemplate) => {
+        try {
+            const response = await fetch('/api/settings/prompt-templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'set-default',
+                    template
+                })
+            })
+            
+            if (response.ok) {
+                const result = await response.json()
+                if (result.success) {
+                    setPromptTemplates(prev => 
+                        prev.map(t => ({
+                            ...t,
+                            isDefault: t.id === template.id ? true : (t.type === template.type ? false : t.isDefault)
+                        }))
+                    )
+                    toast.success('기본 템플릿이 설정되었습니다.')
+                }
+            }
+        } catch (error) {
+            toast.error('기본 템플릿 설정 중 오류가 발생했습니다.')
+        }
+    }
+
+    const handleSeedDefaults = async () => {
+        try {
+            const response = await fetch('/api/settings/prompt-templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'seed-defaults'
+                })
+            })
+            
+            if (response.ok) {
+                const result = await response.json()
+                if (result.success) {
+                    fetchPromptTemplates()
+                    toast.success('기본 템플릿이 생성되었습니다.')
+                }
+            }
+        } catch (error) {
+            toast.error('기본 템플릿 생성 중 오류가 발생했습니다.')
+        }
+    }
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -201,6 +409,7 @@ export default function Settings() {
         { id: 'general', name: '일반 설정', icon: Cog6ToothIcon },
         { id: 'schedule', name: '스케줄러', icon: ClockIcon },
         { id: 'report', name: '주간 보고서', icon: DocumentTextIcon },
+        { id: 'prompts', name: '프롬프트 템플릿', icon: SparklesIcon },
         { id: 'backup', name: '백업', icon: EnvelopeIcon }
     ]
 
@@ -527,6 +736,102 @@ export default function Settings() {
                         >
                             {isSaving ? '저장 중...' : '보고서 설정 저장'}
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 프롬프트 템플릿 탭 */}
+            {activeTab === 'prompts' && (
+                <div className="space-y-6 bg-white p-6 rounded-lg shadow">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <SparklesIcon className="h-5 w-5 mr-2" />
+                        프롬프트 템플릿
+                    </h2>
+
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-md font-medium text-gray-900 mb-2">템플릿 목록</h3>
+                            <ul className="text-sm text-gray-600 space-y-1">
+                                {promptTemplates.map((template) => (
+                                    <li key={template.id}>
+                                        {template.name} - {template.type}
+                                        <button
+                                            onClick={() => setEditingTemplate(template)}
+                                            className="text-blue-500 ml-2"
+                                        >
+                                            수정
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteTemplate(template.id)}
+                                            className="text-red-500 ml-2"
+                                        >
+                                            삭제
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h3 className="text-md font-medium text-gray-900 mb-2">새로운 템플릿 생성</h3>
+                            <input
+                                type="text"
+                                value={newTemplate.name}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                                className="input-field"
+                                placeholder="템플릿 이름"
+                            />
+                            <input
+                                type="text"
+                                value={newTemplate.type}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, type: e.target.value })}
+                                className="input-field"
+                                placeholder="템플릿 유형"
+                            />
+                            <input
+                                type="text"
+                                value={newTemplate.description}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
+                                className="input-field"
+                                placeholder="템플릿 설명"
+                            />
+                            <input
+                                type="text"
+                                value={newTemplate.prompt}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, prompt: e.target.value })}
+                                className="input-field"
+                                placeholder="템플릿 프롬프트"
+                            />
+                            <input
+                                type="text"
+                                value={newTemplate.variables}
+                                onChange={(e) => setNewTemplate({ ...newTemplate, variables: e.target.value })}
+                                className="input-field"
+                                placeholder="템플릿 변수"
+                            />
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={handleCreateTemplate}
+                                    className="btn-primary flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    <PlusIcon className="h-4 w-4" />
+                                    템플릿 생성
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h3 className="text-md font-medium text-gray-900 mb-2">템플릿 관리</h3>
+                        <div className="flex justify-end">
+                            <button
+                                onClick={handleSeedDefaults}
+                                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+                            >
+                                <PlusIcon className="h-4 w-4" />
+                                기본 템플릿 생성
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

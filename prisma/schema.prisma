@@ -262,3 +262,32 @@ model UserInterestProfile {
   @@index([conversionProbability])
   @@index([userId])
 }
+
+model Insight {
+  id          String   @id @default(cuid())
+  type        String   // dashboard, traffic, utm-cohort, keyword-cohort 등
+  propertyId  String
+  model       String
+  prompt      String
+  result      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // 추후: userId, status 등 추가 가능
+}
+
+model PromptTemplate {
+  id          String   @id @default(cuid())
+  name        String   // 프롬프트 이름 (예: "주간보고서", "트래픽분석", "UTM코호트" 등)
+  type        String   // 프롬프트 유형 (weekly-report, monthly-report, traffic-insight, utm-cohort-insight, keyword-cohort-insight 등)
+  description String?  // 프롬프트 설명
+  prompt      String   // 실제 프롬프트 템플릿
+  variables   String?  // 사용 가능한 변수 목록 (JSON)
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false) // 기본 프롬프트 여부
+  sortOrder   Int      @default(0)     // 정렬 순서
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([name, type])
+  @@index([type, isActive])
+}

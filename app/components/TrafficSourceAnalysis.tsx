@@ -7,7 +7,8 @@ import {
   GlobeAltIcon,
   MagnifyingGlassIcon,
   TagIcon,
-  XMarkIcon
+  XMarkIcon,
+  CodeBracketIcon
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -63,10 +64,23 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
   const [currentPage, setCurrentPage] = useState(1)
   const rowsPerPage = 10
   const [groupStats, setGroupStats] = useState<{ [groupId: string]: { sessions: number, conversions: number } }>({})
+  const [availableModels, setAvailableModels] = useState<any[]>([])
+  const [selectedModel, setSelectedModel] = useState<string>('')
+  const [latestInsight, setLatestInsight] = useState<any>(null)
+  const [insightLoading, setInsightLoading] = useState(false)
 
   useEffect(() => {
     loadTrafficData()
     loadKeywordGroups()
+    fetchLatestInsight()
+    fetch('/api/ai-insight/models')
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          setAvailableModels(result.models)
+          if (result.models.length > 0) setSelectedModel(result.models[0].id)
+        }
+      })
   }, [dateRange, propertyId])
 
   const loadTrafficData = async () => {
@@ -231,6 +245,37 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
   const keywords = data?.data?.keywords || []
   const pages = data?.data?.pages || []
   const categorizedSources = categorizeTrafficSources(sources)
+
+  const fetchLatestInsight = async () => {
+    const res = await fetch(`/api/ai-insight?type=traffic&propertyId=${propertyId}`)
+    const result = await res.json()
+    if (result.success && result.insight) setLatestInsight(result.insight)
+    else setLatestInsight(null)
+  }
+
+  const handleGenerateInsight = async () => {
+    setInsightLoading(true)
+    try {
+      const prompt = `다음은 트래픽 소스 분석 주요 데이터입니다.\n\n` +
+        `기간: ${dateRange}\n` +
+        `주요 소스/매체/캠페인별 세션, 전환 등 주요 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
+      const res = await fetch('/api/ai-insight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, model: selectedModel, type: 'traffic', propertyId })
+      })
+      const result = await res.json()
+      if (result.success) {
+        fetchLatestInsight()
+      } else {
+        toast.error('AI 인사이트 생성 실패: ' + (result.error || ''))
+      }
+    } catch (e:any) {
+      toast.error('AI 인사이트 생성 중 오류: ' + (e.message || ''))
+    } finally {
+      setInsightLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -683,6 +728,44 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
           </div>
         </div>
       )}
+
+      {/* AI 인사이트 섹션 */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center mb-2">
+          <CodeBracketIcon className="h-5 w-5 mr-2 text-primary-600" />
+          <span className="font-bold text-primary-700 text-lg">AI 자동 인사이트</span>
+          {latestInsight?.createdAt && (
+            <span className="ml-3 text-xs text-gray-500">{new Date(latestInsight.createdAt).toLocaleString('ko-KR')}</span>
+          )}
+          <div className="ml-auto flex items-center space-x-2">
+            {availableModels.length > 0 && (
+              <select
+                value={selectedModel}
+                onChange={e => setSelectedModel(e.target.value)}
+                className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
+                title="사용할 Gemini 모델 선택"
+              >
+                {availableModels.map(m => (
+                  <option key={m.id} value={m.id}>{m.displayName}</option>
+                ))}
+              </select>
+            )}
+            <button
+              onClick={handleGenerateInsight}
+              disabled={insightLoading || !selectedModel}
+              className="inline-flex items-center px-3 py-1 border border-primary-300 shadow-sm text-sm font-medium rounded-md text-primary-700 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+            >
+              {insightLoading ? 'AI 분석 중...' : 'AI 인사이트'}
+            </button>
+          </div>
+        </div>
+        <div className="whitespace-pre-line text-gray-800 text-sm min-h-[60px]">
+          {latestInsight?.result ? latestInsight.result : '아직 생성된 인사이트가 없습니다.'}
+        </div>
+        {latestInsight?.model && (
+          <div className="mt-2 text-xs text-gray-500">모델: {latestInsight.model}</div>
+        )}
+      </div>
     </div>
   )
 }

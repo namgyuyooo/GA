@@ -16,7 +16,8 @@ import {
   UsersIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
-  CodeBracketIcon
+  CodeBracketIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -41,6 +42,12 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
   const [gtmData, setGtmData] = useState<any>(null)
   const rowsPerPage = 10;
   const router = useRouter()
+  const [insightLoading, setInsightLoading] = useState(false)
+  const [insight, setInsight] = useState<string|null>(null)
+  const [showInsight, setShowInsight] = useState(false)
+  const [availableModels, setAvailableModels] = useState<any[]>([])
+  const [selectedModel, setSelectedModel] = useState<string>('')
+  const [latestInsight, setLatestInsight] = useState<any>(null)
 
   // KPI 드릴다운 핸들러들
   const handleSessionsClick = () => {
@@ -84,10 +91,30 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
     window.location.href = url.toString()
   }
 
+  // 인사이트 조회
+  const fetchLatestInsight = async () => {
+    const res = await fetch(`/api/ai-insight?type=dashboard&propertyId=${propertyId}`)
+    const result = await res.json()
+    if (result.success && result.insight) setLatestInsight(result.insight)
+    else setLatestInsight(null)
+  }
+
   useEffect(() => {
     loadDashboardData()
     loadAnalysisData()
+    fetchLatestInsight()
   }, [period, propertyId])
+
+  useEffect(() => {
+    fetch('/api/ai-insight/models')
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          setAvailableModels(result.models)
+          if (result.models.length > 0) setSelectedModel(result.models[0].id)
+        }
+      })
+  }, [])
 
   const loadDashboardData = async () => {
     setIsLoading(true)
@@ -144,6 +171,34 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
     setRefreshing(false)
   }
 
+  // AI 인사이트 생성 핸들러
+  const handleGenerateInsight = async () => {
+    setInsightLoading(true)
+    try {
+      const prompt = `다음은 웹사이트 대시보드의 주요 지표입니다.\n\n` +
+        `총 사용자: ${kpis.totalUsers}\n` +
+        `총 세션: ${kpis.totalSessions}\n` +
+        `총 전환: ${kpis.totalConversions}\n` +
+        `평균 참여율: ${kpis.avgEngagementRate}\n` +
+        `상위 캠페인: ${(campaigns.map((c:any)=>c.campaign).join(', '))}\n` +
+        `이 데이터를 바탕으로 마케팅/전환/트래픽 관점에서 3가지 핵심 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
+      const res = await fetch('/api/ai-insight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, model: selectedModel, type: 'dashboard', propertyId })
+      })
+      const result = await res.json()
+      if (result.success) {
+        setInsight(result.insight)
+        fetchLatestInsight()
+      } else setInsight('AI 인사이트 생성에 실패했습니다. ' + (result.error || ''))
+    } catch (e:any) {
+      setInsight('AI 인사이트 생성에 실패했습니다. ' + (e.message || ''))
+    } finally {
+      setInsightLoading(false)
+    }
+  }
+
   if (isLoading && !data) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -198,6 +253,20 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
             <option value="90daysAgo">최근 90일</option>
           </select>
 
+          {/* 모델 선택 드롭다운 */}
+          {availableModels.length > 0 && (
+            <select
+              value={selectedModel}
+              onChange={e => setSelectedModel(e.target.value)}
+              className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
+              title="사용할 Gemini 모델 선택"
+            >
+              {availableModels.map(m => (
+                <option key={m.id} value={m.id}>{m.displayName}</option>
+              ))}
+            </select>
+          )}
+
           <button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -205,6 +274,14 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           >
             <ArrowPathIcon className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             새로고침
+          </button>
+          <button
+            onClick={handleGenerateInsight}
+            disabled={insightLoading || !selectedModel}
+            className="inline-flex items-center px-3 py-2 border border-primary-300 shadow-sm text-sm leading-4 font-medium rounded-md text-primary-700 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+          >
+            <CodeBracketIcon className={`h-4 w-4 mr-2`} />
+            {insightLoading ? 'AI 분석 중...' : 'AI 인사이트'}
           </button>
         </div>
       </div>
@@ -822,6 +899,23 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
             </div>
           </div>
         </div>
+      </div>
+
+      {/* AI 인사이트 섹션 */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center mb-2">
+          <CodeBracketIcon className="h-5 w-5 mr-2 text-primary-600" />
+          <span className="font-bold text-primary-700 text-lg">AI 자동 인사이트</span>
+          {latestInsight?.createdAt && (
+            <span className="ml-3 text-xs text-gray-500">{new Date(latestInsight.createdAt).toLocaleString('ko-KR')}</span>
+          )}
+        </div>
+        <div className="whitespace-pre-line text-gray-800 text-sm min-h-[60px]">
+          {latestInsight?.result ? latestInsight.result : '아직 생성된 인사이트가 없습니다.'}
+        </div>
+        {latestInsight?.model && (
+          <div className="mt-2 text-xs text-gray-500">모델: {latestInsight.model}</div>
+        )}
       </div>
     </div>
   )
