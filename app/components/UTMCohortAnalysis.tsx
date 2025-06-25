@@ -30,7 +30,7 @@ interface CohortData {
 export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode = 'database' }: UTMCohortAnalysisProps) {
   const [cohortData, setCohortData] = useState<CohortData[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<string>('all')
-  const [dateRange, setDateRange] = useState('30daysAgo')
+  const [dateRange, setDateRange] = useState('7daysAgo')
   const [isLoading, setIsLoading] = useState(false)
   const [campaigns, setCampaigns] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -180,6 +180,7 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
             onChange={(e) => setDateRange(e.target.value)}
             className="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
           >
+            <option value="7daysAgo">최근 7일</option>
             <option value="30daysAgo">최근 30일</option>
             <option value="60daysAgo">최근 60일</option>
             <option value="90daysAgo">최근 90일</option>
@@ -360,18 +361,51 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">인사이트</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="border-l-4 border-blue-400 pl-4">
-              <h4 className="text-sm font-medium text-gray-900">최고 성과 캠페인</h4>
-              <p className="mt-1 text-sm text-gray-600">
-                Facebook Social 캠페인이 가장 높은 4주 리텐션률(65.2%)을 기록
-              </p>
-            </div>
-            <div className="border-l-4 border-green-400 pl-4">
-              <h4 className="text-sm font-medium text-gray-900">LTV 최적화 기회</h4>
-              <p className="mt-1 text-sm text-gray-600">
-                Email 캠페인의 LTV가 평균 대비 23% 높아 추가 투자 권장
-              </p>
-            </div>
+            {(() => {
+              // 실제 데이터 기반 인사이트 생성
+              if (filteredData.length === 0) {
+                return (
+                  <div className="border-l-4 border-gray-400 pl-4">
+                    <h4 className="text-sm font-medium text-gray-900">데이터 없음</h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      분석할 코호트 데이터가 없습니다.
+                    </p>
+                  </div>
+                )
+              }
+
+              // 최고 성과 캠페인 찾기
+              const bestRetention = filteredData.reduce((best, current) => {
+                const currentRetention = current.retentionWeek4 / current.initialUsers
+                const bestRetention = best.retentionWeek4 / best.initialUsers
+                return currentRetention > bestRetention ? current : best
+              })
+
+              // 최고 LTV 캠페인 찾기
+              const bestLTV = filteredData.reduce((best, current) => 
+                current.ltv > best.ltv ? current : best
+              )
+
+              // 평균 LTV 계산
+              const avgLTV = filteredData.reduce((sum, item) => sum + item.ltv, 0) / filteredData.length
+
+              return (
+                <>
+                  <div className="border-l-4 border-blue-400 pl-4">
+                    <h4 className="text-sm font-medium text-gray-900">최고 성과 캠페인</h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {bestRetention.campaignName} ({bestRetention.source}/{bestRetention.medium})이 가장 높은 4주 리텐션률({((bestRetention.retentionWeek4 / bestRetention.initialUsers) * 100).toFixed(1)}%)을 기록
+                    </p>
+                  </div>
+                  <div className="border-l-4 border-green-400 pl-4">
+                    <h4 className="text-sm font-medium text-gray-900">LTV 최적화 기회</h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {bestLTV.campaignName}의 LTV(${bestLTV.ltv.toFixed(2)})가 평균(${avgLTV.toFixed(2)}) 대비 {((bestLTV.ltv / avgLTV - 1) * 100).toFixed(1)}% 높아 추가 투자 권장
+                    </p>
+                  </div>
+                </>
+              )
+            })()}
           </div>
         </div>
       </div>

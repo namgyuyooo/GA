@@ -41,7 +41,7 @@ interface KeywordGroup {
 export default function KeywordCohortAnalysis({ propertyId = '464147982' }: KeywordCohortAnalysisProps) {
   const [cohortData, setCohortData] = useState<KeywordCohortData[]>([])
   const [selectedKeyword, setSelectedKeyword] = useState<string>('all')
-  const [dateRange, setDateRange] = useState('30daysAgo')
+  const [dateRange, setDateRange] = useState('7daysAgo')
   const [isLoading, setIsLoading] = useState(false)
   const [keywords, setKeywords] = useState<string[]>([])
   const [sortColumn, setSortColumn] = useState<string>('impressions')

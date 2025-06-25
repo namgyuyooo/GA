@@ -51,7 +51,7 @@ interface KeywordGroup {
 export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMode }: TrafficSourceAnalysisProps) {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [period, setPeriod] = useState('30daysAgo')
+  const [dateRange, setDateRange] = useState('7daysAgo')
   const [activeTab, setActiveTab] = useState<'sources' | 'keywords' | 'pages'>('sources')
   const [sourceFilter, setSourceFilter] = useState<'all' | 'utm' | 'non-utm'>('all')
   const [keywordGroups, setKeywordGroups] = useState<KeywordGroup[]>([
@@ -64,13 +64,13 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
 
   useEffect(() => {
     loadTrafficData()
-  }, [period, propertyId])
+  }, [dateRange, propertyId])
 
   const loadTrafficData = async () => {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`/api/analytics/traffic-analysis?period=${period}&propertyId=${propertyId}`)
+      const response = await fetch(`/api/analytics/traffic-analysis?period=${dateRange}&propertyId=${propertyId}`)
       const result = await response.json()
 
       if (response.ok) {
@@ -172,12 +172,13 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
 
         <div className="mt-4 sm:mt-0 flex items-center space-x-3">
           <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
             className="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
           >
             <option value="7daysAgo">최근 7일</option>
             <option value="30daysAgo">최근 30일</option>
+            <option value="60daysAgo">최근 60일</option>
             <option value="90daysAgo">최근 90일</option>
           </select>
         </div>

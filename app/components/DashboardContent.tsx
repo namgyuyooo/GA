@@ -29,7 +29,7 @@ interface DashboardContentProps {
 export default function DashboardContent({ propertyId = '464147982', dataMode = 'database' }: DashboardContentProps) {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [period, setPeriod] = useState('30daysAgo')
+  const [period, setPeriod] = useState('7daysAgo')
   const [refreshing, setRefreshing] = useState(false)
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
