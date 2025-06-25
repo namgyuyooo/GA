@@ -81,11 +81,27 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+      // 먼저 워크스페이스 목록 확인
+      const workspacesResponse = await fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`, {
+        headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+      })
+      
+      let workspaceId = '1' // 기본값
+      if (workspacesResponse.ok) {
+        const workspacesData = await workspacesResponse.json()
+        
+        // 기본 워크스페이스나 첫 번째 사용 가능한 워크스페이스 사용
+        if (workspacesData?.workspace?.length > 0) {
+          const defaultWorkspace = workspacesData.workspace.find(w => w.name === 'Default Workspace') || workspacesData.workspace[0]
+          workspaceId = defaultWorkspace.workspaceId
+        }
+      }
+
       const [containerRes, tagsRes, triggersRes, variablesRes] = await Promise.all([
         fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`, { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } }),
-        fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/1/tags`, { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } }),
-        fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/1/triggers`, { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } }),
-        fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/1/variables`, { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } })
+        fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/tags`, { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } }),
+        fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/triggers`, { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } }),
+        fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/variables`, { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } })
       ])
 
       const containerData = containerRes.ok ? await containerRes.json() : null
@@ -93,12 +109,19 @@ export async function GET(request: NextRequest) {
       const triggersData = triggersRes.ok ? await triggersRes.json() : { trigger: [] }
       const variablesData = variablesRes.ok ? await variablesRes.json() : { variable: [] }
 
+      // 데이터 로드 성공 로그
+      if (containerData && (tagsData?.tag?.length > 0 || triggersData?.trigger?.length > 0)) {
+        console.log(`✅ GTM 실제 데이터 로드: 태그 ${tagsData?.tag?.length || 0}개, 트리거 ${triggersData?.trigger?.length || 0}개, 변수 ${variablesData?.variable?.length || 0}개`)
+      }
+
       const processedData = processGTMData(containerData, tagsData, triggersData, variablesData)
 
       return NextResponse.json({
         success: true,
+        containerId: publicId,
+        accountId: accountId,
         data: processedData,
-        message: '✅ Google Tag Manager 분석 데이터가 성공적으로 로드되었습니다.'
+        message: `✅ GTM 실제 데이터 로드 완료 (태그 ${processedData?.summary?.totalTags || 0}개)`
       })
 
     } catch (gtmError) {
