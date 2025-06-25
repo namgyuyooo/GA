@@ -75,6 +75,7 @@ export default function DashboardContent({ propertyId = '464147982' }: Dashboard
   const kpis = data?.data?.kpis || {}
   const campaigns = data?.data?.topCampaigns || []
   const realTimeData = data?.data?.realTimeData || {}
+  const pages = data?.data?.topPages || [];
 
   // 기간에 따른 비교 텍스트 동적 생성
   const getComparisonText = (period: string) => {
