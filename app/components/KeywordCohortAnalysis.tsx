@@ -48,6 +48,8 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [currentPage, setCurrentPage] = useState(1)
   const rowsPerPage = 10
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
 
   // 그룹 관리 상태
   const [keywordGroups, setKeywordGroups] = useState<KeywordGroup[]>([
@@ -106,8 +108,9 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
         const newKeywords = Array.from(new Set(['all', ...result.keywords]));
         return newKeywords;
       });
+      setLastUpdate(result.lastUpdate)
 
-      toast.success('검색어 코호트 데이터 로드 완료')
+      toast.success(result.message || '검색어 코호트 데이터 로드 완료')
     } catch (error) {
       console.error('Keyword cohort data error:', error)
       toast.error('검색어 코호트 데이터 로드 실패. 데모 데이터를 표시합니다.')
@@ -405,6 +408,49 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
     loadCohortData()
   }
 
+  const handleUpdateData = async () => {
+    setIsUpdating(true)
+    try {
+      toast.loading('키워드 데이터를 업데이트하는 중...', { duration: 3000 })
+      
+      const response = await fetch(
+        `/api/analytics/keyword-cohort`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ propertyId })
+        }
+      )
+
+      const result = await response.json()
+      
+      if (response.ok) {
+        toast.success(result.message)
+        // 업데이트 후 데이터 다시 로드
+        await loadCohortData()
+      } else {
+        toast.error(result.error || '데이터 업데이트 실패')
+      }
+    } catch (error) {
+      console.error('Data update error:', error)
+      toast.error('데이터 업데이트 중 오류가 발생했습니다.')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const formatLastUpdate = (dateString: string | null) => {
+    if (!dateString) return '업데이트 기록 없음'
+    const date = new Date(dateString)
+    return date.toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -419,7 +465,13 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
       {/* Header Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold text-gray-800">키워드 코호트 분석</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">키워드 코호트 분석</h1>
+            <p className="text-sm text-gray-600">
+              마지막 업데이트: {formatLastUpdate(lastUpdate)} 
+              {lastUpdate && <span className="text-gray-400 ml-1">(매일 9시 자동 업데이트)</span>}
+            </p>
+          </div>
           <div className="flex items-center space-x-2">
             <select
               value={dateRange}
@@ -433,8 +485,24 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
             <button
               onClick={handleRefresh}
               className="p-2 rounded-md hover:bg-gray-100"
+              title="데이터 새로고침"
             >
               <ArrowPathIcon className="h-5 w-5 text-gray-500" />
+            </button>
+            <button
+              onClick={handleUpdateData}
+              disabled={isUpdating}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Google Search Console에서 최신 데이터 가져오기"
+            >
+              {isUpdating ? (
+                <>
+                  <ArrowPathIcon className="animate-spin h-4 w-4 mr-2" />
+                  업데이트 중...
+                </>
+              ) : (
+                '데이터 업데이트'
+              )}
             </button>
           </div>
         </div>
