@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SideNavigation from './SideNavigation'
 import DashboardContent from './DashboardContent'
 import UTMBuilder from './UTMBuilder'
@@ -24,6 +24,27 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
   const [activeProperty, setActiveProperty] = useState('464147982')
   const [dataMode, setDataMode] = useState<'realtime' | 'database'>('database')
   const [isDataLoading, setIsDataLoading] = useState(false)
+
+  // URL 파라미터에서 탭 정보 읽기
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const tabParam = urlParams.get('tab')
+      if (tabParam && ['dashboard', 'utm-builder', 'utm-list', 'utm-cohort', 'keyword-cohort', 'traffic-analysis', 'gtm-analysis', 'settings', 'property-check'].includes(tabParam)) {
+        setActiveTab(tabParam)
+      }
+    }
+  }, [])
+
+  // 탭 변경 시 URL 업데이트
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('tab', tab)
+      window.history.replaceState({}, '', url.toString())
+    }
+  }
 
   const handleBulkDataLoad = async () => {
     setIsDataLoading(true)
@@ -169,7 +190,7 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
     <div className="h-screen flex overflow-hidden bg-gray-100">
       <SideNavigation
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         activeProperty={activeProperty}
         onPropertyChange={setActiveProperty}
         user={user}

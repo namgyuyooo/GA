@@ -13,7 +13,10 @@ import {
   GlobeAltIcon,
   InformationCircleIcon,
   TagIcon,
-  UsersIcon
+  UsersIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  CodeBracketIcon
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -32,6 +35,10 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
   const [period, setPeriod] = useState('7daysAgo')
   const [refreshing, setRefreshing] = useState(false)
   const [currentPage, setCurrentPage] = useState(1);
+  const [utmCohortData, setUtmCohortData] = useState<any>(null)
+  const [keywordCohortData, setKeywordCohortData] = useState<any>(null)
+  const [trafficData, setTrafficData] = useState<any>(null)
+  const [gtmData, setGtmData] = useState<any>(null)
   const rowsPerPage = 10;
   const router = useRouter()
 
@@ -52,8 +59,34 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
     router.push(`/analytics/conversions?period=${period}&propertyId=${propertyId}`)
   }
 
+  // 분석 섹션 클릭 핸들러들
+  const handleUtmCohortClick = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', 'utm-cohort')
+    window.location.href = url.toString()
+  }
+
+  const handleKeywordCohortClick = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', 'keyword-cohort')
+    window.location.href = url.toString()
+  }
+
+  const handleTrafficAnalysisClick = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', 'traffic-analysis')
+    window.location.href = url.toString()
+  }
+
+  const handleGtmAnalysisClick = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', 'gtm-analysis')
+    window.location.href = url.toString()
+  }
+
   useEffect(() => {
     loadDashboardData()
+    loadAnalysisData()
   }, [period, propertyId])
 
   const loadDashboardData = async () => {
@@ -78,9 +111,36 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
     }
   }
 
+  const loadAnalysisData = async () => {
+    try {
+      // UTM 코호트 데이터 로드
+      const utmResponse = await fetch(`/api/analytics/utm-cohort?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
+      const utmResult = await utmResponse.json()
+      setUtmCohortData(utmResult)
+
+      // 키워드 코호트 데이터 로드
+      const keywordResponse = await fetch(`/api/analytics/keyword-groups?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
+      const keywordResult = await keywordResponse.json()
+      setKeywordCohortData(keywordResult)
+
+      // 트래픽 소스 데이터 로드
+      const trafficResponse = await fetch(`/api/analytics/traffic-analysis?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
+      const trafficResult = await trafficResponse.json()
+      setTrafficData(trafficResult)
+
+      // GTM 데이터 로드
+      const gtmResponse = await fetch(`/api/analytics/gtm-analysis?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
+      const gtmResult = await gtmResponse.json()
+      setGtmData(gtmResult)
+
+    } catch (err: any) {
+      console.error('Analysis data load error:', err)
+    }
+  }
+
   const handleRefresh = async () => {
     setRefreshing(true)
-    await loadDashboardData()
+    await Promise.all([loadDashboardData(), loadAnalysisData()])
     setRefreshing(false)
   }
 
@@ -360,6 +420,145 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
               </span>
               <span className="text-gray-600 ml-2">{getComparisonText(period)}</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Analysis Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* UTM 코호트 분석 */}
+        <div className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={handleUtmCohortClick}>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <TagIcon className="h-6 w-6 text-blue-600 mr-3" />
+                <h3 className="text-lg font-semibold text-gray-900">UTM 캠페인 코호트 분석</h3>
+              </div>
+              <ArrowTrendingUpIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">활성 캠페인:</span>
+                <span className="font-medium text-gray-900">
+                  {utmCohortData?.data?.campaigns?.length || 0}개
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">총 세션:</span>
+                <span className="font-medium text-gray-900">
+                  {utmCohortData?.data?.totalSessions?.toLocaleString() || '0'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">평균 전환율:</span>
+                <span className="font-medium text-gray-900">
+                  {utmCohortData?.data?.avgConversionRate ? `${(utmCohortData.data.avgConversionRate * 100).toFixed(1)}%` : '0%'}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">클릭하여 상세 분석 보기</p>
+          </div>
+        </div>
+
+        {/* 키워드 코호트 분석 */}
+        <div className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={handleKeywordCohortClick}>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <MagnifyingGlassIcon className="h-6 w-6 text-green-600 mr-3" />
+                <h3 className="text-lg font-semibold text-gray-900">키워드 코호트 분석</h3>
+              </div>
+              <ArrowTrendingUpIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">키워드 그룹:</span>
+                <span className="font-medium text-gray-900">
+                  {keywordCohortData?.data?.groups?.length || 0}개
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">총 키워드:</span>
+                <span className="font-medium text-gray-900">
+                  {keywordCohortData?.data?.totalKeywords || 0}개
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">평균 순위:</span>
+                <span className="font-medium text-gray-900">
+                  {keywordCohortData?.data?.avgRank ? keywordCohortData.data.avgRank.toFixed(1) : '0'}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">클릭하여 상세 분석 보기</p>
+          </div>
+        </div>
+
+        {/* 트래픽 소스 분석 */}
+        <div className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={handleTrafficAnalysisClick}>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <FunnelIcon className="h-6 w-6 text-purple-600 mr-3" />
+                <h3 className="text-lg font-semibold text-gray-900">트래픽 소스 분석</h3>
+              </div>
+              <ArrowTrendingUpIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">주요 소스:</span>
+                <span className="font-medium text-gray-900">
+                  {trafficData?.data?.sources?.length || 0}개
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">유기 검색:</span>
+                <span className="font-medium text-gray-900">
+                  {trafficData?.data?.organicSearch?.toLocaleString() || '0'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">직접 트래픽:</span>
+                <span className="font-medium text-gray-900">
+                  {trafficData?.data?.directTraffic?.toLocaleString() || '0'}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">클릭하여 상세 분석 보기</p>
+          </div>
+        </div>
+
+        {/* GTM 분석 */}
+        <div className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={handleGtmAnalysisClick}>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <CodeBracketIcon className="h-6 w-6 text-orange-600 mr-3" />
+                <h3 className="text-lg font-semibold text-gray-900">Google Tag Manager 분석</h3>
+              </div>
+              <ArrowTrendingUpIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">활성 태그:</span>
+                <span className="font-medium text-gray-900">
+                  {gtmData?.data?.tags?.length || 0}개
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">트리거:</span>
+                <span className="font-medium text-gray-900">
+                  {gtmData?.data?.triggers?.length || 0}개
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">저장된 목표:</span>
+                <span className="font-medium text-gray-900">
+                  {gtmData?.data?.savedGoals?.length || 0}개
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">클릭하여 상세 분석 보기</p>
           </div>
         </div>
       </div>
