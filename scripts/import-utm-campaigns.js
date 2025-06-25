@@ -91,7 +91,7 @@ async function insertToGoogleSheets() {
     console.log('🚀 Google Sheets에 UTM 캠페인 데이터 삽입 시작...')
     
     // Service Account 파일 읽기
-    const serviceAccountPath = path.join(__dirname, '../ga-auto-464002-672370fda082.json')
+    const serviceAccountPath = path.join(__dirname, '../secrets/ga-auto-464002-672370fda082.json')
     const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
     const serviceAccount = JSON.parse(serviceAccountData)
     
