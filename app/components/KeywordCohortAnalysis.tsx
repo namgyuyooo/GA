@@ -799,136 +799,76 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
       </div>
 
       {/* Keyword Cohort Table */}
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between pb-4">
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="표에서 키워드 검색..."
-                  value={selectedKeyword === 'all' ? '' : selectedKeyword}
-                  onChange={(e) => setSelectedKeyword(e.target.value || 'all')}
-                  className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-600">정렬 기준:</span>
-                <select
-                  value={sortColumn}
-                  onChange={(e) => setSortColumn(e.target.value as any)}
-                  className="border-gray-300 rounded-md text-sm shadow-sm"
-                >
-                  <option value="impressions">노출</option>
-                  <option value="clicks">클릭</option>
-                  <option value="conversions">전환</option>
-                  <option value="retention">리텐션</option>
-                </select>
-              </div>
-            </div>
-            {isLoading ? (
-              <div className="text-center py-10">
-                <ArrowPathIcon className="mx-auto h-12 w-12 text-gray-400 animate-spin" />
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">데이터 로딩 중...</h3>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-[1100px] divide-y divide-gray-300 text-xs">
-                  <thead>
-                    <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-0 cursor-pointer whitespace-nowrap" onClick={() => handleSort('keyword')}>
-                        키워드 {sortColumn === 'keyword' && (sortDirection === 'asc' ? '▲' : '▼')}
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('impressions')}>
-                        노출 {sortColumn === 'impressions' && (sortDirection === 'asc' ? '▲' : '▼')}
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('clicks')}>
-                        클릭 {sortColumn === 'clicks' && (sortDirection === 'asc' ? '▲' : '▼')}
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('ctr')}>
-                        CTR {sortColumn === 'ctr' && (sortDirection === 'asc' ? '▲' : '▼')}
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('position')}>
-                        순위 {sortColumn === 'position' && (sortDirection === 'asc' ? '▲' : '▼')}
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('initialUsers')}>
-                        초기 사용자 {sortColumn === 'initialUsers' && (sortDirection === 'asc' ? '▲' : '▼')}
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 whitespace-nowrap">
-                        주간 리텐션 (1, 2, 4, 8주)
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 cursor-pointer whitespace-nowrap" onClick={() => handleSort('conversions')}>
-                        전환 {sortColumn === 'conversions' && (sortDirection === 'asc' ? '▲' : '▼')}
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 whitespace-nowrap">그룹</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {getFilteredCohortData().slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((item) => (
-                      <tr key={item.keyword}>
-                        <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
-                          <div className="flex items-center">
-                            <div className="font-medium text-gray-900">{item.keyword}</div>
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">{item.impressions.toLocaleString()}</td>
-                        <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">{item.clicks.toLocaleString()}</td>
-                        <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-                          <span className={getPerformanceColor(item.ctr, 'ctr')}>
-                            {(item.ctr * 100).toFixed(2)}%
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-                          <span className={getPerformanceColor(item.position, 'position')}>
-                            {item.position.toFixed(1)}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">{item.initialUsers.toLocaleString()}</td>
-                        <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-                          <div className="w-full bg-gray-200 rounded-full h-4">
-                            <div className={getRetentionBarColor(item.retentionWeek1 / item.initialUsers) + " h-4 rounded-full"} style={{ width: `${(item.retentionWeek1 / item.initialUsers) * 100}%` }}></div>
-                          </div>
-                          <div className="text-xs text-center text-gray-500 mt-1">
-                            {((item.retentionWeek1 / item.initialUsers) * 100).toFixed(1)}%
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-500">{item.conversions.toLocaleString()}</td>
-                        <td className="whitespace-nowrap px-3 py-5 text-sm">
-                          {item.group && keywordGroups.find(g => g.id === item.group) && item.group !== 'ungrouped' ? (
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${keywordGroups.find(g => g.id === item.group)?.color}`}>
-                              {keywordGroups.find(g => g.id === item.group)?.name}
-                            </span>
-                          ) : (
-                            <select
-                              className="border-gray-300 rounded-md text-xs"
-                              defaultValue=""
-                              onChange={e => {
-                                if (e.target.value) addKeywordToGroup(e.target.value, item.keyword)
-                              }}
-                            >
-                              <option value="">그룹 등록</option>
-                              {keywordGroups.map(g => (
-                                <option key={g.id} value={g.id}>{g.name}</option>
-                              ))}
-                            </select>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {/* Pagination */}
-                <div className="flex justify-end items-center mt-4 space-x-2">
-                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 text-sm border rounded disabled:opacity-50">이전</button>
-                  <span className="text-sm">{currentPage} / {Math.ceil(getFilteredCohortData().length / rowsPerPage)}</span>
-                  <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(getFilteredCohortData().length / rowsPerPage), p + 1))} disabled={currentPage === Math.ceil(getFilteredCohortData().length / rowsPerPage)} className="px-2 py-1 text-sm border rounded disabled:opacity-50">다음</button>
-                </div>
-              </div>
-            )}
-          </div>
+      <div className="mt-8 w-full overflow-x-auto px-4">
+        <table className="min-w-[1200px] divide-y divide-gray-300 text-xs">
+          <thead>
+            <tr>
+              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">키워드</th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">노출</th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">클릭</th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">CTR</th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">순위</th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">초기 사용자</th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">주간 리텐션 (1,2,4,8주)</th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">전환</th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">그룹</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 bg-white">
+            {getFilteredCohortData().slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((item) => (
+              <tr key={item.keyword}>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">{item.keyword}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">{item.impressions.toLocaleString()}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">{item.clicks.toLocaleString()}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">
+                  <span className={getPerformanceColor(item.ctr, 'ctr')}>
+                    {(item.ctr * 100).toFixed(2)}%
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">
+                  <span className={getPerformanceColor(item.position, 'position')}>
+                    {item.position.toFixed(1)}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">{item.initialUsers.toLocaleString()}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">
+                  <div className="w-full bg-gray-200 rounded-full h-4">
+                    <div className={getRetentionBarColor(item.retentionWeek1 / item.initialUsers) + " h-4 rounded-full"} style={{ width: `${(item.retentionWeek1 / item.initialUsers) * 100}%` }}></div>
+                  </div>
+                  <div className="text-xs text-center text-gray-500 mt-1">
+                    {((item.retentionWeek1 / item.initialUsers) * 100).toFixed(1)}%
+                  </div>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">{item.conversions.toLocaleString()}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm">
+                  {item.group && keywordGroups.find(g => g.id === item.group) && item.group !== 'ungrouped' ? (
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${keywordGroups.find(g => g.id === item.group)?.color}`}>
+                      {keywordGroups.find(g => g.id === item.group)?.name}
+                    </span>
+                  ) : (
+                    <select
+                      className="border-gray-300 rounded-md text-xs"
+                      defaultValue=""
+                      onChange={e => {
+                        if (e.target.value) addKeywordToGroup(e.target.value, item.keyword)
+                      }}
+                    >
+                      <option value="">그룹 등록</option>
+                      {keywordGroups.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {/* Pagination */}
+        <div className="flex justify-end items-center mt-4 space-x-2">
+          <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 text-sm border rounded disabled:opacity-50">이전</button>
+          <span className="text-sm">{currentPage} / {Math.ceil(getFilteredCohortData().length / rowsPerPage)}</span>
+          <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(getFilteredCohortData().length / rowsPerPage), p + 1))} disabled={currentPage === Math.ceil(getFilteredCohortData().length / rowsPerPage)} className="px-2 py-1 text-sm border rounded disabled:opacity-50">다음</button>
         </div>
       </div>
 
