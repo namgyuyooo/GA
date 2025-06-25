@@ -31,7 +31,7 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const tabParam = urlParams.get('tab')
-      if (tabParam && ['dashboard', 'utm-builder', 'utm-list', 'utm-cohort', 'keyword-cohort', 'traffic-analysis', 'gtm-analysis', 'settings', 'property-check'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'utm-builder', 'utm-list', 'utm-cohort', 'keyword-cohort', 'traffic-analysis', 'gtm-analysis', 'user-journey', 'settings', 'property-check'].includes(tabParam)) {
         setActiveTab(tabParam)
       }
     }
@@ -106,6 +106,25 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
         return <TrafficSourceAnalysis {...commonProps} />
       case 'gtm-analysis':
         return <GTMAnalysis {...commonProps} />
+      case 'user-journey':
+        return (
+          <div className="space-y-6">
+            <div className="card">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">사용자 여정 분석</h2>
+              <p className="text-gray-600 mb-4">
+                사용자의 페이지 전환 경로, 체류 시간, 스크롤 깊이, 재방문율 등을 분석합니다.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-blue-800">
+                  사용자 여정 분석은 별도 페이지에서 제공됩니다. 
+                  <a href={`/analytics/user-journey?propertyId=${activeProperty}`} className="text-blue-600 hover:text-blue-800 underline ml-1">
+                    상세 분석 보기 →
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        )
       case 'settings':
         return <Settings />
       case 'property-check':
