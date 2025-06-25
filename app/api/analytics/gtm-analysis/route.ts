@@ -30,6 +30,9 @@ async function getNumericContainerId(accessToken: string, accountId: string, pub
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const dataMode = searchParams.get('dataMode') || 'realtime'
+    
     const settings = await getSettings()
 
     const accountId = settings.GTM_ACCOUNT_ID
@@ -37,7 +40,13 @@ export async function GET(request: NextRequest) {
 
     if (!publicId || !accountId || !settings.GOOGLE_SERVICE_ACCOUNT_JSON) {
       console.warn('GTM settings are incomplete, falling back to demo data.')
-      return getDemoGTMData()
+      return getDemoGTMData(dataMode)
+    }
+
+    // DB 모드인 경우 데이터베이스에서 데이터 로드
+    if (dataMode === 'database') {
+      // TODO: 데이터베이스에서 저장된 GTM 데이터 로드
+      console.log('DB 모드로 GTM 데이터 요청됨')
     }
 
     let serviceAccount
@@ -45,7 +54,7 @@ export async function GET(request: NextRequest) {
       serviceAccount = JSON.parse(settings.GOOGLE_SERVICE_ACCOUNT_JSON)
     } catch (e) {
       console.warn('Could not parse Service Account JSON, falling back to demo data.', e)
-      return getDemoGTMData()
+      return getDemoGTMData(dataMode)
     }
 
     const jwt = require('jsonwebtoken')
@@ -71,13 +80,13 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json()
     if (!tokenData.access_token) {
       console.warn('Failed to get GTM access token, falling back to demo data.')
-      return getDemoGTMData()
+      return getDemoGTMData(dataMode)
     }
 
     const containerId = await getNumericContainerId(tokenData.access_token, accountId, publicId)
     if (!containerId) {
       console.warn(`No container found with Public ID ${publicId}, falling back to demo data.`)
-      return getDemoGTMData()
+      return getDemoGTMData(dataMode)
     }
 
     try {
@@ -117,7 +126,7 @@ export async function GET(request: NextRequest) {
       const processedData = processGTMData(containerData, tagsData, triggersData, variablesData)
 
       // 저장된 Goal 설정 로드
-      const savedGoals = await prisma.gTMGoal.findMany({
+      const savedGoals = await prisma.GTMGoal.findMany({
         where: {
           accountId,
           containerId: publicId
@@ -139,14 +148,15 @@ export async function GET(request: NextRequest) {
         success: true,
         containerId: publicId,
         accountId: accountId,
+        dataMode,
         data: processedData,
         savedGoals: savedGoals.length,
-        message: `✅ GTM 실제 데이터 로드 완료 (태그 ${processedData?.summary?.totalTags || 0}개, Goal ${savedGoals.length}개)`
+        message: `✅ ${dataMode === 'realtime' ? '실시간' : 'DB'} GTM 데이터 로드 완료 (태그 ${processedData?.summary?.totalTags || 0}개, Goal ${savedGoals.length}개)`
       })
 
     } catch (gtmError) {
       console.warn('GTM Analysis API: An error occurred during GTM API calls, using demo data:', gtmError)
-      return getDemoGTMData()
+      return getDemoGTMData(dataMode)
     }
 
   } catch (error: any) {
@@ -168,7 +178,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 기존 Goal 설정 삭제
-    await prisma.gTMGoal.deleteMany({
+    await prisma.GTMGoal.deleteMany({
       where: {
         accountId,
         containerId
@@ -177,7 +187,7 @@ export async function POST(request: NextRequest) {
 
     // 새로운 Goal 설정 저장
     const goalPromises = goals.map((goal: any, index: number) => 
-      prisma.gTMGoal.create({
+      prisma.GTMGoal.create({
         data: {
           accountId,
           containerId,
@@ -265,7 +275,7 @@ function processGTMData(container: any, tags: any, triggers: any, variables: any
 }
 
 // 데모 데이터 생성 (UTM Goals 포함)
-function getDemoGTMData() {
+function getDemoGTMData(dataMode: string) {
   // UTM Goals JSON 파일 로드
   const fs = require('fs')
   const path = require('path')

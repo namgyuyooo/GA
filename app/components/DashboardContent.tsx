@@ -23,9 +23,10 @@ import { CalculationTooltip, DataSourceTooltip } from './Tooltip'
 
 interface DashboardContentProps {
   propertyId?: string
+  dataMode?: 'realtime' | 'database'
 }
 
-export default function DashboardContent({ propertyId = '464147982' }: DashboardContentProps) {
+export default function DashboardContent({ propertyId = '464147982', dataMode = 'realtime' }: DashboardContentProps) {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [period, setPeriod] = useState('30daysAgo')
@@ -59,13 +60,13 @@ export default function DashboardContent({ propertyId = '464147982' }: Dashboard
     setIsLoading(true)
 
     try {
-      const response = await fetch(`/api/dashboard/overview?period=${period}&propertyId=${propertyId}`)
+      const response = await fetch(`/api/dashboard/overview?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
       const result = await response.json()
 
       setData(result)
 
       if (response.ok) {
-        toast.success('대시보드 데이터 로드 완료')
+        toast.success(`대시보드 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`)
       } else {
         toast.error('데이터 로드 실패')
       }
@@ -117,7 +118,7 @@ export default function DashboardContent({ propertyId = '464147982' }: Dashboard
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Analytics 대시보드</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Property ID: {propertyId} | 실시간 데이터 모니터링
+            Property ID: {propertyId} | {dataMode === 'realtime' ? '실시간' : 'DB'} 데이터 모드
           </p>
         </div>
 

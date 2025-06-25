@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast'
 
 interface UTMCohortAnalysisProps {
   propertyId?: string
+  dataMode?: 'realtime' | 'database'
 }
 
 interface CohortData {
@@ -26,7 +27,7 @@ interface CohortData {
   conversions: number
 }
 
-export default function UTMCohortAnalysis({ propertyId = '464147982' }: UTMCohortAnalysisProps) {
+export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode = 'realtime' }: UTMCohortAnalysisProps) {
   const [cohortData, setCohortData] = useState<CohortData[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<string>('all')
   const [dateRange, setDateRange] = useState('30daysAgo')
@@ -43,7 +44,7 @@ export default function UTMCohortAnalysis({ propertyId = '464147982' }: UTMCohor
     setIsLoading(true)
     try {
       const response = await fetch(
-        `/api/analytics/utm-cohort?propertyId=${propertyId}&period=${dateRange}&campaign=${selectedCampaign}`
+        `/api/analytics/utm-cohort?propertyId=${propertyId}&period=${dateRange}&campaign=${selectedCampaign}&dataMode=${dataMode}`
       )
 
       if (!response.ok) {
@@ -54,7 +55,7 @@ export default function UTMCohortAnalysis({ propertyId = '464147982' }: UTMCohor
       setCohortData(result.cohorts || [])
       setCampaigns(result.campaigns || [])
 
-      toast.success('UTM 코호트 데이터 로드 완료')
+      toast.success(`UTM 코호트 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`)
     } catch (error) {
       console.error('Cohort data error:', error)
       toast.error('코호트 데이터 로드 실패')
@@ -164,7 +165,7 @@ export default function UTMCohortAnalysis({ propertyId = '464147982' }: UTMCohor
         <div>
           <h1 className="text-2xl font-bold text-gray-900">UTM 캠페인 코호트 분석</h1>
           <p className="text-sm text-gray-600 mt-1">
-            UTM 캠페인별 사용자 리텐션 및 생애가치 분석
+            UTM 캠페인별 사용자 리텐션 및 생애가치 분석 | {dataMode === 'realtime' ? '실시간' : 'DB'} 데이터 모드
           </p>
         </div>
 

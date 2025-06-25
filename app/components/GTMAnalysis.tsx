@@ -18,6 +18,7 @@ import { toast } from 'react-hot-toast'
 interface GTMAnalysisProps {
   containerId?: string
   accountId?: string
+  dataMode?: 'realtime' | 'database'
 }
 
 interface GTMTag {
@@ -70,7 +71,7 @@ interface GTMData {
   }
 }
 
-export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = '6243694530' }: GTMAnalysisProps) {
+export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = '6243694530', dataMode = 'realtime' }: GTMAnalysisProps) {
   const [data, setData] = useState<GTMData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'tags' | 'goals' | 'triggers'>('overview')
@@ -89,7 +90,7 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
     setIsLoading(true)
 
     try {
-      const response = await fetch(`/api/analytics/gtm-analysis?containerId=${containerId}&accountId=${accountId}`)
+      const response = await fetch(`/api/analytics/gtm-analysis?containerId=${containerId}&accountId=${accountId}&dataMode=${dataMode}`)
       const result = await response.json()
 
       if (response.ok) {
@@ -98,7 +99,7 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
         // 기존 Goal 설정 로드
         const existingGoals = new Set(gtmData.tags.filter((tag: GTMTag) => tag.isGoal).map((tag: GTMTag) => tag.id))
         setSelectedGoals(existingGoals)
-        toast.success('GTM 분석 데이터 로드 완료')
+        toast.success(`GTM 분석 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`)
       } else {
         toast.error('GTM 데이터 로드 실패')
       }
@@ -233,7 +234,7 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Google Tag Manager 분석</h1>
           <p className="text-sm text-gray-600 mt-1">
-            컨테이너: {data.container.publicId} | {data.container.name}
+            컨테이너: {data.container.publicId} | {data.container.name} | {dataMode === 'realtime' ? '실시간' : 'DB'} 데이터 모드
           </p>
         </div>
 

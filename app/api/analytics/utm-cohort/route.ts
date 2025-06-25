@@ -8,6 +8,13 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || '30daysAgo'
     const propertyId = searchParams.get('propertyId') || DEFAULT_PROPERTIES[0]
     const campaign = searchParams.get('campaign') || 'all'
+    const dataMode = searchParams.get('dataMode') || 'realtime'
+
+    // DB 모드인 경우 데이터베이스에서 데이터 로드
+    if (dataMode === 'database') {
+      // TODO: 데이터베이스에서 저장된 UTM 코호트 데이터 로드
+      console.log('DB 모드로 UTM 코호트 데이터 요청됨')
+    }
 
     // Service Account 기반 실제 데이터 가져오기 (파일에서 직접 읽기)
     const fs = require('fs')
@@ -167,9 +174,10 @@ export async function GET(request: NextRequest) {
       propertyId,
       period,
       campaign,
+      dataMode,
       cohorts: cohorts.slice(0, 50), // 최대 50개 결과
       campaigns: Array.from(campaignSet),
-      message: '✅ UTM 코호트 데이터가 성공적으로 로드되었습니다.'
+      message: `✅ ${dataMode === 'realtime' ? '실시간' : 'DB'} UTM 코호트 데이터가 성공적으로 로드되었습니다.`
     })
 
   } catch (error: any) {

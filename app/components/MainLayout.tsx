@@ -83,7 +83,7 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
       case 'traffic-analysis':
         return <TrafficSourceAnalysis {...commonProps} />
       case 'gtm-analysis':
-        return <GTMAnalysis />
+        return <GTMAnalysis {...commonProps} />
       case 'settings':
         return (
           <div className="space-y-6">

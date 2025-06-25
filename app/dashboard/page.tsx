@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 interface DashboardData {
   kpis: {
@@ -20,11 +21,13 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const dataMode = searchParams.get('dataMode') || 'realtime';
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/dashboard/overview');
+        const response = await fetch(`/api/dashboard/overview?dataMode=${dataMode}`);
         
         if (response.status === 401) {
           window.location.href = '/login';
@@ -45,7 +48,7 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, []);
+  }, [dataMode]);
 
   if (loading) {
     return (
@@ -77,6 +80,9 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
           Google Analytics Dashboard
         </h1>
+        <p className="text-sm text-gray-600 mb-6">
+          데이터 모드: {dataMode === 'realtime' ? '실시간' : 'DB'}
+        </p>
         
         {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
