@@ -468,11 +468,11 @@ export default function UserJourneyPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">참여도:</span>
-                        <span className="font-medium">{metric.engagement.toFixed(1)}%</span>
+                        <span className="font-medium">{(metric.engagement || 0).toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">전환율:</span>
-                        <span className="font-medium">{metric.conversion.toFixed(1)}%</span>
+                        <span className="font-medium">{(metric.conversion || 0).toFixed(1)}%</span>
                       </div>
                     </div>
                   </div>
@@ -557,11 +557,11 @@ export default function UserJourneyPage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">평균 참여도:</span>
-                        <span className="font-medium">{pattern.avgEngagement.toFixed(1)}%</span>
+                        <span className="font-medium">{(pattern.avgEngagement || 0).toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">전환율:</span>
-                        <span className="font-medium">{pattern.conversionRate.toFixed(1)}%</span>
+                        <span className="font-medium">{(pattern.conversionRate || 0).toFixed(1)}%</span>
                       </div>
                     </div>
                   </div>

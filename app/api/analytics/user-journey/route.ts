@@ -1,25 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { BetaAnalyticsDataClient } from '@google-analytics/data';
-import { JWT } from 'google-auth-library';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const prisma = new PrismaClient();
 
-// GA4 클라이언트 초기화
-function getAnalyticsClient() {
+// GA4 API 인증 및 클라이언트 초기화
+async function getAnalyticsClient() {
   try {
-    const serviceAccountPath = path.join(process.cwd(), 'secrets', 'service-account.json');
+    const serviceAccountPath = path.join(process.cwd(), 'secrets', 'ga-auto-464002-672370fda082.json');
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
     
-    const jwt = new JWT({
-      email: serviceAccount.client_email,
-      key: serviceAccount.private_key,
-      scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+    // JWT 토큰으로 Google API 인증
+    const jwt = require('jsonwebtoken');
+    
+    const now = Math.floor(Date.now() / 1000);
+    const tokenPayload = {
+      iss: serviceAccount.client_email,
+      scope: 'https://www.googleapis.com/auth/analytics.readonly',
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600
+    };
+
+    const token = jwt.sign(tokenPayload, serviceAccount.private_key, { algorithm: 'RS256' });
+
+    const authResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
     });
 
-    return new BetaAnalyticsDataClient({ authClient: jwt });
+    if (!authResponse.ok) {
+      throw new Error(`Auth failed: ${authResponse.status}`);
+    }
+
+    const tokenData = await authResponse.json();
+    return tokenData.access_token;
   } catch (error) {
     console.error('Error initializing GA4 client:', error);
     return null;
@@ -50,8 +67,8 @@ export async function GET(request: NextRequest) {
         startDate = '7daysAgo';
     }
 
-    const analyticsClient = getAnalyticsClient();
-    if (!analyticsClient) {
+    const accessToken = await getAnalyticsClient();
+    if (!accessToken) {
       return NextResponse.json(
         { error: 'Failed to initialize GA4 client' },
         { status: 500 }
@@ -59,34 +76,34 @@ export async function GET(request: NextRequest) {
     }
 
     // 1. 페이지 전환 데이터 (페이지 경로별 세션)
-    const pageTransitionsData = await fetchPageTransitions(analyticsClient, propertyId, startDate);
+    const pageTransitionsData = await fetchPageTransitions(accessToken, propertyId, startDate);
     
     // 2. 체류 시간 데이터
-    const dwellTimeData = await fetchDwellTime(analyticsClient, propertyId, startDate);
+    const dwellTimeData = await fetchDwellTime(accessToken, propertyId, startDate);
     
     // 3. 스크롤 깊이 데이터
-    const scrollDepthData = await fetchScrollDepth(analyticsClient, propertyId, startDate);
+    const scrollDepthData = await fetchScrollDepth(accessToken, propertyId, startDate);
     
     // 4. 재방문율 데이터
-    const revisitRateData = await fetchRevisitRate(analyticsClient, propertyId, startDate);
+    const revisitRateData = await fetchRevisitRate(accessToken, propertyId, startDate);
     
     // 5. 관심도 지표 (이벤트 기반)
-    const interestMetricsData = await fetchInterestMetrics(analyticsClient, propertyId, startDate);
+    const interestMetricsData = await fetchInterestMetrics(accessToken, propertyId, startDate);
     
     // 6. 사용자 행동 패턴
-    const behaviorPatternsData = await fetchBehaviorPatterns(analyticsClient, propertyId, startDate);
+    const behaviorPatternsData = await fetchBehaviorPatterns(accessToken, propertyId, startDate);
     
     // 7. 시간대별 분석
-    const timeOfDayData = await fetchTimeOfDayAnalysis(analyticsClient, propertyId, startDate);
+    const timeOfDayData = await fetchTimeOfDayAnalysis(accessToken, propertyId, startDate);
     
     // 8. 디바이스별 분석
-    const deviceAnalysisData = await fetchDeviceAnalysis(analyticsClient, propertyId, startDate);
+    const deviceAnalysisData = await fetchDeviceAnalysis(accessToken, propertyId, startDate);
 
     // 9. 유입 경로 분석
-    const entryPathData = await fetchEntryPathAnalysis(analyticsClient, propertyId, startDate);
+    const entryPathData = await fetchEntryPathAnalysis(accessToken, propertyId, startDate);
     
     // 10. 이탈 페이지 및 전환 목표 분석
-    const exitGoalData = await fetchExitGoalAnalysis(analyticsClient, propertyId, startDate);
+    const exitGoalData = await fetchExitGoalAnalysis(accessToken, propertyId, startDate);
 
     const result = {
       pageTransitions: pageTransitionsData,
@@ -112,35 +129,50 @@ export async function GET(request: NextRequest) {
 }
 
 // 페이지 전환 데이터 가져오기
-async function fetchPageTransitions(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchPageTransitions(accessToken: string, propertyId: string, startDate: string) {
   try {
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [
-        { name: 'pagePath' },
-        { name: 'nextPagePath' }
-      ],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'eventCount' }
-      ],
-      dimensionFilter: {
-        filter: {
-          fieldName: 'nextPagePath',
-          stringFilter: {
-            matchType: 'CONTAINS',
-            value: '/'
-          }
-        }
-      },
-      limit: 100
-    });
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [
+            { name: 'pagePath' },
+            { name: 'nextPagePath' }
+          ],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'eventCount' }
+          ],
+          dimensionFilter: {
+            filter: {
+              fieldName: 'nextPagePath',
+              stringFilter: {
+                matchType: 'CONTAINS',
+                value: '/'
+              }
+            }
+          },
+          limit: 100
+        })
+      }
+    );
 
+    if (!response.ok) {
+      console.error('Page transitions API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
     const transitions: any[] = [];
     const transitionMap = new Map<string, number>();
 
-    response.rows?.forEach((row) => {
+    data.rows?.forEach((row: any) => {
       const from = row.dimensionValues?.[0]?.value || '';
       const to = row.dimensionValues?.[1]?.value || '';
       const sessions = parseInt(row.metricValues?.[0]?.value || '0');
@@ -167,21 +199,36 @@ async function fetchPageTransitions(client: BetaAnalyticsDataClient, propertyId:
 }
 
 // 체류 시간 데이터 가져오기
-async function fetchDwellTime(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchDwellTime(accessToken: string, propertyId: string, startDate: string) {
   try {
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [{ name: 'pagePath' }],
-      metrics: [
-        { name: 'averageSessionDuration' },
-        { name: 'sessions' },
-        { name: 'screenPageViews' }
-      ],
-      limit: 50
-    });
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [{ name: 'pagePath' }],
+          metrics: [
+            { name: 'averageSessionDuration' },
+            { name: 'sessions' },
+            { name: 'screenPageViews' }
+          ],
+          limit: 50
+        })
+      }
+    );
 
-    return response.rows?.map((row) => {
+    if (!response.ok) {
+      console.error('Dwell time API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.rows?.map((row: any) => {
       const page = row.dimensionValues?.[0]?.value || '';
       const avgTime = parseFloat(row.metricValues?.[0]?.value || '0') / 1000; // 초 단위로 변환
       const sessions = parseInt(row.metricValues?.[1]?.value || '0');
@@ -191,7 +238,7 @@ async function fetchDwellTime(client: BetaAnalyticsDataClient, propertyId: strin
         avgTime: Math.round(avgTime * 10) / 10,
         sessions
       };
-    }).filter(item => item.sessions > 0) || [];
+    }).filter((item: any) => item.sessions > 0) || [];
 
   } catch (error) {
     console.error('Error fetching dwell time:', error);
@@ -200,40 +247,49 @@ async function fetchDwellTime(client: BetaAnalyticsDataClient, propertyId: strin
 }
 
 // 스크롤 깊이 데이터 가져오기 (이벤트 기반)
-async function fetchScrollDepth(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchScrollDepth(accessToken: string, propertyId: string, startDate: string) {
   try {
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [
-        { name: 'pagePath' },
-        { name: 'eventName' }
-      ],
-      metrics: [
-        { name: 'eventCount' },
-        { name: 'sessions' }
-      ],
-      dimensionFilter: {
-        andGroup: {
-          expressions: [
-            {
-              filter: {
-                fieldName: 'eventName',
-                stringFilter: {
-                  matchType: 'CONTAINS',
-                  value: 'scroll'
-                }
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [
+            { name: 'pagePath' },
+            { name: 'eventName' }
+          ],
+          metrics: [
+            { name: 'eventCount' },
+            { name: 'sessions' }
+          ],
+          dimensionFilter: {
+            filter: {
+              fieldName: 'eventName',
+              stringFilter: {
+                matchType: 'CONTAINS',
+                value: 'scroll'
               }
             }
-          ]
-        }
-      },
-      limit: 100
-    });
+          },
+          limit: 100
+        })
+      }
+    );
 
+    if (!response.ok) {
+      console.error('Scroll depth API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
     const scrollMap = new Map<string, { count: number; sessions: number }>();
 
-    response.rows?.forEach((row) => {
+    data.rows?.forEach((row: any) => {
       const page = row.dimensionValues?.[0]?.value || '';
       const eventName = row.dimensionValues?.[1]?.value || '';
       const count = parseInt(row.metricValues?.[0]?.value || '0');
@@ -264,27 +320,41 @@ async function fetchScrollDepth(client: BetaAnalyticsDataClient, propertyId: str
 }
 
 // 재방문율 데이터 가져오기
-async function fetchRevisitRate(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchRevisitRate(accessToken: string, propertyId: string, startDate: string) {
   try {
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [{ name: 'pagePath' }],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'totalUsers' },
-        { name: 'newUsers' }
-      ],
-      limit: 50
-    });
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [{ name: 'pagePath' }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'totalUsers' },
+            { name: 'returningUsers' }
+          ],
+          limit: 50
+        })
+      }
+    );
 
-    return response.rows?.map((row) => {
+    if (!response.ok) {
+      console.error('Revisit rate API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.rows?.map((row: any) => {
       const page = row.dimensionValues?.[0]?.value || '';
       const sessions = parseInt(row.metricValues?.[0]?.value || '0');
       const totalUsers = parseInt(row.metricValues?.[1]?.value || '0');
-      const newUsers = parseInt(row.metricValues?.[2]?.value || '0');
+      const returningUsers = parseInt(row.metricValues?.[2]?.value || '0');
       
-      const returningUsers = totalUsers - newUsers;
       const revisitRate = totalUsers > 0 ? (returningUsers / totalUsers) * 100 : 0;
 
       return {
@@ -292,7 +362,7 @@ async function fetchRevisitRate(client: BetaAnalyticsDataClient, propertyId: str
         rate: Math.round(revisitRate * 10) / 10,
         totalVisits: sessions
       };
-    }).filter(item => item.totalVisits > 0) || [];
+    }).filter((item: any) => item.totalVisits > 0) || [];
 
   } catch (error) {
     console.error('Error fetching revisit rate:', error);
@@ -301,35 +371,51 @@ async function fetchRevisitRate(client: BetaAnalyticsDataClient, propertyId: str
 }
 
 // 관심도 지표 데이터 가져오기 (이벤트 기반)
-async function fetchInterestMetrics(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchInterestMetrics(accessToken: string, propertyId: string, startDate: string) {
   try {
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [{ name: 'eventName' }],
-      metrics: [
-        { name: 'eventCount' },
-        { name: 'sessions' },
-        { name: 'totalUsers' }
-      ],
-      limit: 50
-    });
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [{ name: 'eventName' }],
+          metrics: [
+            { name: 'eventCount' },
+            { name: 'sessions' },
+            { name: 'totalUsers' }
+          ],
+          limit: 50
+        })
+      }
+    );
 
+    if (!response.ok) {
+      console.error('Interest metrics API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
     const eventCategories = {
       'click': '클릭 상호작용',
       'scroll': '스크롤 활동',
-      'form': '폼 제출',
-      'video': '비디오 시청',
+      'form': '폼 상호작용',
+      'video': '비디오 활동',
       'download': '다운로드',
       'share': '공유 활동',
-      'search': '검색 활동'
+      'search': '검색 활동',
+      'purchase': '구매 활동'
     };
 
     const categoryMap = new Map<string, { engagement: number; conversion: number; count: number }>();
 
-    response.rows?.forEach((row) => {
+    data.rows?.forEach((row: any) => {
       const eventName = row.dimensionValues?.[0]?.value || '';
-      const count = parseInt(row.metricValues?.[0]?.value || '0');
+      const eventCount = parseInt(row.metricValues?.[0]?.value || '0');
       const sessions = parseInt(row.metricValues?.[1]?.value || '0');
       const users = parseInt(row.metricValues?.[2]?.value || '0');
 
@@ -344,9 +430,9 @@ async function fetchInterestMetrics(client: BetaAnalyticsDataClient, propertyId:
 
       const existing = categoryMap.get(category) || { engagement: 0, conversion: 0, count: 0 };
       categoryMap.set(category, {
-        engagement: existing.engagement + (sessions > 0 ? (count / sessions) * 100 : 0),
-        conversion: existing.conversion + (users > 0 ? (count / users) * 100 : 0),
-        count: existing.count + count
+        engagement: existing.engagement + (sessions > 0 ? (eventCount / sessions) * 100 : 0),
+        conversion: existing.conversion + (users > 0 ? (eventCount / users) * 100 : 0),
+        count: existing.count + eventCount
       });
     });
 
@@ -365,26 +451,41 @@ async function fetchInterestMetrics(client: BetaAnalyticsDataClient, propertyId:
 }
 
 // 사용자 행동 패턴 분석
-async function fetchBehaviorPatterns(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchBehaviorPatterns(accessToken: string, propertyId: string, startDate: string) {
   try {
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [
-        { name: 'sessionDefaultChannelGroup' },
-        { name: 'deviceCategory' }
-      ],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'engagementRate' },
-        { name: 'conversions' }
-      ],
-      limit: 50
-    });
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [
+            { name: 'sessionDefaultChannelGroup' },
+            { name: 'deviceCategory' }
+          ],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'engagementRate' },
+            { name: 'conversions' }
+          ],
+          limit: 50
+        })
+      }
+    );
 
-    return response.rows?.map((row) => {
-      const channel = row.dimensionValues?.[0]?.value || '';
-      const device = row.dimensionValues?.[1]?.value || '';
+    if (!response.ok) {
+      console.error('Behavior patterns API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.rows?.map((row: any) => {
+      const channel = row.dimensionValues?.[0]?.value || 'Unknown';
+      const device = row.dimensionValues?.[1]?.value || 'Unknown';
       const sessions = parseInt(row.metricValues?.[0]?.value || '0');
       const engagementRate = parseFloat(row.metricValues?.[1]?.value || '0') * 100;
       const conversions = parseInt(row.metricValues?.[2]?.value || '0');
@@ -398,7 +499,7 @@ async function fetchBehaviorPatterns(client: BetaAnalyticsDataClient, propertyId
         avgEngagement: Math.round(engagementRate * 10) / 10,
         conversionRate: Math.round(conversionRate * 10) / 10
       };
-    }).filter(item => item.frequency > 0) || [];
+    }).filter((item: any) => item.frequency > 0) || [];
 
   } catch (error) {
     console.error('Error fetching behavior patterns:', error);
@@ -407,20 +508,35 @@ async function fetchBehaviorPatterns(client: BetaAnalyticsDataClient, propertyId
 }
 
 // 시간대별 분석
-async function fetchTimeOfDayAnalysis(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchTimeOfDayAnalysis(accessToken: string, propertyId: string, startDate: string) {
   try {
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [{ name: 'hour' }],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'engagementRate' }
-      ],
-      limit: 24
-    });
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [{ name: 'hour' }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'engagementRate' }
+          ],
+          limit: 24
+        })
+      }
+    );
 
-    return response.rows?.map((row) => {
+    if (!response.ok) {
+      console.error('Time of day API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.rows?.map((row: any) => {
       const hour = parseInt(row.dimensionValues?.[0]?.value || '0');
       const sessions = parseInt(row.metricValues?.[0]?.value || '0');
       const engagementRate = parseFloat(row.metricValues?.[1]?.value || '0') * 100;
@@ -439,22 +555,37 @@ async function fetchTimeOfDayAnalysis(client: BetaAnalyticsDataClient, propertyI
 }
 
 // 디바이스별 분석
-async function fetchDeviceAnalysis(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchDeviceAnalysis(accessToken: string, propertyId: string, startDate: string) {
   try {
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [{ name: 'deviceCategory' }],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'averageSessionDuration' },
-        { name: 'conversions' }
-      ],
-      limit: 10
-    });
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [{ name: 'deviceCategory' }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'averageSessionDuration' },
+            { name: 'conversions' }
+          ],
+          limit: 10
+        })
+      }
+    );
 
-    return response.rows?.map((row) => {
-      const device = row.dimensionValues?.[0]?.value || '';
+    if (!response.ok) {
+      console.error('Device analysis API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.rows?.map((row: any) => {
+      const device = row.dimensionValues?.[0]?.value || 'Unknown';
       const sessions = parseInt(row.metricValues?.[0]?.value || '0');
       const avgTime = parseFloat(row.metricValues?.[1]?.value || '0') / 1000; // 초 단위
       const conversions = parseInt(row.metricValues?.[2]?.value || '0');
@@ -467,7 +598,7 @@ async function fetchDeviceAnalysis(client: BetaAnalyticsDataClient, propertyId: 
         avgTime: Math.round(avgTime * 10) / 10,
         conversionRate: Math.round(conversionRate * 10) / 10
       };
-    }).filter(item => item.sessions > 0) || [];
+    }).filter((item: any) => item.sessions > 0) || [];
 
   } catch (error) {
     console.error('Error fetching device analysis:', error);
@@ -476,27 +607,42 @@ async function fetchDeviceAnalysis(client: BetaAnalyticsDataClient, propertyId: 
 }
 
 // 유입 경로 분석
-async function fetchEntryPathAnalysis(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchEntryPathAnalysis(accessToken: string, propertyId: string, startDate: string) {
   try {
-    const [response] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [
-        { name: 'sessionDefaultChannelGroup' },
-        { name: 'sessionSource' },
-        { name: 'sessionMedium' },
-        { name: 'sessionCampaignName' },
-        { name: 'landingPage' }
-      ],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'totalUsers' },
-        { name: 'engagementRate' },
-        { name: 'averageSessionDuration' }
-      ],
-      limit: 100
-    });
+    const response = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [
+            { name: 'sessionDefaultChannelGroup' },
+            { name: 'sessionSource' },
+            { name: 'sessionMedium' },
+            { name: 'sessionCampaignName' },
+            { name: 'landingPage' }
+          ],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'totalUsers' },
+            { name: 'engagementRate' },
+            { name: 'averageSessionDuration' }
+          ],
+          limit: 100
+        })
+      }
+    );
 
+    if (!response.ok) {
+      console.error('Entry path API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
     const entryPathMap = new Map<string, {
       channel: string;
       source: string;
@@ -509,7 +655,7 @@ async function fetchEntryPathAnalysis(client: BetaAnalyticsDataClient, propertyI
       avgDuration: number;
     }>();
 
-    response.rows?.forEach((row) => {
+    data.rows?.forEach((row: any) => {
       const channel = row.dimensionValues?.[0]?.value || '';
       const source = row.dimensionValues?.[1]?.value || '';
       const medium = row.dimensionValues?.[2]?.value || '';
@@ -559,47 +705,73 @@ async function fetchEntryPathAnalysis(client: BetaAnalyticsDataClient, propertyI
 }
 
 // 이탈 페이지 및 전환 목표 분석
-async function fetchExitGoalAnalysis(client: BetaAnalyticsDataClient, propertyId: string, startDate: string) {
+async function fetchExitGoalAnalysis(accessToken: string, propertyId: string, startDate: string) {
   try {
     // 이탈 페이지 분석
-    const [exitResponse] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [{ name: 'pagePath' }],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'exits' },
-        { name: 'exitRate' }
-      ],
-      limit: 50
-    });
+    const exitResponse = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [{ name: 'pagePath' }],
+          metrics: [
+            { name: 'sessions' },
+            { name: 'exits' },
+            { name: 'exitRate' }
+          ],
+          limit: 50
+        })
+      }
+    );
 
     // 전환 목표 분석
-    const [conversionResponse] = await client.runReport({
-      property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate: 'today' }],
-      dimensions: [
-        { name: 'pagePath' },
-        { name: 'eventName' }
-      ],
-      metrics: [
-        { name: 'eventCount' },
-        { name: 'sessions' }
-      ],
-      dimensionFilter: {
-        filter: {
-          fieldName: 'eventName',
-          stringFilter: {
-            matchType: 'CONTAINS',
-            value: 'conversion'
-          }
-        }
-      },
-      limit: 100
-    });
+    const conversionResponse = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate, endDate: 'today' }],
+          dimensions: [
+            { name: 'pagePath' },
+            { name: 'eventName' }
+          ],
+          metrics: [
+            { name: 'eventCount' },
+            { name: 'sessions' }
+          ],
+          dimensionFilter: {
+            filter: {
+              fieldName: 'eventName',
+              stringFilter: {
+                matchType: 'CONTAINS',
+                value: 'conversion'
+              }
+            }
+          },
+          limit: 100
+        })
+      }
+    );
+
+    if (!exitResponse.ok || !conversionResponse.ok) {
+      console.error('Exit goal API error:', exitResponse.status, conversionResponse.status);
+      return { exitPages: [], conversionPages: [] };
+    }
+
+    const exitData = await exitResponse.json();
+    const conversionData = await conversionResponse.json();
 
     // 이탈 페이지 데이터
-    const exitPages = exitResponse.rows?.map((row) => {
+    const exitPages = exitData.rows?.map((row: any) => {
       const page = row.dimensionValues?.[0]?.value || '';
       const sessions = parseInt(row.metricValues?.[0]?.value || '0');
       const exits = parseInt(row.metricValues?.[1]?.value || '0');
@@ -611,12 +783,12 @@ async function fetchExitGoalAnalysis(client: BetaAnalyticsDataClient, propertyId
         exits,
         exitRate: Math.round(exitRate * 10) / 10
       };
-    }).filter(item => item.sessions > 0) || [];
+    }).filter((item: any) => item.sessions > 0) || [];
 
     // 전환 목표 데이터
     const conversionMap = new Map<string, { page: string; conversions: number; sessions: number }>();
     
-    conversionResponse.rows?.forEach((row) => {
+    conversionData.rows?.forEach((row: any) => {
       const page = row.dimensionValues?.[0]?.value || '';
       const eventName = row.dimensionValues?.[1]?.value || '';
       const conversions = parseInt(row.metricValues?.[0]?.value || '0');
