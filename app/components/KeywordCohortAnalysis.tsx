@@ -185,8 +185,47 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
     }
   }
 
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [newGroupData, setNewGroupData] = useState({
+    name: '',
+    description: '',
+    keywords: '',
+    color: 'bg-blue-100 text-blue-800'
+  });
+
   const addKeywordGroup = () => {
-    toast.error('UI에서 그룹 추가는 지원하지 않습니다.');
+    setShowCreateGroupModal(true);
+  };
+
+  const handleCreateGroup = () => {
+    if (!newGroupData.name.trim()) {
+      toast.error('그룹명을 입력해주세요.');
+      return;
+    }
+
+    const keywordArray = newGroupData.keywords
+      .split(',')
+      .map(k => k.trim())
+      .filter(k => k.length > 0);
+
+    const newGroup: KeywordGroup = {
+      id: Date.now().toString(),
+      name: newGroupData.name.trim(),
+      description: newGroupData.description.trim(),
+      keywords: keywordArray,
+      color: newGroupData.color,
+      createdAt: new Date().toISOString()
+    };
+
+    setKeywordGroups(prev => [...prev, newGroup]);
+    setNewGroupData({
+      name: '',
+      description: '',
+      keywords: '',
+      color: 'bg-blue-100 text-blue-800'
+    });
+    setShowCreateGroupModal(false);
+    toast.success(`'${newGroup.name}' 그룹이 생성되었습니다.`);
   };
 
   const deleteKeywordGroup = (groupId: string) => {
@@ -202,7 +241,6 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
   }
 
   const addKeywordToGroup = (groupId: string, keyword: string) => {
-    alert('addKeywordToGroup 실행')
     setKeywordGroups(groups => {
       const updated = groups.map(group =>
         group.id === groupId
@@ -386,7 +424,7 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
             <select
               value={dateRange}
               onChange={e => setDateRange(e.target.value)}
-              className="border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+              className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             >
               <option value="7daysAgo">최근 7일</option>
               <option value="30daysAgo">최근 30일</option>
@@ -423,21 +461,43 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">그룹별 성과 요약</h3>
+          <button
+            onClick={addKeywordGroup}
+            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            + 새 그룹 생성
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Object.entries(getGroupSummary()).filter(([key, summary]) => key === 'ungrouped' ? (selectedGroup === 'ungrouped' && summary.keywordCount > 0) || (selectedGroup !== 'ungrouped' && summary.keywordCount > 0) : summary.keywordCount > 0).map(([groupId, summary]: [string, any]) => (
             <div
               key={groupId}
-              onClick={() => setSelectedGroup(groupId)}
-              className={`p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer ${selectedGroup === groupId ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+              className={`p-4 rounded-lg border-2 transition-all duration-200 ${selectedGroup === groupId ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                 }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${summary.color}`}>
+                <span 
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${summary.color}`}
+                  onClick={() => setSelectedGroup(groupId)}
+                >
                   {summary.name}
                 </span>
-                <span className="text-xs text-gray-500">{summary.keywordCount}개 키워드</span>
+                <div className="flex items-center space-x-1">
+                  <span className="text-xs text-gray-500">{summary.keywordCount}개</span>
+                  {groupId !== 'ungrouped' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteKeywordGroup(groupId);
+                      }}
+                      className="text-red-400 hover:text-red-600 text-xs ml-1"
+                      title="그룹 삭제"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-1 text-sm mt-3">
@@ -457,6 +517,61 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
                   <span className="text-gray-500">평균 리텐션 (W4):</span>
                   <span className="font-medium text-gray-900">{(summary.avgRetention * 100).toFixed(1)}%</span>
                 </div>
+                
+                {/* 키워드 목록 (접기/펼치기) */}
+                {groupId !== 'ungrouped' && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <details className="group">
+                      <summary className="cursor-pointer text-xs text-gray-600 hover:text-gray-800 flex items-center justify-between">
+                        <span>키워드 목록</span>
+                        <span className="group-open:rotate-90 transform transition-transform">▶</span>
+                      </summary>
+                      <div className="mt-2 space-y-1">
+                        {keywordGroups.find(g => g.id === groupId)?.keywords.map((keyword, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-xs">
+                            <span className="text-gray-700">{keyword}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeKeywordFromGroup(groupId, keyword);
+                              }}
+                              className="text-red-400 hover:text-red-600 ml-1"
+                              title="키워드 제거"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                        
+                        {/* 키워드 추가 입력 */}
+                        <div className="mt-2 flex items-center space-x-1">
+                          <input
+                            type="text"
+                            placeholder="키워드 추가"
+                            value={searchTerms[groupId] || ''}
+                            onChange={(e) => setSearchTerms({...searchTerms, [groupId]: e.target.value})}
+                            className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter' && searchTerms[groupId]?.trim()) {
+                                addKeywordToGroup(groupId, searchTerms[groupId].trim());
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => {
+                              if (searchTerms[groupId]?.trim()) {
+                                addKeywordToGroup(groupId, searchTerms[groupId].trim());
+                              }
+                            }}
+                            className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -477,7 +592,7 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
                   placeholder="표에서 키워드 검색..."
                   value={selectedKeyword === 'all' ? '' : selectedKeyword}
                   onChange={(e) => setSelectedKeyword(e.target.value || 'all')}
-                  className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                  className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
                 />
               </div>
               <div className="flex items-center space-x-2">
@@ -596,6 +711,93 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
           </div>
         </div>
       </div>
+
+      {/* 그룹 생성 모달 */}
+      {showCreateGroupModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">새 키워드 그룹 생성</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    그룹명 *
+                  </label>
+                  <input
+                    type="text"
+                    value={newGroupData.name}
+                    onChange={(e) => setNewGroupData({...newGroupData, name: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="예: 브랜드 검색어"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    설명
+                  </label>
+                  <textarea
+                    value={newGroupData.description}
+                    onChange={(e) => setNewGroupData({...newGroupData, description: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="그룹에 대한 간단한 설명을 입력하세요"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    키워드 (쉼표로 구분)
+                  </label>
+                  <textarea
+                    value={newGroupData.keywords}
+                    onChange={(e) => setNewGroupData({...newGroupData, keywords: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="rtm, analytics, 대시보드, 분석도구"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    색상
+                  </label>
+                  <select
+                    value={newGroupData.color}
+                    onChange={(e) => setNewGroupData({...newGroupData, color: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="bg-blue-100 text-blue-800">파란색</option>
+                    <option value="bg-green-100 text-green-800">초록색</option>
+                    <option value="bg-purple-100 text-purple-800">보라색</option>
+                    <option value="bg-red-100 text-red-800">빨간색</option>
+                    <option value="bg-yellow-100 text-yellow-800">노란색</option>
+                    <option value="bg-indigo-100 text-indigo-800">인디고색</option>
+                    <option value="bg-pink-100 text-pink-800">분홍색</option>
+                    <option value="bg-gray-100 text-gray-800">회색</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCreateGroupModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleCreateGroup}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  생성
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

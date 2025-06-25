@@ -89,3 +89,43 @@ model UtmCohortGroup {
   
   @@unique([name])
 }
+
+model KeywordCohortData {
+  id               String   @id @default(cuid())
+  cohortDate       DateTime
+  keyword          String
+  impressions      Int      @default(0)
+  clicks           Int      @default(0)
+  ctr              Float    @default(0)
+  position         Float    @default(0)
+  initialUsers     Int      @default(0)
+  retentionWeek1   Int      @default(0)
+  retentionWeek2   Int      @default(0)
+  retentionWeek4   Int      @default(0)
+  retentionWeek8   Int      @default(0)
+  conversions      Int      @default(0)
+  revenue          Float    @default(0)
+  groupId          String?
+  propertyId       String
+  dataSource       String   @default("GSC") // GSC (Google Search Console) or GA4
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@unique([cohortDate, keyword, propertyId])
+  @@index([propertyId, cohortDate])
+  @@index([keyword])
+}
+
+model DataUpdateLog {
+  id           String   @id @default(cuid())
+  dataType     String   // 'keyword_cohort', 'analytics', etc.
+  propertyId   String?
+  status       String   // 'SUCCESS', 'FAILED', 'RUNNING'
+  recordsCount Int      @default(0)
+  errorMessage String?
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  triggeredBy  String   @default("SCHEDULED") // 'SCHEDULED', 'MANUAL'
+  
+  @@index([dataType, propertyId])
+}
