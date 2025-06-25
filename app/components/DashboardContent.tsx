@@ -48,6 +48,8 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [selectedModel, setSelectedModel] = useState<string>('')
   const [latestInsight, setLatestInsight] = useState<any>(null)
+  const [promptTemplates, setPromptTemplates] = useState<any[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
 
   // KPI 드릴다운 핸들러들
   const handleSessionsClick = () => {
@@ -103,9 +105,6 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
     loadDashboardData()
     loadAnalysisData()
     fetchLatestInsight()
-  }, [period, propertyId])
-
-  useEffect(() => {
     fetch('/api/ai-insight/models')
       .then(res => res.json())
       .then(result => {
@@ -114,7 +113,16 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           if (result.models.length > 0) setSelectedModel(result.models[0].id)
         }
       })
-  }, [])
+    fetch('/api/settings/prompt-templates?type=weekly-report')
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          setPromptTemplates(result.templates)
+          const defaultTemplate = result.templates.find((t: any) => t.isDefault)
+          if (defaultTemplate) setSelectedTemplate(defaultTemplate.id)
+        }
+      })
+  }, [period, propertyId])
 
   const loadDashboardData = async () => {
     setIsLoading(true)
@@ -175,25 +183,48 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
   const handleGenerateInsight = async () => {
     setInsightLoading(true)
     try {
-      const prompt = `다음은 웹사이트 대시보드의 주요 지표입니다.\n\n` +
-        `총 사용자: ${kpis.totalUsers}\n` +
-        `총 세션: ${kpis.totalSessions}\n` +
-        `총 전환: ${kpis.totalConversions}\n` +
-        `평균 참여율: ${kpis.avgEngagementRate}\n` +
-        `상위 캠페인: ${(campaigns.map((c:any)=>c.campaign).join(', '))}\n` +
-        `이 데이터를 바탕으로 마케팅/전환/트래픽 관점에서 3가지 핵심 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
+      const requestBody: any = {
+        model: selectedModel,
+        type: 'dashboard',
+        propertyId
+      }
+
+      if (selectedTemplate) {
+        requestBody.templateId = selectedTemplate
+        requestBody.variables = {
+          dateRange: period,
+          totalSessions: data?.data?.kpis?.totalSessions || 0,
+          totalUsers: data?.data?.kpis?.totalUsers || 0,
+          totalConversions: data?.data?.kpis?.totalConversions || 0,
+          avgEngagementRate: data?.data?.kpis?.avgEngagementRate || 0,
+          totalClicks: data?.data?.kpis?.totalClicks || 0,
+          totalImpressions: data?.data?.kpis?.totalImpressions || 0,
+          avgCtr: data?.data?.kpis?.avgCtr || 0,
+          avgPosition: data?.data?.kpis?.avgPosition || 0
+        }
+      } else {
+        requestBody.prompt = `다음은 대시보드 주요 데이터입니다.\n\n` +
+          `기간: ${period}\n` +
+          `총 세션: ${data?.data?.kpis?.totalSessions || 0}\n` +
+          `총 사용자: ${data?.data?.kpis?.totalUsers || 0}\n` +
+          `총 전환: ${data?.data?.kpis?.totalConversions || 0}\n` +
+          `평균 참여율: ${data?.data?.kpis?.avgEngagementRate || 0}%\n` +
+          `주요 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
+      }
+
       const res = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, model: selectedModel, type: 'dashboard', propertyId })
+        body: JSON.stringify(requestBody)
       })
       const result = await res.json()
       if (result.success) {
-        setInsight(result.insight)
         fetchLatestInsight()
-      } else setInsight('AI 인사이트 생성에 실패했습니다. ' + (result.error || ''))
+      } else {
+        toast.error('AI 인사이트 생성 실패: ' + (result.error || ''))
+      }
     } catch (e:any) {
-      setInsight('AI 인사이트 생성에 실패했습니다. ' + (e.message || ''))
+      toast.error('AI 인사이트 생성 중 오류: ' + (e.message || ''))
     } finally {
       setInsightLoading(false)
     }
@@ -263,6 +294,20 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
             >
               {availableModels.map(m => (
                 <option key={m.id} value={m.id}>{m.displayName}</option>
+              ))}
+            </select>
+          )}
+
+          {promptTemplates.length > 0 && (
+            <select
+              value={selectedTemplate}
+              onChange={e => setSelectedTemplate(e.target.value)}
+              className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
+              title="사용할 프롬프트 템플릿 선택"
+            >
+              <option value="">기본 프롬프트</option>
+              {promptTemplates.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
           )}

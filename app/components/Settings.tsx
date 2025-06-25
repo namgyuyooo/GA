@@ -743,93 +743,287 @@ export default function Settings() {
             {/* 프롬프트 템플릿 탭 */}
             {activeTab === 'prompts' && (
                 <div className="space-y-6 bg-white p-6 rounded-lg shadow">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <SparklesIcon className="h-5 w-5 mr-2" />
-                        프롬프트 템플릿
-                    </h2>
-
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-md font-medium text-gray-900 mb-2">템플릿 목록</h3>
-                            <ul className="text-sm text-gray-600 space-y-1">
-                                {promptTemplates.map((template) => (
-                                    <li key={template.id}>
-                                        {template.name} - {template.type}
-                                        <button
-                                            onClick={() => setEditingTemplate(template)}
-                                            className="text-blue-500 ml-2"
-                                        >
-                                            수정
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteTemplate(template.id)}
-                                            className="text-red-500 ml-2"
-                                        >
-                                            삭제
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                            <SparklesIcon className="h-5 w-5 mr-2" />
+                            프롬프트 템플릿 관리
+                        </h2>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleSeedDefaults}
+                                className="btn-secondary flex items-center gap-2"
+                            >
+                                <PlusIcon className="h-4 w-4" />
+                                기본 템플릿 생성
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setEditingTemplate(null)
+                                    setShowTemplateModal(true)
+                                }}
+                                className="btn-primary flex items-center gap-2"
+                            >
+                                <PlusIcon className="h-4 w-4" />
+                                새 템플릿
+                            </button>
                         </div>
+                    </div>
 
-                        <div>
-                            <h3 className="text-md font-medium text-gray-900 mb-2">새로운 템플릿 생성</h3>
-                            <input
-                                type="text"
-                                value={newTemplate.name}
-                                onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-                                className="input-field"
-                                placeholder="템플릿 이름"
-                            />
-                            <input
-                                type="text"
-                                value={newTemplate.type}
-                                onChange={(e) => setNewTemplate({ ...newTemplate, type: e.target.value })}
-                                className="input-field"
-                                placeholder="템플릿 유형"
-                            />
-                            <input
-                                type="text"
-                                value={newTemplate.description}
-                                onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
-                                className="input-field"
-                                placeholder="템플릿 설명"
-                            />
-                            <input
-                                type="text"
-                                value={newTemplate.prompt}
-                                onChange={(e) => setNewTemplate({ ...newTemplate, prompt: e.target.value })}
-                                className="input-field"
-                                placeholder="템플릿 프롬프트"
-                            />
-                            <input
-                                type="text"
-                                value={newTemplate.variables}
-                                onChange={(e) => setNewTemplate({ ...newTemplate, variables: e.target.value })}
-                                className="input-field"
-                                placeholder="템플릿 변수"
-                            />
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={handleCreateTemplate}
-                                    className="btn-primary flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    <PlusIcon className="h-4 w-4" />
-                                    템플릿 생성
-                                </button>
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                        <div className="flex">
+                            <InformationCircleIcon className="h-5 w-5 text-blue-400" />
+                            <div className="ml-3">
+                                <p className="text-sm text-blue-800">
+                                    <strong>프롬프트 템플릿:</strong> AI 인사이트 생성에 사용할 프롬프트를 관리할 수 있습니다. 
+                                    주간보고서, 월간보고서, 각 분석 탭별 인사이트용 템플릿을 설정할 수 있습니다.
+                                </p>
                             </div>
                         </div>
                     </div>
 
+                    {/* 템플릿 타입 필터 */}
+                    <div>
+                        <label className="label">템플릿 유형 필터</label>
+                        <select
+                            value={selectedTemplateType}
+                            onChange={(e) => setSelectedTemplateType(e.target.value)}
+                            className="input-field"
+                        >
+                            <option value="">모든 유형</option>
+                            <option value="weekly-report">주간보고서</option>
+                            <option value="monthly-report">월간보고서</option>
+                            <option value="traffic-insight">트래픽분석</option>
+                            <option value="utm-cohort-insight">UTM코호트</option>
+                            <option value="keyword-cohort-insight">키워드코호트</option>
+                        </select>
+                    </div>
+
+                    {/* 템플릿 목록 */}
                     <div className="space-y-4">
-                        <h3 className="text-md font-medium text-gray-900 mb-2">템플릿 관리</h3>
-                        <div className="flex justify-end">
+                        <h3 className="text-md font-medium text-gray-900">템플릿 목록</h3>
+                        <div className="grid gap-4">
+                            {promptTemplates
+                                .filter(t => !selectedTemplateType || t.type === selectedTemplateType)
+                                .map((template) => (
+                                <div key={template.id} className="border border-gray-200 rounded-lg p-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <h4 className="font-medium text-gray-900">{template.name}</h4>
+                                                {template.isDefault && (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        기본
+                                                    </span>
+                                                )}
+                                                {!template.isActive && (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                        비활성
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-600 mb-2">{template.description}</p>
+                                            <div className="text-xs text-gray-500">
+                                                유형: {template.type} | 생성일: {new Date(template.createdAt).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleToggleTemplateActive(template)}
+                                                className="p-1 text-gray-400 hover:text-gray-600"
+                                                title={template.isActive ? '비활성화' : '활성화'}
+                                            >
+                                                {template.isActive ? (
+                                                    <EyeIcon className="h-4 w-4" />
+                                                ) : (
+                                                    <EyeSlashIcon className="h-4 w-4" />
+                                                )}
+                                            </button>
+                                            {!template.isDefault && (
+                                                <button
+                                                    onClick={() => handleSetDefaultTemplate(template)}
+                                                    className="p-1 text-blue-400 hover:text-blue-600"
+                                                    title="기본으로 설정"
+                                                >
+                                                    <CheckCircleIcon className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    setEditingTemplate(template)
+                                                    setShowTemplateModal(true)
+                                                }}
+                                                className="p-1 text-gray-400 hover:text-blue-600"
+                                                title="수정"
+                                            >
+                                                <PencilIcon className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteTemplate(template.id)}
+                                                className="p-1 text-gray-400 hover:text-red-600"
+                                                title="삭제"
+                                            >
+                                                <TrashIcon className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {promptTemplates.filter(t => !selectedTemplateType || t.type === selectedTemplateType).length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                {selectedTemplateType ? `${selectedTemplateType} 유형의 템플릿이 없습니다.` : '템플릿이 없습니다.'}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* 템플릿 편집 모달 */}
+            {showTemplateModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            {editingTemplate ? '템플릿 수정' : '새 템플릿 생성'}
+                        </h3>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="label">템플릿 이름</label>
+                                <input
+                                    type="text"
+                                    value={editingTemplate?.name || newTemplate.name}
+                                    onChange={(e) => {
+                                        if (editingTemplate) {
+                                            setEditingTemplate({ ...editingTemplate, name: e.target.value })
+                                        } else {
+                                            setNewTemplate({ ...newTemplate, name: e.target.value })
+                                        }
+                                    }}
+                                    className="input-field"
+                                    placeholder="예: 주간보고서 기본"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label">템플릿 유형</label>
+                                <select
+                                    value={editingTemplate?.type || newTemplate.type}
+                                    onChange={(e) => {
+                                        if (editingTemplate) {
+                                            setEditingTemplate({ ...editingTemplate, type: e.target.value })
+                                        } else {
+                                            setNewTemplate({ ...newTemplate, type: e.target.value })
+                                        }
+                                    }}
+                                    className="input-field"
+                                >
+                                    <option value="weekly-report">주간보고서</option>
+                                    <option value="monthly-report">월간보고서</option>
+                                    <option value="traffic-insight">트래픽분석</option>
+                                    <option value="utm-cohort-insight">UTM코호트</option>
+                                    <option value="keyword-cohort-insight">키워드코호트</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="label">설명</label>
+                                <input
+                                    type="text"
+                                    value={editingTemplate?.description || newTemplate.description}
+                                    onChange={(e) => {
+                                        if (editingTemplate) {
+                                            setEditingTemplate({ ...editingTemplate, description: e.target.value })
+                                        } else {
+                                            setNewTemplate({ ...newTemplate, description: e.target.value })
+                                        }
+                                    }}
+                                    className="input-field"
+                                    placeholder="템플릿에 대한 간단한 설명"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label">프롬프트 템플릿</label>
+                                <textarea
+                                    value={editingTemplate?.prompt || newTemplate.prompt}
+                                    onChange={(e) => {
+                                        if (editingTemplate) {
+                                            setEditingTemplate({ ...editingTemplate, prompt: e.target.value })
+                                        } else {
+                                            setNewTemplate({ ...newTemplate, prompt: e.target.value })
+                                        }
+                                    }}
+                                    className="input-field min-h-[200px] font-mono text-sm"
+                                    placeholder="프롬프트 템플릿을 입력하세요. {변수명} 형태로 변수를 사용할 수 있습니다."
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label">사용 가능한 변수 (JSON 배열)</label>
+                                <input
+                                    type="text"
+                                    value={editingTemplate?.variables || newTemplate.variables}
+                                    onChange={(e) => {
+                                        if (editingTemplate) {
+                                            setEditingTemplate({ ...editingTemplate, variables: e.target.value })
+                                        } else {
+                                            setNewTemplate({ ...newTemplate, variables: e.target.value })
+                                        }
+                                    }}
+                                    className="input-field font-mono text-sm"
+                                    placeholder='["변수1", "변수2", "변수3"]'
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <label className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={editingTemplate?.isActive ?? newTemplate.isActive}
+                                        onChange={(e) => {
+                                            if (editingTemplate) {
+                                                setEditingTemplate({ ...editingTemplate, isActive: e.target.checked })
+                                            } else {
+                                                setNewTemplate({ ...newTemplate, isActive: e.target.checked })
+                                            }
+                                        }}
+                                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700">활성화</span>
+                                </label>
+                                <label className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={editingTemplate?.isDefault ?? newTemplate.isDefault}
+                                        onChange={(e) => {
+                                            if (editingTemplate) {
+                                                setEditingTemplate({ ...editingTemplate, isDefault: e.target.checked })
+                                            } else {
+                                                setNewTemplate({ ...newTemplate, isDefault: e.target.checked })
+                                            }
+                                        }}
+                                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700">기본 템플릿</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 mt-6">
                             <button
-                                onClick={handleSeedDefaults}
-                                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+                                onClick={() => {
+                                    setShowTemplateModal(false)
+                                    setEditingTemplate(null)
+                                }}
+                                className="btn-secondary"
                             >
-                                <PlusIcon className="h-4 w-4" />
-                                기본 템플릿 생성
+                                취소
+                            </button>
+                            <button
+                                onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
+                                className="btn-primary"
+                            >
+                                {editingTemplate ? '수정' : '생성'}
                             </button>
                         </div>
                     </div>

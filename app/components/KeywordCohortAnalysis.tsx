@@ -62,6 +62,8 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
   const [selectedModel, setSelectedModel] = useState<string>('')
   const [latestInsight, setLatestInsight] = useState<any>(null)
   const [insightLoading, setInsightLoading] = useState(false)
+  const [promptTemplates, setPromptTemplates] = useState<any[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
 
   useEffect(() => {
     loadCohortData()
@@ -73,6 +75,15 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
         if (result.success) {
           setAvailableModels(result.models)
           if (result.models.length > 0) setSelectedModel(result.models[0].id)
+        }
+      })
+    fetch('/api/settings/prompt-templates?type=keyword-cohort-insight')
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          setPromptTemplates(result.templates)
+          const defaultTemplate = result.templates.find((t: any) => t.isDefault)
+          if (defaultTemplate) setSelectedTemplate(defaultTemplate.id)
         }
       })
   }, [propertyId, dateRange])
@@ -638,13 +649,27 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
   const handleGenerateInsight = async () => {
     setInsightLoading(true)
     try {
-      const prompt = `다음은 키워드 코호트 분석 주요 데이터입니다.\n\n` +
-        `기간: ${dateRange}\n` +
-        `주요 검색어별 노출, 클릭, 전환, 리텐션 등 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
+      const requestBody: any = {
+        model: selectedModel,
+        type: 'keyword-cohort',
+        propertyId
+      }
+
+      if (selectedTemplate) {
+        requestBody.templateId = selectedTemplate
+        requestBody.variables = {
+          dateRange
+        }
+      } else {
+        requestBody.prompt = `다음은 키워드 코호트 분석 주요 데이터입니다.\n\n` +
+          `기간: ${dateRange}\n` +
+          `주요 검색어별 노출, 클릭, 전환, 리텐션 등 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
+      }
+
       const res = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, model: selectedModel, type: 'keyword-cohort', propertyId })
+        body: JSON.stringify(requestBody)
       })
       const result = await res.json()
       if (result.success) {
@@ -937,6 +962,19 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
               >
                 {availableModels.map(m => (
                   <option key={m.id} value={m.id}>{m.displayName}</option>
+                ))}
+              </select>
+            )}
+            {promptTemplates.length > 0 && (
+              <select
+                value={selectedTemplate}
+                onChange={e => setSelectedTemplate(e.target.value)}
+                className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
+                title="사용할 프롬프트 템플릿 선택"
+              >
+                <option value="">기본 프롬프트</option>
+                {promptTemplates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
             )}
