@@ -9,6 +9,7 @@ import UTMCohortAnalysis from './UTMCohortAnalysis'
 import KeywordCohortAnalysis from './KeywordCohortAnalysis'
 import TrafficSourceAnalysis from './TrafficSourceAnalysis'
 import GTMAnalysis from './GTMAnalysis'
+import Settings from './Settings'
 
 interface MainLayoutProps {
   user?: {
@@ -106,40 +107,7 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
       case 'gtm-analysis':
         return <GTMAnalysis {...commonProps} />
       case 'settings':
-        return (
-          <div className="space-y-6">
-            <div className="card">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">설정</h2>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">현재 설정</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="font-medium text-gray-700">활성 속성:</span>
-                        <span className="ml-2 text-gray-600">{activeProperty}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">사용자:</span>
-                        <span className="ml-2 text-gray-600">{user?.name || 'Guest'}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">데이터 모드:</span>
-                        <span className="ml-2 text-gray-600 capitalize">{dataMode}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">데이터 소스</h3>
-                  <p className="text-gray-600">
-                    Google Analytics 4 속성에서 데이터를 가져옵니다.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
+        return <Settings />
       case 'property-check':
         return (
           <div className="space-y-6">

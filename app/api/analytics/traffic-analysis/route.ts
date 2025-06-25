@@ -169,6 +169,27 @@ export async function GET(request: NextRequest) {
     const pages = processPagePaths(pageData)
     const keywords = processKeywords(keywordData)
 
+    // 디버깅 정보 추가
+    console.log('🔍 트래픽 소스 분석 디버깅:')
+    console.log(`- 등록된 UTM 캠페인: ${registeredUTMs.length}개`)
+    console.log(`- GA4 트래픽 소스: ${trafficData.rows?.length || 0}개`)
+    console.log(`- 매칭된 UTM: ${sources.filter(s => s.isRegisteredUTM).length}개`)
+    
+    // UTM 매칭 상세 정보
+    const utmMatches = sources.filter(s => s.isRegisteredUTM)
+    if (utmMatches.length > 0) {
+      console.log('✅ 매칭된 UTM 캠페인:')
+      utmMatches.forEach(match => {
+        console.log(`  - ${match.source}/${match.medium}/${match.campaign}: ${match.sessions} 세션`)
+      })
+    } else {
+      console.log('⚠️ 매칭된 UTM 캠페인이 없습니다.')
+      console.log('등록된 UTM 캠페인:')
+      registeredUTMs.forEach(utm => {
+        console.log(`  - ${utm.source}/${utm.medium}/${utm.campaign}`)
+      })
+    }
+
     return NextResponse.json({
       success: true,
       propertyId,
@@ -177,7 +198,12 @@ export async function GET(request: NextRequest) {
         sources,
         pages,
         keywords,
-        registeredUTMs: registeredUTMs.length
+        registeredUTMs: registeredUTMs.length,
+        debug: {
+          totalSources: trafficData.rows?.length || 0,
+          matchedUTMs: utmMatches.length,
+          registeredUTMList: registeredUTMs.map(utm => `${utm.source}/${utm.medium}/${utm.campaign}`)
+        }
       },
       message: '✅ 트래픽 소스 분석 데이터가 성공적으로 로드되었습니다.'
     })
@@ -199,13 +225,45 @@ function processTrafficSources(gaData: any, registeredUTMs: any[]) {
     registeredUTMs.map(utm => `${utm.source}_${utm.medium}_${utm.campaign}`)
   )
 
+  // 추가 매칭을 위한 맵 생성
+  const utmMap = new Map()
+  registeredUTMs.forEach(utm => {
+    // 정확한 매칭
+    utmMap.set(`${utm.source}_${utm.medium}_${utm.campaign}`, utm)
+    // 부분 매칭 (캠페인만)
+    utmMap.set(utm.campaign, utm)
+    // 소스+미디엄 매칭
+    utmMap.set(`${utm.source}_${utm.medium}`, utm)
+  })
+
   return gaData.rows.map((row: any) => {
     const [source, medium, campaign] = row.dimensionValues.map((d: any) => d.value)
     const [sessions, users, pageViews, avgDuration, bounceRate, conversions, revenue] =
       row.metricValues.map((m: any) => parseFloat(m.value) || 0)
 
-    const campaignKey = `${source}_${medium}_${campaign}`
-    const isRegisteredUTM = registeredCampaigns.has(campaignKey)
+    // 다양한 매칭 시도
+    let isRegisteredUTM = false
+    let matchedUTM = null
+
+    // 1. 정확한 매칭
+    const exactKey = `${source}_${medium}_${campaign}`
+    if (utmMap.has(exactKey)) {
+      isRegisteredUTM = true
+      matchedUTM = utmMap.get(exactKey)
+    }
+    // 2. 캠페인만 매칭
+    else if (campaign && utmMap.has(campaign)) {
+      isRegisteredUTM = true
+      matchedUTM = utmMap.get(campaign)
+    }
+    // 3. 소스+미디엄 매칭
+    else if (source && medium) {
+      const sourceMediumKey = `${source}_${medium}`
+      if (utmMap.has(sourceMediumKey)) {
+        isRegisteredUTM = true
+        matchedUTM = utmMap.get(sourceMediumKey)
+      }
+    }
 
     // 카테고리 분류
     let category = 'utm'
@@ -216,6 +274,7 @@ function processTrafficSources(gaData: any, registeredUTMs: any[]) {
       else if (medium === 'social') category = 'social'
       else if (medium === 'cpc' || medium === 'ppc') category = 'paid'
       else if (source === '(not set)' || medium === '(not set)') category = 'not_set'
+      else category = 'other'
     }
 
     return {
@@ -231,6 +290,11 @@ function processTrafficSources(gaData: any, registeredUTMs: any[]) {
       revenue,
       isRegisteredUTM,
       category,
+      matchedUTM: matchedUTM ? {
+        name: matchedUTM.name,
+        url: matchedUTM.url,
+        description: matchedUTM.description
+      } : null,
       topPages: [] // 추후 연결
     }
   })

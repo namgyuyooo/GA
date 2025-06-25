@@ -59,6 +59,24 @@ model ScheduledJob {
   updatedAt   DateTime @updatedAt
 }
 
+model WeeklyReportSchedule {
+  id              String   @id @default(cuid())
+  name            String   @default("주간 보고서")
+  isActive        Boolean  @default(true)
+  dayOfWeek       Int      @default(1) // 0=일요일, 1=월요일, ..., 6=토요일
+  hour            Int      @default(10)
+  minute          Int      @default(30)
+  timezone        String   @default("Asia/Seoul")
+  recipients      String?  // JSON array of email addresses
+  includeSummary  Boolean  @default(true)
+  includeIssues   Boolean  @default(true)
+  includeAI       Boolean  @default(true)
+  aiPrompt        String?  // Custom prompt for Gemini
+  propertyIds     String?  // JSON array of property IDs
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 model Setting {
   key   String @id
   value String

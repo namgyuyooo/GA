@@ -30,7 +30,12 @@ interface TrafficSource {
   conversions: number
   revenue: number
   isRegisteredUTM: boolean
-  category: 'utm' | 'organic' | 'direct' | 'referral' | 'social' | 'paid' | 'not_set'
+  category: 'utm' | 'organic' | 'direct' | 'referral' | 'social' | 'paid' | 'not_set' | 'other'
+  matchedUTM?: {
+    name: string
+    url: string
+    description: string
+  } | null
   topPages: Array<{
     page: string
     pageViews: number
@@ -323,12 +328,23 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
                       <div key={index} className="border-l-4 border-green-400 pl-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="text-sm font-medium text-gray-900">
+                            <h4 className="text-sm font-medium text-gray-900 flex items-center">
                               {source.campaign || source.source}
+                              {source.matchedUTM?.name && (
+                                <span className="ml-2 text-xs text-blue-600">{source.matchedUTM.name}</span>
+                              )}
                             </h4>
                             <div className="text-sm text-gray-500">
                               <SourceMediumTag source={source.source} medium={source.medium} />
                             </div>
+                            {source.matchedUTM?.description && (
+                              <div className="text-xs text-gray-400 mt-1">{source.matchedUTM.description}</div>
+                            )}
+                            {source.matchedUTM?.url && (
+                              <div className="text-xs text-blue-500 mt-1">
+                                <a href={source.matchedUTM.url} target="_blank" rel="noopener noreferrer" className="underline">UTM URL 바로가기</a>
+                              </div>
+                            )}
                           </div>
                           <div className="text-right">
                             <div className="text-sm font-medium text-gray-900">
@@ -421,6 +437,26 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
 
           {/* Source List Table */}
           <div className="bg-white rounded-lg shadow overflow-x-auto">
+            {/* Debug Info */}
+            {data?.data?.debug && (
+              <div className="px-6 py-3 bg-blue-50 border-b border-blue-200">
+                <div className="text-sm text-blue-800">
+                  <div className="flex items-center justify-between">
+                    <span>🔍 디버깅 정보:</span>
+                    <span className="text-xs">
+                      총 {data.data.debug.totalSources}개 소스, 
+                      매칭된 UTM: {data.data.debug.matchedUTMs}개
+                    </span>
+                  </div>
+                  {data.data.debug.matchedUTMs === 0 && (
+                    <div className="mt-2 text-xs text-blue-600">
+                      등록된 UTM: {data.data.debug.registeredUTMList.join(', ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -437,10 +473,18 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
                     <td className="px-6 py-4 whitespace-nowrap">
                       {source.isRegisteredUTM ? (
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{source.campaign}</div>
+                          <div className="text-sm font-medium text-gray-900 flex items-center">
+                            <TagIcon className="h-4 w-4 text-blue-500 mr-1" />
+                            {source.matchedUTM?.name || source.campaign}
+                          </div>
                           <div className="text-sm text-gray-500">
                             <SourceMediumTag source={source.source} medium={source.medium} />
                           </div>
+                          {source.matchedUTM?.description && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              {source.matchedUTM.description}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="flex items-center">

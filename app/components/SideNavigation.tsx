@@ -15,7 +15,8 @@ import {
   XMarkIcon,
   ArrowDownTrayIcon,
   ServerIcon,
-  BoltIcon
+  BoltIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 
@@ -56,7 +57,7 @@ const navigation: NavigationItem[] = [
   { name: '검색어 코호트 분석', href: '#', icon: MagnifyingGlassIcon, id: 'keyword-cohort' },
   { name: '트래픽 소스 분석', href: '#', icon: GlobeAltIcon, id: 'traffic-analysis' },
   { name: 'GTM 분석', href: '#', icon: TagIcon, id: 'gtm-analysis' },
-  { name: '설정', href: '#', icon: CogIcon, id: 'settings' },
+  { name: '보고서 관리', href: '/reports', icon: DocumentTextIcon, id: 'reports' }
 ]
 
 const properties: Property[] = [
@@ -158,20 +159,36 @@ export default function SideNavigation({
         </div>
 
         <nav className="mt-8 px-2 space-y-1">
-          {navigation.map((item) => (
-            <button
-              key={item.name}
-              onClick={() => handleTabChange(item.id)}
-              className={`group flex items-center px-2 py-2 ${isMobile ? 'text-base' : 'text-sm'
-                } font-medium rounded-md w-full text-left ${activeTab === item.id
-                  ? 'bg-primary-100 text-primary-900'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-            >
-              <item.icon className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`} />
-              {item.name}
-            </button>
-          ))}
+          {navigation.map((item) => {
+            if (item.id === 'reports') {
+              return (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center px-2 py-2 ${isMobile ? 'text-base' : 'text-sm'
+                    } font-medium rounded-md w-full text-left text-gray-600 hover:bg-gray-50 hover:text-gray-900`}
+                >
+                  <item.icon className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`} />
+                  {item.name}
+                </a>
+              )
+            }
+            
+            return (
+              <button
+                key={item.name}
+                onClick={() => handleTabChange(item.id)}
+                className={`group flex items-center px-2 py-2 ${isMobile ? 'text-base' : 'text-sm'
+                  } font-medium rounded-md w-full text-left ${activeTab === item.id
+                    ? 'bg-primary-100 text-primary-900'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+              >
+                <item.icon className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`} />
+                {item.name}
+              </button>
+            )
+          })}
           <a
             href="/settings"
             className={`group flex items-center px-2 py-2 ${isMobile ? 'text-base' : 'text-sm'
