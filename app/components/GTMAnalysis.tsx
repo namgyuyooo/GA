@@ -71,7 +71,7 @@ interface GTMData {
   }
 }
 
-export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = '6243694530', dataMode = 'realtime' }: GTMAnalysisProps) {
+export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = '6243694530', dataMode = 'database' }: GTMAnalysisProps) {
   const [data, setData] = useState<GTMData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'tags' | 'goals' | 'triggers'>('overview')

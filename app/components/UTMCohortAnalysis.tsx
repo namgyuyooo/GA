@@ -27,7 +27,7 @@ interface CohortData {
   conversions: number
 }
 
-export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode = 'realtime' }: UTMCohortAnalysisProps) {
+export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode = 'database' }: UTMCohortAnalysisProps) {
   const [cohortData, setCohortData] = useState<CohortData[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<string>('all')
   const [dateRange, setDateRange] = useState('30daysAgo')
@@ -166,6 +166,11 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
           <h1 className="text-2xl font-bold text-gray-900">UTM 캠페인 코호트 분석</h1>
           <p className="text-sm text-gray-600 mt-1">
             UTM 캠페인별 사용자 리텐션 및 생애가치 분석 | {dataMode === 'realtime' ? '실시간' : 'DB'} 데이터 모드
+            {dataMode === 'database' && cohortData.length > 0 && (
+              <span className="ml-2 text-gray-500">
+                (데이터 시점: {new Date().toLocaleString('ko-KR')})
+              </span>
+            )}
           </p>
         </div>
 

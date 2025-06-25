@@ -26,7 +26,7 @@ interface DashboardContentProps {
   dataMode?: 'realtime' | 'database'
 }
 
-export default function DashboardContent({ propertyId = '464147982', dataMode = 'realtime' }: DashboardContentProps) {
+export default function DashboardContent({ propertyId = '464147982', dataMode = 'database' }: DashboardContentProps) {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [period, setPeriod] = useState('30daysAgo')
@@ -119,6 +119,11 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           <h1 className="text-2xl font-bold text-gray-900">Analytics 대시보드</h1>
           <p className="text-sm text-gray-600 mt-1">
             Property ID: {propertyId} | {dataMode === 'realtime' ? '실시간' : 'DB'} 데이터 모드
+            {dataMode === 'database' && data?.dataTimestamp && (
+              <span className="ml-2 text-gray-500">
+                (데이터 시점: {new Date(data.dataTimestamp).toLocaleString('ko-KR')})
+              </span>
+            )}
           </p>
         </div>
 

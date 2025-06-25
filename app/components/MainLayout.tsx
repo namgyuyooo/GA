@@ -22,7 +22,7 @@ interface MainLayoutProps {
 export default function MainLayout({ user, onLogout }: MainLayoutProps) {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [activeProperty, setActiveProperty] = useState('464147982')
-  const [dataMode, setDataMode] = useState<'realtime' | 'database'>('realtime')
+  const [dataMode, setDataMode] = useState<'realtime' | 'database'>('database')
   const [isDataLoading, setIsDataLoading] = useState(false)
 
   const handleBulkDataLoad = async () => {
