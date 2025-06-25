@@ -15,6 +15,9 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import dynamic from 'next/dynamic';
+
+const UserJourneySankey = dynamic(() => import('../../components/UserJourneySankey'), { ssr: false });
 
 // Chart.js 등록
 ChartJS.register(
@@ -983,6 +986,10 @@ export default function UserJourneyPage() {
             )}
           </div>
         </div>
+      )}
+
+      {data?.pageTransitions && data.pageTransitions.length > 0 && (
+        <UserJourneySankey data={{ pageTransitions: data.pageTransitions }} />
       )}
     </div>
   );
