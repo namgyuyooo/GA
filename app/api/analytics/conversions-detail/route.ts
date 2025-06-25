@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const DEFAULT_PROPERTIES = ['464147982', '482625214', '483589217', '462871516']
 
+const { PrismaClient } = require('@prisma/client')
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -96,7 +98,6 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. 사용자 정의 Goal 기반 전환 이벤트 분석
-    const { PrismaClient } = require('@prisma/client')
     const prismaLocal = new PrismaClient()
     
     // 활성 Goal 목록 조회
@@ -313,7 +314,6 @@ export async function GET(request: NextRequest) {
     }
 
     // 5. UTM 캠페인과 오가닉 채널 분리 분석
-    const { PrismaClient } = require('@prisma/client')
     const prisma = new PrismaClient()
     
     // 데이터베이스에서 등록된 UTM 캠페인 목록 가져오기

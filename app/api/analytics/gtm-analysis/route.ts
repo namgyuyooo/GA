@@ -186,7 +186,8 @@ export async function POST(request: NextRequest) {
     })
 
     // 새로운 Goal 설정 저장
-    const goalPromises = goals.map((goal: any, index: number) => 
+    const validGoals = goals.filter((goal: any) => goal.tagId)
+    const goalPromises = validGoals.map((goal: any, index: number) => 
       prisma.GTMGoal.create({
         data: {
           accountId,

@@ -560,7 +560,7 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
                     <div className="mt-3 text-xs text-gray-600">
                       <strong>Type:</strong> {tag.type} |
                       <strong className="ml-2">Status:</strong> {tag.status} |
-                      <strong className="ml-2">Triggers:</strong> {tag.firingTriggerId.length}개
+                      <strong className="ml-2">Triggers:</strong> {Array.isArray(tag.firingTriggerId) ? tag.firingTriggerId.length : 0}개
                     </div>
                   </div>
                 ))}
