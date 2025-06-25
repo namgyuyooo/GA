@@ -291,3 +291,103 @@ model PromptTemplate {
   @@unique([name, type])
   @@index([type, isActive])
 }
+
+model UserJourneyAnalysis {
+  id                String   @id @default(cuid())
+  sessionId         String
+  userId            String?
+  propertyId        String
+  goalId            String?
+  goal              ConversionGoal? @relation(fields: [goalId], references: [id])
+  analysisDate      DateTime @default(now())
+  
+  // 진입 정보 (트래픽 획득)
+  entryKeyword      String?  // 검색어 (GSC 데이터)
+  entrySource       String?  // 진입 소스
+  entryMedium       String?  // 진입 미디엄
+  entryCampaign     String?  // UTM 캠페인
+  entryPage         String?  // 첫 방문 페이지
+  
+  // 페이지 전환 여정
+  pageSequence      String   // JSON: [{"page": "/", "timestamp": "...", "duration": 120, "scrollDepth": 0.8}]
+  totalPages        Int      @default(0)
+  uniquePages       Int      @default(0)
+  
+  // 체류시간 분석
+  totalDuration     Int      @default(0) // 초 단위
+  avgPageDuration   Float    @default(0) // 페이지당 평균 체류시간
+  maxPageDuration   Int      @default(0) // 가장 오래 머문 페이지 시간
+  
+  // 스크롤 깊이 분석
+  avgScrollDepth    Float    @default(0) // 평균 스크롤 깊이 (0-1)
+  maxScrollDepth    Float    @default(0) // 최대 스크롤 깊이
+  scrollEngagement  Float    @default(0) // 스크롤 참여도 점수
+  
+  // 전환 관련
+  isConverted       Boolean  @default(false) // 실제 전환 여부
+  conversionPage    String?  // 전환 발생 페이지
+  conversionTime    Int?     // 전환까지 걸린 시간 (초)
+  
+  // 관심도 분석
+  interestScore     Float    @default(0) // 종합 관심도 점수 (0-1)
+  engagementLevel   String   @default("LOW") // HIGH, MEDIUM, LOW
+  intentStrength    Float    @default(0) // 구매 의도 강도 (0-1)
+  
+  // 재방문 패턴
+  returnVisitCount  Int      @default(0) // 재방문 횟수
+  lastVisitDate     DateTime? // 마지막 방문일
+  
+  // 분석 결과
+  journeyType       String   @default("EXPLORATORY") // CONVERSION, EXPLORATORY, BOUNCE
+  bottleneckPages   String?  // JSON: 이탈이 많은 페이지들
+  opportunityPages  String?  // JSON: 전환 기회가 높은 페이지들
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([sessionId, propertyId])
+  @@index([propertyId, analysisDate])
+  @@index([goalId, isConverted])
+  @@index([entryKeyword])
+  @@index([interestScore])
+}
+
+model UserBehaviorPattern {
+  id                String   @id @default(cuid())
+  propertyId        String
+  patternDate       DateTime @default(now())
+  
+  // 패턴 분류
+  patternType       String   // 'GOAL_CONVERSION', 'HIGH_INTEREST', 'EXPLORATORY', 'BOUNCE'
+  segmentName       String   // 패턴 세그먼트명
+  
+  // 진입 패턴
+  entryPatterns     String   // JSON: 진입 소스/키워드 패턴
+  entryPagePatterns String   // JSON: 진입 페이지 패턴
+  
+  // 여정 패턴
+  journeyPatterns   String   // JSON: 페이지 전환 패턴
+  durationPatterns  String   // JSON: 체류시간 패턴
+  scrollPatterns    String   // JSON: 스크롤 패턴
+  
+  // 전환 패턴
+  conversionPatterns String  // JSON: 전환 경로 패턴
+  dropoffPatterns   String   // JSON: 이탈 지점 패턴
+  
+  // 통계
+  sessionCount      Int      @default(0) // 해당 패턴의 세션 수
+  conversionRate    Float    @default(0) // 전환율
+  avgInterestScore  Float    @default(0) // 평균 관심도 점수
+  avgDuration       Int      @default(0) // 평균 체류시간
+  
+  // 인사이트
+  insights          String?  // JSON: 패턴별 인사이트
+  recommendations   String?  // JSON: 개선 권장사항
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([propertyId, patternDate])
+  @@index([patternType])
+  @@index([segmentName])
+}
