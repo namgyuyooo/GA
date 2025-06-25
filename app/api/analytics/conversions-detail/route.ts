@@ -314,19 +314,17 @@ export async function GET(request: NextRequest) {
     }
 
     // 5. UTM 캠페인과 오가닉 채널 분리 분석
-    const prisma = new PrismaClient()
-    
     // 데이터베이스에서 등록된 UTM 캠페인 목록 가져오기
     let registeredCampaigns = []
     try {
-      registeredCampaigns = await prisma.utmCampaign.findMany({
+      registeredCampaigns = await prismaLocal.utmCampaign.findMany({
         where: { status: 'ACTIVE' },
         select: { source: true, medium: true, campaign: true }
       })
     } catch (dbError) {
       console.log('UTM campaigns DB query failed, using empty list')
     } finally {
-      await prisma.$disconnect()
+      await prismaLocal.$disconnect()
     }
 
     // 모든 채널 데이터 가져오기

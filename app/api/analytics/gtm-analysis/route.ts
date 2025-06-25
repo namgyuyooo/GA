@@ -38,23 +38,36 @@ export async function GET(request: NextRequest) {
     const accountId = settings.GTM_ACCOUNT_ID
     const publicId = settings.GTM_PUBLIC_ID
 
-    if (!publicId || !accountId || !settings.GOOGLE_SERVICE_ACCOUNT_JSON) {
-      console.warn('GTM settings are incomplete, falling back to demo data.')
-      return getDemoGTMData(dataMode)
+    if (!publicId || !accountId) {
+      console.error('GTM 설정이 누락되었습니다. 설정 페이지에서 GTM 정보를 입력해주세요.')
+      return NextResponse.json({
+        error: 'GTM 설정이 누락되었습니다',
+        message: '설정 페이지에서 GTM_ACCOUNT_ID, GTM_PUBLIC_ID를 입력해주세요.',
+        needsSetup: true
+      }, { status: 400 })
     }
 
     // DB 모드인 경우 데이터베이스에서 데이터 로드
     if (dataMode === 'database') {
-      // TODO: 데이터베이스에서 저장된 GTM 데이터 로드
       console.log('DB 모드로 GTM 데이터 요청됨')
     }
 
+    // /secrets 폴더에서 서비스 계정 JSON 파일 읽기
+    const fs = require('fs')
+    const path = require('path')
+    
     let serviceAccount
     try {
-      serviceAccount = JSON.parse(settings.GOOGLE_SERVICE_ACCOUNT_JSON)
-    } catch (e) {
-      console.warn('Could not parse Service Account JSON, falling back to demo data.', e)
-      return getDemoGTMData(dataMode)
+      const serviceAccountPath = path.join(process.cwd(), 'secrets/ga-auto-464002-672370fda082.json')
+      const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
+      serviceAccount = JSON.parse(serviceAccountData)
+    } catch (fileError) {
+      console.error('서비스 계정 파일 오류:', fileError)
+      return NextResponse.json({
+        error: '서비스 계정 파일을 찾을 수 없습니다',
+        message: 'secrets/ga-auto-464002-672370fda082.json 파일을 확인해주세요.',
+        needsSetup: true
+      }, { status: 500 })
     }
 
     const jwt = require('jsonwebtoken')
@@ -79,14 +92,22 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json()
     if (!tokenData.access_token) {
-      console.warn('Failed to get GTM access token, falling back to demo data.')
-      return getDemoGTMData(dataMode)
+      console.error('GTM 액세스 토큰 획득 실패:', tokenData)
+      return NextResponse.json({
+        error: 'GTM 액세스 토큰을 획득할 수 없습니다',
+        message: '서비스 계정 권한을 확인해주세요.',
+        needsSetup: true
+      }, { status: 401 })
     }
 
     const containerId = await getNumericContainerId(tokenData.access_token, accountId, publicId)
     if (!containerId) {
-      console.warn(`No container found with Public ID ${publicId}, falling back to demo data.`)
-      return getDemoGTMData(dataMode)
+      console.error(`컨테이너를 찾을 수 없습니다: ${publicId}`)
+      return NextResponse.json({
+        error: 'GTM 컨테이너를 찾을 수 없습니다',
+        message: `Public ID '${publicId}'에 해당하는 컨테이너가 존재하지 않거나 접근 권한이 없습니다.`,
+        needsSetup: true
+      }, { status: 404 })
     }
 
     try {
@@ -155,8 +176,12 @@ export async function GET(request: NextRequest) {
       })
 
     } catch (gtmError) {
-      console.warn('GTM Analysis API: An error occurred during GTM API calls, using demo data:', gtmError)
-      return getDemoGTMData(dataMode)
+      console.error('GTM API 호출 중 오류 발생:', gtmError)
+      return NextResponse.json({
+        error: 'GTM API 호출 중 오류가 발생했습니다',
+        message: 'GTM 계정 권한이나 컨테이너 설정을 확인해주세요.',
+        details: gtmError.message
+      }, { status: 500 })
     }
 
   } catch (error: any) {
@@ -173,11 +198,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { accountId, containerId, goals } = body
 
+    console.log('GTM Goal 저장 요청:', { accountId, containerId, goalsCount: goals?.length })
+
     if (!accountId || !containerId || !goals) {
+      console.error('필수 필드 누락:', { accountId, containerId, goals })
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     // 기존 Goal 설정 삭제
+    console.log('기존 Goal 설정 삭제 중...')
     await prisma.GTMGoal.deleteMany({
       where: {
         accountId,
@@ -187,8 +216,11 @@ export async function POST(request: NextRequest) {
 
     // 새로운 Goal 설정 저장
     const validGoals = goals.filter((goal: any) => goal.tagId)
-    const goalPromises = validGoals.map((goal: any, index: number) => 
-      prisma.GTMGoal.create({
+    console.log(`유효한 Goal ${validGoals.length}개 저장 중...`)
+    
+    const goalPromises = validGoals.map((goal: any, index: number) => {
+      console.log(`Goal 저장: ${goal.name} (${goal.tagId})`)
+      return prisma.GTMGoal.create({
         data: {
           accountId,
           containerId,
@@ -199,14 +231,29 @@ export async function POST(request: NextRequest) {
           isActive: true
         }
       })
-    )
+    })
 
     await Promise.all(goalPromises)
+    console.log('모든 Goal 저장 완료')
+
+    // 저장된 Goal 목록 조회
+    const savedGoals = await prisma.GTMGoal.findMany({
+      where: {
+        accountId,
+        containerId
+      },
+      orderBy: {
+        priority: 'asc'
+      }
+    })
+
+    console.log(`저장된 Goal ${savedGoals.length}개 조회 완료`)
 
     return NextResponse.json({ 
       success: true, 
-      message: `${goals.length}개의 GTM Goal이 저장되었습니다.`,
-      savedGoals: goals.length
+      message: `${validGoals.length}개의 GTM Goal이 저장되었습니다.`,
+      savedGoals: savedGoals.length,
+      goals: savedGoals
     })
   } catch (error: any) {
     console.error('Error saving GTM Goals:', error)
@@ -273,184 +320,6 @@ function processGTMData(container: any, tags: any, triggers: any, variables: any
       goalTags: tagList.filter((t: any) => t.isGoal).length
     }
   }
-}
-
-// 데모 데이터 생성 (UTM Goals 포함)
-function getDemoGTMData(dataMode: string) {
-  // UTM Goals JSON 파일 로드
-  const fs = require('fs')
-  const path = require('path')
-
-  let utmGoals: any[] = []
-  const goalPath = path.join(process.cwd(), 'gtm-goals.json')
-
-  try {
-    if (!fs.existsSync(goalPath)) {
-      // 파일이 없으면 기본 내용으로 생성
-      const defaultGoals = {
-        accountId: "1234567890",
-        containerId: "GTM-N99ZMP6T",
-        goals: []
-      }
-      fs.writeFileSync(goalPath, JSON.stringify(defaultGoals, null, 2), 'utf8')
-      console.log('gtm-goals.json 파일이 생성되었습니다.')
-    }
-
-    const goalData = fs.readFileSync(goalPath, 'utf8')
-    const goalConfig = JSON.parse(goalData)
-    utmGoals = goalConfig.goals || []
-  } catch (error: any) {
-    console.warn('UTM Goals 파일을 처리하는 중 오류 발생:', error.message)
-  }
-
-  const demoTags = [
-    {
-      id: '1',
-      name: 'Google Analytics 4 - GA4',
-      type: 'gtagconfig',
-      status: 'active',
-      firingTriggerId: ['1', '2'],
-      blockingTriggerId: [],
-      parameter: [
-        { key: 'config_id', value: 'G-XXXXXXXXXX' }
-      ],
-      fingerprint: 'demo-fingerprint-1',
-      isGoal: false,
-      goalPriority: 0,
-      category: 'analytics',
-      description: 'Google Analytics 4 측정 태그'
-    },
-    {
-      id: '2',
-      name: 'GA4 - Page View Event',
-      type: 'gaEvent',
-      status: 'active',
-      firingTriggerId: ['1'],
-      blockingTriggerId: [],
-      parameter: [
-        { key: 'event_name', value: 'page_view' },
-        { key: 'send_to', value: 'G-XXXXXXXXXX' }
-      ],
-      fingerprint: 'demo-fingerprint-2',
-      isGoal: true,
-      goalPriority: 1,
-      category: 'analytics',
-      description: '페이지뷰 이벤트 추적'
-    },
-    {
-      id: '3',
-      name: 'GA4 - Button Click Event',
-      type: 'gaEvent',
-      status: 'active',
-      firingTriggerId: ['3'],
-      blockingTriggerId: [],
-      parameter: [
-        { key: 'event_name', value: 'button_click' },
-        { key: 'send_to', value: 'G-XXXXXXXXXX' }
-      ],
-      fingerprint: 'demo-fingerprint-3',
-      isGoal: false,
-      goalPriority: 0,
-      category: 'interaction',
-      description: '버튼 클릭 이벤트 추적'
-    },
-    {
-      id: '4',
-      name: 'GA4 - Form Submit Event',
-      type: 'gaEvent',
-      status: 'active',
-      firingTriggerId: ['4'],
-      blockingTriggerId: [],
-      parameter: [
-        { key: 'event_name', value: 'form_submit' },
-        { key: 'send_to', value: 'G-XXXXXXXXXX' }
-      ],
-      fingerprint: 'demo-fingerprint-4',
-      isGoal: true,
-      goalPriority: 2,
-      category: 'conversion',
-      description: '폼 제출 전환 이벤트'
-    },
-    {
-      id: '5',
-      name: 'Facebook Pixel - Base Code',
-      type: 'facebookPixel',
-      status: 'active',
-      firingTriggerId: ['1'],
-      blockingTriggerId: [],
-      parameter: [
-        { key: 'pixel_id', value: '1234567890123456' }
-      ],
-      fingerprint: 'demo-fingerprint-5',
-      isGoal: false,
-      goalPriority: 0,
-      category: 'advertising',
-      description: 'Facebook 픽셀 기본 코드'
-    },
-    {
-      id: '6',
-      name: 'Facebook Pixel - Purchase Event',
-      type: 'facebookPixel',
-      status: 'active',
-      firingTriggerId: ['5'],
-      blockingTriggerId: [],
-      parameter: [
-        { key: 'pixel_id', value: '1234567890123456' },
-        { key: 'event', value: 'Purchase' }
-      ],
-      fingerprint: 'demo-fingerprint-6',
-      isGoal: true,
-      goalPriority: 3,
-      category: 'conversion',
-      description: '구매 완료 전환 이벤트'
-    }
-  ]
-
-  // UTM Goals와 기본 데모 태그 병합
-  const allTags = [...demoTags, ...utmGoals]
-
-  const demoTriggers = [
-    { id: '1', name: 'All Pages', type: 'pageview', category: 'pageview' },
-    { id: '2', name: 'DOM Ready', type: 'domReady', category: 'page' },
-    { id: '3', name: 'CTA Button Click', type: 'click', category: 'click' },
-    { id: '4', name: 'Contact Form Submit', type: 'formSubmit', category: 'form' },
-    { id: '5', name: 'Purchase Complete', type: 'customEvent', category: 'custom' }
-  ]
-
-  const demoVariables = [
-    { id: '1', name: 'Page URL', type: 'url', category: 'page' },
-    { id: '2', name: 'Page Title', type: 'pageTitle', category: 'page' },
-    { id: '3', name: 'Click Element', type: 'clickElement', category: 'click' },
-    { id: '4', name: 'Form ID', type: 'formId', category: 'form' },
-    { id: '5', name: 'Custom User ID', type: 'customVariable', category: 'custom' }
-  ]
-
-  return NextResponse.json({
-    success: true,
-    containerId: 'GTM-N99ZMP6T',
-    accountId: 'demo-account',
-    data: {
-      container: {
-        name: 'RTM Analytics Container (Demo)',
-        containerId: 'GTM-N99ZMP6T',
-        publicId: 'GTM-N99ZMP6T',
-        domainName: ['rtm.ai', 'online-poc.rtm.ai'],
-        fingerprint: 'demo-container-fingerprint'
-      },
-      tags: allTags,
-      triggers: demoTriggers,
-      variables: demoVariables,
-      summary: {
-        totalTags: allTags.length,
-        activeTags: allTags.filter(t => t.status === 'active').length,
-        pausedTags: allTags.filter(t => t.status === 'paused').length,
-        totalTriggers: demoTriggers.length,
-        totalVariables: demoVariables.length,
-        goalTags: allTags.filter(t => t.isGoal).length
-      }
-    },
-    message: `✅ GTM 분석 데이터 로드 완료 (UTM Goals ${utmGoals.length}개 포함)`
-  })
 }
 
 // 태그 카테고리 분류

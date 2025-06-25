@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast'
 import { 
   ChartBarIcon, 
   FunnelIcon, 
-  TrendingUpIcon, 
+  ArrowTrendingUpIcon, 
   MagnifyingGlassIcon,
   UserGroupIcon,
   EyeSlashIcon,
@@ -47,7 +47,7 @@ export default function AdvancedAnalyticsPage() {
     {
       id: 'keyword-ranking',
       name: '검색어 순위 추적',
-      icon: TrendingUpIcon,
+      icon: ArrowTrendingUpIcon,
       description: '주간/누적 검색어 순위 변동 분석',
       color: 'green'
     },

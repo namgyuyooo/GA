@@ -44,8 +44,8 @@ interface KeywordGroup {
   name: string
   keywords: string[]
   color: string
-  sessions: number
-  conversions: number
+  description?: string
+  createdAt?: string
 }
 
 export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMode }: TrafficSourceAnalysisProps) {
@@ -54,25 +54,21 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
   const [dateRange, setDateRange] = useState('7daysAgo')
   const [activeTab, setActiveTab] = useState<'sources' | 'keywords' | 'pages'>('sources')
   const [sourceFilter, setSourceFilter] = useState<'all' | 'utm' | 'non-utm'>('all')
-  const [keywordGroups, setKeywordGroups] = useState<KeywordGroup[]>([
-    { id: '1', name: '브랜드 검색어', keywords: ['rtm', 'rtm.ai', '알티엠'], color: 'bg-blue-500', sessions: 0, conversions: 0 },
-    { id: '2', name: '제품 관련', keywords: ['analytics', 'dashboard', '분석'], color: 'bg-green-500', sessions: 0, conversions: 0 },
-    { id: '3', name: '경쟁사 비교', keywords: ['vs', '비교', 'compare'], color: 'bg-purple-500', sessions: 0, conversions: 0 }
-  ])
+  const [keywordGroups, setKeywordGroups] = useState<KeywordGroup[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const rowsPerPage = 10
+  const [groupStats, setGroupStats] = useState<{ [groupId: string]: { sessions: number, conversions: number } }>({})
 
   useEffect(() => {
     loadTrafficData()
+    loadKeywordGroups()
   }, [dateRange, propertyId])
 
   const loadTrafficData = async () => {
     setIsLoading(true)
-
     try {
       const response = await fetch(`/api/analytics/traffic-analysis?period=${dateRange}&propertyId=${propertyId}`)
       const result = await response.json()
-
       if (response.ok) {
         setData(result)
         updateKeywordGroupStats(result.data.keywords || [])
@@ -88,42 +84,114 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
     }
   }
 
+  const loadKeywordGroups = async () => {
+    try {
+      const response = await fetch('/api/analytics/keyword-groups')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setKeywordGroups(result.groups)
+        } else {
+          setKeywordGroups([])
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load keyword groups:', error)
+      setKeywordGroups([])
+    }
+  }
+
   const updateKeywordGroupStats = (keywords: any[]) => {
-    const updatedGroups = keywordGroups.map(group => {
+    const stats: { [groupId: string]: { sessions: number, conversions: number } } = {}
+    keywordGroups.forEach(group => {
       const groupKeywords = keywords.filter(kw =>
         group.keywords.some(groupKw =>
           kw.keyword.toLowerCase().includes(groupKw.toLowerCase())
         )
       )
-
-      return {
-        ...group,
+      stats[group.id] = {
         sessions: groupKeywords.reduce((sum, kw) => sum + (kw.sessions || 0), 0),
         conversions: groupKeywords.reduce((sum, kw) => sum + (kw.conversions || 0), 0)
       }
     })
-
-    setKeywordGroups(updatedGroups)
+    setGroupStats(stats)
   }
 
-  const addKeywordGroup = () => {
-    toast.error('UI에서 그룹 추가는 지원하지 않습니다.');
-  };
-
-  const removeKeywordGroup = (groupId: string) => {
-    setKeywordGroups(keywordGroups.filter(g => g.id !== groupId))
-    toast.success('키워드 그룹이 삭제되었습니다')
+  const addKeywordGroup = async (group: { name: string, color: string, keywords: string[], description?: string }) => {
+    try {
+      const response = await fetch('/api/analytics/keyword-groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          group
+        })
+      })
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setKeywordGroups(prev => [...prev, result.group])
+          toast.success('그룹이 추가되었습니다')
+        } else {
+          toast.error(result.message || '그룹 추가 실패')
+        }
+      } else {
+        toast.error('그룹 추가 실패')
+      }
+    } catch (error) {
+      toast.error('그룹 추가 중 오류 발생')
+    }
   }
 
-  const addKeywordToGroup = (groupId: string, keyword: string) => {
-    setKeywordGroups(groups =>
-      groups.map(group =>
-        group.id === groupId
-          ? { ...group, keywords: [...group.keywords, keyword] }
-          : group
-      )
-    )
-    toast.success('키워드가 그룹에 추가되었습니다')
+  const removeKeywordGroup = async (groupId: string) => {
+    try {
+      const group = keywordGroups.find(g => g.id === groupId)
+      if (!group) return
+      const response = await fetch('/api/analytics/keyword-groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          group: { id: groupId, ...group }
+        })
+      })
+      if (response.ok) {
+        setKeywordGroups(groups => groups.filter(g => g.id !== groupId))
+        toast.success('키워드 그룹이 삭제되었습니다')
+      } else {
+        toast.error('그룹 삭제 실패')
+      }
+    } catch (error) {
+      toast.error('그룹 삭제 중 오류 발생')
+    }
+  }
+
+  const addKeywordToGroup = async (groupId: string, keyword: string) => {
+    try {
+      const group = keywordGroups.find(g => g.id === groupId)
+      if (!group) return
+      const updatedKeywords = Array.from(new Set([...group.keywords, keyword]))
+      const response = await fetch('/api/analytics/keyword-groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          group: { ...group, keywords: updatedKeywords }
+        })
+      })
+      if (response.ok) {
+        setKeywordGroups(groups =>
+          groups.map(g =>
+            g.id === groupId ? { ...g, keywords: updatedKeywords } : g
+          )
+        )
+        toast.success('키워드가 그룹에 추가되었습니다')
+      } else {
+        toast.error('키워드 추가 실패')
+      }
+    } catch (error) {
+      toast.error('키워드 추가 중 오류 발생')
+    }
   }
 
   const categorizeTrafficSources = (sources: TrafficSource[]) => {
@@ -431,11 +499,11 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
                     <div className="space-y-2 mb-3">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">세션</span>
-                        <span className="font-medium">{group.sessions.toLocaleString()}</span>
+                        <span className="font-medium">{groupStats[group.id]?.sessions?.toLocaleString() ?? 0}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">전환</span>
-                        <span className="font-medium">{group.conversions}</span>
+                        <span className="font-medium">{groupStats[group.id]?.conversions ?? 0}</span>
                       </div>
                     </div>
 

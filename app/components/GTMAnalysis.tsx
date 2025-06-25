@@ -101,7 +101,11 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
         setSelectedGoals(existingGoals)
         toast.success(`GTM 분석 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`)
       } else {
-        toast.error('GTM 데이터 로드 실패')
+        if (result.needsSetup) {
+          toast.error('GTM 설정이 필요합니다. 설정 페이지에서 GTM 정보를 입력해주세요.')
+        } else {
+          toast.error(`GTM 데이터 로드 실패: ${result.message || '알 수 없는 오류'}`)
+        }
       }
     } catch (err: any) {
       toast.error('네트워크 오류')
@@ -164,11 +168,15 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
 
       if (response.ok) {
         toast.success(`${selectedGoals.size}개의 Goal이 저장되었습니다`)
+        // 저장 후 데이터 다시 로드
+        await loadGTMData()
       } else {
-        toast.error('Goal 설정 저장에 실패했습니다.')
+        const errorData = await response.json()
+        toast.error(`Goal 설정 저장에 실패했습니다: ${errorData.error || '알 수 없는 오류'}`)
       }
     } catch (error) {
       toast.error('Goal 설정 저장 중 오류가 발생했습니다.')
+      console.error('Save goal settings error:', error)
     } finally {
       setIsLoading(false)
     }
@@ -221,8 +229,19 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
     return (
       <div className="text-center py-12">
         <TagIcon className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-2 text-sm font-medium text-gray-900">GTM 데이터 없음</h3>
-        <p className="mt-1 text-sm text-gray-500">태그 매니저 컨테이너를 확인해주세요.</p>
+        <h3 className="mt-2 text-sm font-medium text-gray-900">GTM 설정이 필요합니다</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          설정 페이지에서 GTM_ACCOUNT_ID, GTM_PUBLIC_ID를 입력해주세요.<br />
+          서비스 계정 파일은 secrets/ga-auto-464002-672370fda082.json에서 자동으로 로드됩니다.
+        </p>
+        <div className="mt-4">
+          <a
+            href="/settings"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+          >
+            설정 페이지로 이동
+          </a>
+        </div>
       </div>
     )
   }
