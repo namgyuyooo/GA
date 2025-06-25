@@ -63,3 +63,29 @@ model Setting {
   key   String @id
   value String
 }
+
+model KeywordCohortGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#3B82F6")
+  keywords    String   // JSON array as string for SQLite
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([name])
+}
+
+model UtmCohortGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#10B981")
+  campaigns   String   // JSON array as string for SQLite
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([name])
+}

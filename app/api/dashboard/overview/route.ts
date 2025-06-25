@@ -123,6 +123,50 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 인기 페이지 데이터 (실제 GA4 데이터)
+    const topPagesResponse = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate: period, endDate: 'today' }],
+          dimensions: [
+            { name: 'pagePath' },
+            { name: 'pageTitle' }
+          ],
+          metrics: [
+            { name: 'screenPageViews' },
+            { name: 'sessions' },
+            { name: 'activeUsers' },
+            { name: 'averageSessionDuration' },
+            { name: 'bounceRate' }
+          ],
+          orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+          limit: 20
+        })
+      }
+    )
+
+    let topPages = []
+    if (topPagesResponse.ok) {
+      const topPagesData = await topPagesResponse.json()
+      topPages = topPagesData.rows?.map((row: any, index: number) => ({
+        id: (index + 1).toString(),
+        path: row.dimensionValues[0].value,
+        title: row.dimensionValues[1].value || row.dimensionValues[0].value,
+        pageViews: Number(row.metricValues[0].value || 0),
+        sessions: Number(row.metricValues[1].value || 0),
+        users: Number(row.metricValues[2].value || 0),
+        avgSessionDuration: Number(row.metricValues[3].value || 0),
+        bounceRate: Number(row.metricValues[4].value || 0),
+        createdAt: new Date().toISOString()
+      })) || []
+    }
+
     // UTM 캠페인별 성과 (실제 GA4 데이터)
     const campaignResponse = await fetch(
       `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
@@ -174,6 +218,7 @@ export async function GET(request: NextRequest) {
       data: {
         kpis,
         topCampaigns: campaigns.slice(0, 5),
+        topPages: topPages.slice(0, 10),
         realTimeData
       }
     });

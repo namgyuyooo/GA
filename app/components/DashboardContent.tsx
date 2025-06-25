@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 import { getDataSourceInfo } from '../utils/dataExplanations'
 import { CalculationTooltip, DataSourceTooltip } from './Tooltip'
 
@@ -31,6 +32,24 @@ export default function DashboardContent({ propertyId = '464147982' }: Dashboard
   const [refreshing, setRefreshing] = useState(false)
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+  const router = useRouter()
+
+  // KPI 드릴다운 핸들러들
+  const handleSessionsClick = () => {
+    router.push(`/analytics/sessions?period=${period}&propertyId=${propertyId}`)
+  }
+
+  const handleUsersClick = () => {
+    router.push(`/analytics/users?period=${period}&propertyId=${propertyId}`)
+  }
+
+  const handlePageViewsClick = () => {
+    router.push(`/analytics/pageviews?period=${period}&propertyId=${propertyId}`)
+  }
+
+  const handleConversionsClick = () => {
+    router.push(`/analytics/conversions?period=${period}&propertyId=${propertyId}`)
+  }
 
   useEffect(() => {
     loadDashboardData()
@@ -140,11 +159,14 @@ export default function DashboardContent({ propertyId = '464147982' }: Dashboard
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div 
+          className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+          onClick={handleUsersClick}
+        >
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <UsersIcon className="h-6 w-6 text-gray-400" />
+                <UsersIcon className="h-6 w-6 text-blue-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -197,11 +219,14 @@ export default function DashboardContent({ propertyId = '464147982' }: Dashboard
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div 
+          className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+          onClick={handleSessionsClick}
+        >
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <ChartBarIcon className="h-6 w-6 text-gray-400" />
+                <ChartBarIcon className="h-6 w-6 text-green-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -240,11 +265,14 @@ export default function DashboardContent({ propertyId = '464147982' }: Dashboard
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div 
+          className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+          onClick={handlePageViewsClick}
+        >
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <EyeIcon className="h-6 w-6 text-gray-400" />
+                <EyeIcon className="h-6 w-6 text-purple-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -283,11 +311,14 @@ export default function DashboardContent({ propertyId = '464147982' }: Dashboard
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div 
+          className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+          onClick={handleConversionsClick}
+        >
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <CurrencyDollarIcon className="h-6 w-6 text-gray-400" />
+                <CurrencyDollarIcon className="h-6 w-6 text-orange-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
