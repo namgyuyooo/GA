@@ -1,0 +1,9 @@
+ID,관리메모,랜딩페이지URL,소스,매체,캠페인,UTM_Content,UTM_Term,finalURL,생성일시
+1,"구글 디스플레이광고 - 프로모션",http://rtm.ai,sms,social,campain_name,,,"http://rtm.ai?utm_source=sms&utm_medium=social&utm_campaign=campain_name",2025-06-25T09:11:39.045Z
+2,"온라인 poc 프로젝트 페이지",https://poc-request.hubble-engine.rtm.ai/project/auth,email,email,welcome_auto,,,"https://poc-request.hubble-engine.rtm.ai/project/auth?utm_source=email&utm_medium=email&utm_campaign=welcome_auto",2025-06-25T09:11:39.045Z
+3,"온라인 poc 신청페이지 aw 감사메일",https://poc-request.hubble-engine.rtm.ai/,email,email,aw_thanks_mail,,,"https://poc-request.hubble-engine.rtm.ai/?utm_source=email&utm_medium=email&utm_campaign=aw_thanks_mail",2025-06-25T09:11:39.045Z
+4,"온라인 poc 랜딩페이지",https://online-poc.rtm.ai/,email,email,bluepoint_demoday-offline,,,"https://online-poc.rtm.ai/?utm_source=email&utm_medium=email&utm_campaign=bluepoint_demoday-offline",2025-06-25T09:11:39.045Z
+5,"온라인 poc 신청페이지 메일",http://rtm.ai,email,email,250319_email_onlicepoc_welcome,,,"http://rtm.ai?utm_source=email&utm_medium=email&utm_campaign=250319_email_onlicepoc_welcome",2025-06-25T09:11:39.045Z
+6,"홈페이지-poc 랜딩 이동",https://online-poc.rtm.ai/,homepage,btn,basic,,,"https://online-poc.rtm.ai/?utm_source=homepage&utm_medium=btn&utm_campaign=basic",2025-06-25T09:11:39.045Z
+7,"온라인 poc 신청페이지 메일",https://online-poc.rtm.ai/,email,email,250424_email_poc_maillist,,,"https://online-poc.rtm.ai/?utm_source=email&utm_medium=email&utm_campaign=250424_email_poc_maillist",2025-06-25T09:11:39.045Z
+8,"홈페이지-엔진 신청",https://www.rtm.ai/kr/hubble/engine,email,email,250604_email-engine_maillist,,,"https://www.rtm.ai/kr/hubble/engine?utm_source=email&utm_medium=email&utm_campaign=250604_email-engine_maillist",2025-06-25T09:11:39.045Z

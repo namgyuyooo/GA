@@ -1,0 +1,17 @@
+{
+  "accountId": "6243694530",
+  "containerId": "GTM-N99ZMP6T",
+  "goals": [
+    {
+      "tagId": "3",
+      "name": "GA4 - Button Click Event",
+      "type": "gaEvent"
+    },
+    {
+      "tagId": "4",
+      "name": "GA4 - Form Submit Event",
+      "type": "gaEvent"
+    }
+  ],
+  "updatedAt": "2025-06-25T10:16:55.478Z"
+}

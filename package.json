@@ -1,0 +1,49 @@
+{
+  "name": "utm-analytics-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "import-utm": "node scripts/import-utm-campaigns.js",
+    "import-utm-api": "node scripts/import-utm-campaigns.js api",
+    "import-utm-csv": "node scripts/import-utm-campaigns.js csv"
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "@prisma/client": "^5.7.1",
+    "@tailwindcss/forms": "^0.5.10",
+    "@types/jsonwebtoken": "^9.0.10",
+    "autoprefixer": "^10.4.16",
+    "chart.js": "^4.4.1",
+    "clsx": "^2.0.0",
+    "date-fns": "^3.0.6",
+    "dotenv": "^16.5.0",
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^150.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.303.0",
+    "next": "14.0.4",
+    "papaparse": "^5.5.3",
+    "postcss": "^8.4.32",
+    "prisma": "^5.7.1",
+    "react": "18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "18.2.0",
+    "react-hook-form": "^7.48.2",
+    "react-hot-toast": "^2.4.1",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/papaparse": "^5.3.16",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.4"
+  }
+}

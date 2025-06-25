@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+
+model UtmCampaign {
+  id          String   @id @default(cuid())
+  name        String
+  source      String
+  medium      String
+  campaign    String
+  term        String?
+  content     String?
+  url         String
+  description String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([campaign, source, medium])
+}
+
+model WeeklyReport {
+  id                String   @id @default(cuid())
+  title            String
+  startDate        DateTime
+  endDate          DateTime
+  totalSessions    Int
+  totalUsers       Int
+  totalConversions Int
+  avgEngagementRate Float
+  totalClicks      Int
+  totalImpressions Int
+  avgCtr           Float
+  avgPosition      Float
+  reportData       String   // JSON as string for SQLite
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model ScheduledJob {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // JobType as string
+  schedule    String   // Cron expression
+  isActive    Boolean  @default(true)
+  lastRun     DateTime?
+  nextRun     DateTime?
+  config      String?  // JSON as string for SQLite
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Setting {
+  key   String @id
+  value String
+}
