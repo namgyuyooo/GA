@@ -30,6 +30,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.303.0",
     "next": "14.0.4",
+    "next-auth": "^4.24.11",
     "node-cron": "^4.1.1",
     "papaparse": "^5.5.3",
     "postcss": "^8.4.32",

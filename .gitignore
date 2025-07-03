@@ -43,3 +43,4 @@ clean-node_modules.sh
 clean-build.sh
 clean-dist.sh
 clean-out.sh
+.vercel
