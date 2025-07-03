@@ -12,8 +12,23 @@ const FREE_GEMINI_MODELS = [
 
 // /secrets/.env에서 API Key 읽기
 export function getGeminiApiKey() {
-  const envPath = path.join(process.cwd(), 'secrets', '.env')
-  if (!fs.existsSync(envPath)) throw new Error('.env 파일이 없습니다')
+  // Try multiple possible paths
+  const possiblePaths = [
+    path.join(process.cwd(), 'secrets', '.env'),
+    path.join(process.cwd(), '..', 'GA', 'secrets', '.env'),
+    path.join('/Users/rtm/Documents/GitHub/GA/secrets', '.env')
+  ]
+  
+  let envPath = ''
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      envPath = p
+      break
+    }
+  }
+  
+  if (!envPath) throw new Error('.env 파일을 찾을 수 없습니다: ' + possiblePaths.join(', '))
+  
   const env = fs.readFileSync(envPath, 'utf8')
   // FREE_KEY 우선, 없으면 기존 KEY 사용
   const freeKeyMatch = env.match(/GEMINI_API_FREE_KEY\s*=\s*(.+)/)
@@ -24,8 +39,23 @@ export function getGeminiApiKey() {
 }
 
 export function getGeminiProjectId() {
-  const envPath = path.join(process.cwd(), 'secrets', '.env')
-  if (!fs.existsSync(envPath)) throw new Error('.env 파일이 없습니다')
+  // Try multiple possible paths
+  const possiblePaths = [
+    path.join(process.cwd(), 'secrets', '.env'),
+    path.join(process.cwd(), '..', 'GA', 'secrets', '.env'),
+    path.join('/Users/rtm/Documents/GitHub/GA/secrets', '.env')
+  ]
+  
+  let envPath = ''
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      envPath = p
+      break
+    }
+  }
+  
+  if (!envPath) throw new Error('.env 파일을 찾을 수 없습니다: ' + possiblePaths.join(', '))
+  
   const env = fs.readFileSync(envPath, 'utf8')
   const match = env.match(/GEMINI_API_PROJECT_ID\s*=\s*(.+)/)
   if (!match) throw new Error('GEMINI_API_PROJECT_ID가 .env에 없습니다')

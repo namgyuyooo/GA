@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { runGeminiPrompt, getBestFreeGeminiModel } from '../../../lib/geminiClient'
 const { PrismaClient } = require('@prisma/client')
 
+// Ensure DATABASE_URL is set correctly
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./prisma/dev.db'
+}
+
 const prisma = new PrismaClient()
 
 // 프롬프트 템플릿에서 변수를 실제 값으로 치환

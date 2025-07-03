@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 const { PrismaClient } = require('@prisma/client')
 
+// Ensure DATABASE_URL is set correctly
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./prisma/dev.db'
+}
+
 // 기본 프롬프트 템플릿 데이터
 const DEFAULT_TEMPLATES = [
   {

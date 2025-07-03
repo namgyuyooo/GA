@@ -115,61 +115,14 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
       toast.success(result.message || '검색어 코호트 데이터 로드 완료')
     } catch (error) {
       console.error('Keyword cohort data error:', error)
-      toast.error('검색어 코호트 데이터 로드 실패. 데모 데이터를 표시합니다.')
-      generateDemoData()
+      toast.error('검색어 코호트 데이터 로드 실패.')
+      setCohortData([])
+      setKeywords(['all'])
     } finally {
       setIsLoading(false)
     }
   }
 
-  const generateDemoData = () => {
-    const demoKeywords = [
-      'analytics dashboard',
-      'utm tracking tool',
-      'google analytics 4',
-      '웹 분석 도구',
-      'conversion tracking',
-      '마케팅 분석',
-      'cohort analysis',
-      '사용자 행동 분석',
-      'digital marketing',
-      'data visualization'
-    ]
-
-    const demoData: KeywordCohortData[] = []
-    const weeks = 8
-
-    for (let week = 0; week < weeks; week++) {
-      demoKeywords.forEach((keyword) => {
-        const cohortDate = new Date()
-        cohortDate.setDate(cohortDate.getDate() - (week * 7))
-
-        const impressions = Math.floor(Math.random() * 10000) + 1000
-        const clicks = Math.floor(impressions * (0.02 + Math.random() * 0.08))
-        const initialUsers = Math.floor(clicks * (0.7 + Math.random() * 0.3))
-        const baseRetention = 0.6 - (week * 0.03)
-
-        demoData.push({
-          cohortDate: cohortDate.toISOString().split('T')[0],
-          keyword,
-          impressions,
-          clicks,
-          ctr: clicks / impressions,
-          position: Math.floor(Math.random() * 20) + 1,
-          initialUsers,
-          retentionWeek1: Math.floor(initialUsers * (baseRetention - 0.1 + Math.random() * 0.05)),
-          retentionWeek2: Math.floor(initialUsers * (baseRetention - 0.2 + Math.random() * 0.05)),
-          retentionWeek4: Math.floor(initialUsers * (baseRetention - 0.3 + Math.random() * 0.05)),
-          retentionWeek8: Math.floor(initialUsers * (baseRetention - 0.4 + Math.random() * 0.05)),
-          conversions: Math.floor(initialUsers * (0.01 + Math.random() * 0.05)),
-          revenue: Math.floor((Math.random() * 1000 + 100) * 100) / 100
-        })
-      })
-    }
-
-    setCohortData(demoData)
-    setKeywords(['all', ...demoKeywords])
-  }
 
   const assignKeywordsToGroups = () => {
     const updatedCohortData = cohortData.map(cohort => {
@@ -431,11 +384,57 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
     // 정렬
     const compare = (a: any, b: any) => {
       let v1 = a[sortColumn], v2 = b[sortColumn];
-      // CTR, position 등 특수 처리
-      if (sortColumn === 'ctr') { v1 = a.ctr; v2 = b.ctr; }
-      if (sortColumn === 'position') { v1 = a.position; v2 = b.position; }
-      if (sortColumn === 'keyword') { v1 = a.keyword; v2 = b.keyword; }
-      if (typeof v1 === 'string') return sortDirection === 'asc' ? v1.localeCompare(v2) : v2.localeCompare(v1);
+      
+      // 특수 처리가 필요한 컬럼들
+      switch (sortColumn) {
+        case 'ctr':
+          v1 = a.ctr; v2 = b.ctr;
+          break;
+        case 'position':
+          v1 = a.position; v2 = b.position;
+          break;
+        case 'keyword':
+          v1 = a.keyword; v2 = b.keyword;
+          break;
+        case 'impressions':
+          v1 = a.impressions; v2 = b.impressions;
+          break;
+        case 'clicks':
+          v1 = a.clicks; v2 = b.clicks;
+          break;
+        case 'initialUsers':
+          v1 = a.initialUsers; v2 = b.initialUsers;
+          break;
+        case 'retentionWeek1':
+          v1 = a.retentionWeek1; v2 = b.retentionWeek1;
+          break;
+        case 'retentionWeek2':
+          v1 = a.retentionWeek2; v2 = b.retentionWeek2;
+          break;
+        case 'retentionWeek4':
+          v1 = a.retentionWeek4; v2 = b.retentionWeek4;
+          break;
+        case 'retentionWeek8':
+          v1 = a.retentionWeek8; v2 = b.retentionWeek8;
+          break;
+        case 'conversions':
+          v1 = a.conversions; v2 = b.conversions;
+          break;
+        case 'revenue':
+          v1 = a.revenue; v2 = b.revenue;
+          break;
+        default:
+          v1 = a[sortColumn]; v2 = b[sortColumn];
+      }
+      
+      // 문자열 비교
+      if (typeof v1 === 'string') {
+        return sortDirection === 'asc' ? v1.localeCompare(v2) : v2.localeCompare(v1);
+      }
+      
+      // 숫자 비교 (null/undefined 처리)
+      if (v1 == null) v1 = 0;
+      if (v2 == null) v2 = 0;
       return sortDirection === 'asc' ? v1 - v2 : v2 - v1;
     };
     return aggregatedData.sort(compare);
@@ -875,14 +874,116 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
         <table className="min-w-[1200px] divide-y divide-gray-300 text-xs">
           <thead>
             <tr>
-              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">키워드</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">노출</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">클릭</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">CTR</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">순위</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">초기 사용자</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">주간 리텐션 (1,2,4,8주)</th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">전환</th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('keyword')}
+              >
+                <div className="flex items-center">
+                  키워드
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'keyword' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('impressions')}
+              >
+                <div className="flex items-center">
+                  노출
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'impressions' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('clicks')}
+              >
+                <div className="flex items-center">
+                  클릭
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'clicks' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('ctr')}
+              >
+                <div className="flex items-center">
+                  CTR
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'ctr' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('position')}
+              >
+                <div className="flex items-center">
+                  순위
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'position' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('initialUsers')}
+              >
+                <div className="flex items-center">
+                  초기 사용자
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'initialUsers' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('retentionWeek1')}
+              >
+                <div className="flex items-center">
+                  리텐션(1주)
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'retentionWeek1' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('retentionWeek4')}
+              >
+                <div className="flex items-center">
+                  리텐션(4주)
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'retentionWeek4' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('revenue')}
+              >
+                <div className="flex items-center">
+                  수익
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'revenue' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('conversions')}
+              >
+                <div className="flex items-center">
+                  전환
+                  <span className="ml-1 text-gray-400">
+                    {sortColumn === 'conversions' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </div>
+              </th>
               <th className="px-3 py-2 text-left font-semibold text-gray-900 whitespace-nowrap">그룹</th>
             </tr>
           </thead>
@@ -904,12 +1005,23 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">{item.initialUsers.toLocaleString()}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">
-                  <div className="w-full bg-gray-200 rounded-full h-4">
-                    <div className={getRetentionBarColor(item.retentionWeek1 / item.initialUsers) + " h-4 rounded-full"} style={{ width: `${(item.retentionWeek1 / item.initialUsers) * 100}%` }}></div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className={getRetentionBarColor(item.retentionWeek1 / (item.initialUsers || 1)) + " h-3 rounded-full"} style={{ width: `${Math.min(100, (item.retentionWeek1 / (item.initialUsers || 1)) * 100)}%` }}></div>
                   </div>
                   <div className="text-xs text-center text-gray-500 mt-1">
-                    {((item.retentionWeek1 / item.initialUsers) * 100).toFixed(1)}%
+                    {item.initialUsers > 0 ? ((item.retentionWeek1 / item.initialUsers) * 100).toFixed(1) : '0.0'}%
                   </div>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className={getRetentionBarColor(item.retentionWeek4 / (item.initialUsers || 1)) + " h-3 rounded-full"} style={{ width: `${Math.min(100, (item.retentionWeek4 / (item.initialUsers || 1)) * 100)}%` }}></div>
+                  </div>
+                  <div className="text-xs text-center text-gray-500 mt-1">
+                    {item.initialUsers > 0 ? ((item.retentionWeek4 / item.initialUsers) * 100).toFixed(1) : '0.0'}%
+                  </div>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">
+                  <span className="text-green-600 font-medium">₩{item.revenue.toLocaleString()}</span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">{item.conversions.toLocaleString()}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-sm">

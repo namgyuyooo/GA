@@ -1,6 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Ensure DATABASE_URL is set correctly
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./prisma/dev.db'
+}
+
 const DEFAULT_PROPERTIES = ['464147982', '482625214', '483589217', '462871516']
 
 const prisma = new PrismaClient()

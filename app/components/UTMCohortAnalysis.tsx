@@ -84,53 +84,13 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
     } catch (error) {
       console.error('Cohort data error:', error)
       toast.error('코호트 데이터 로드 실패')
-
-      // 데모 데이터 사용
-      generateDemoData()
+      setCohortData([])
+      setCampaigns(['all'])
     } finally {
       setIsLoading(false)
     }
   }
 
-  const generateDemoData = () => {
-    const demoCampaigns = [
-      { name: 'summer_sale_facebook', source: 'facebook', medium: 'social' },
-      { name: 'google_ads_search', source: 'google', medium: 'cpc' },
-      { name: 'email_newsletter', source: 'email', medium: 'email' },
-      { name: 'naver_organic', source: 'naver', medium: 'organic' },
-      { name: 'youtube_video', source: 'youtube', medium: 'social' }
-    ]
-
-    const demoData: CohortData[] = []
-    const weeks = 8
-
-    for (let week = 0; week < weeks; week++) {
-      demoCampaigns.forEach((campaign, index) => {
-        const cohortDate = new Date()
-        cohortDate.setDate(cohortDate.getDate() - (week * 7))
-
-        const initialUsers = Math.floor(Math.random() * 500) + 100
-        const baseRetention = 0.7 - (week * 0.05) // 감소하는 리텐션
-
-        demoData.push({
-          cohortDate: cohortDate.toISOString().split('T')[0],
-          campaignName: campaign.name,
-          source: campaign.source,
-          medium: campaign.medium,
-          initialUsers,
-          retentionWeek1: Math.floor(initialUsers * (baseRetention - 0.2 + Math.random() * 0.1)),
-          retentionWeek2: Math.floor(initialUsers * (baseRetention - 0.3 + Math.random() * 0.1)),
-          retentionWeek4: Math.floor(initialUsers * (baseRetention - 0.4 + Math.random() * 0.1)),
-          retentionWeek8: Math.floor(initialUsers * (baseRetention - 0.5 + Math.random() * 0.1)),
-          ltv: Math.floor((Math.random() * 50 + 10) * 100) / 100,
-          conversions: Math.floor(initialUsers * (0.02 + Math.random() * 0.08))
-        })
-      })
-    }
-
-    setCohortData(demoData)
-    setCampaigns(['all', ...demoCampaigns.map(c => c.name)])
-  }
 
   const getRetentionColor = (rate: number) => {
     if (rate >= 0.6) return 'bg-green-500'

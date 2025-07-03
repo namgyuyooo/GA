@@ -1,6 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Ensure DATABASE_URL is set correctly
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./prisma/dev.db'
+}
+
 const prisma = new PrismaClient()
 
 // 키워드 그룹 목록 조회

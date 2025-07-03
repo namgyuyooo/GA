@@ -1,6 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Ensure DATABASE_URL is set correctly
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./prisma/dev.db'
+}
+
 const prisma = new PrismaClient()
 
 const DEFAULT_CONTAINERS = [
