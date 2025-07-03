@@ -27,7 +27,7 @@ export class GoogleSheetsService {
     }
   }
 
-  private async getAccessToken(): Promise<string> {
+  public async getAccessToken(): Promise<string> {
     const jwt = require('jsonwebtoken')
     
     const now = Math.floor(Date.now() / 1000)

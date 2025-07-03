@@ -29,6 +29,13 @@ export async function GET() {
     const accessToken = await authClient.getAccessToken()
 
     // GA4 Property ID
+    const propertyId = process.env.GA4_PROPERTY_ID
+
+    if (!propertyId) {
+      return NextResponse.json({
+        error: 'GA4 Property ID not found in environment variables'
+      }, { status: 500 })
+    }
 
     // 간단한 GA4 API 테스트 (지난 7일간 페이지뷰)
     const ga4Response = await fetch(

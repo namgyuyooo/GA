@@ -12,7 +12,7 @@ export async function GET() {
     // Parse keywords JSON for each group
     const groupsWithParsedKeywords = groups.map(group => ({
       ...group,
-      keywords: JSON.parse(group.keywords || '[]')
+      keywords: JSON.parse(typeof group.keywords === 'string' ? group.keywords : JSON.stringify(group.keywords) || '[]')
     }))
 
     return NextResponse.json({
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       success: true,
       group: {
         ...newGroup,
-        keywords: JSON.parse(newGroup.keywords)
+        keywords: JSON.parse(typeof newGroup.keywords === 'string' ? newGroup.keywords : JSON.stringify(newGroup.keywords))
       }
     })
   } catch (error: any) {
@@ -115,7 +115,7 @@ export async function PUT(request: NextRequest) {
       success: true,
       group: {
         ...updatedGroup,
-        keywords: JSON.parse(updatedGroup.keywords)
+        keywords: JSON.parse(typeof updatedGroup.keywords === 'string' ? updatedGroup.keywords : JSON.stringify(updatedGroup.keywords))
       }
     })
   } catch (error: any) {

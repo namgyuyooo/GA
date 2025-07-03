@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Mock 데이터로 컨텐츠 드릴다운 분석 시연
-    const mockData = generateContentDrilldownData({ keyword, startDate, endDate })
+    const mockData = generateContentDrilldownData({ keyword })
 
     return NextResponse.json({
       success: true,

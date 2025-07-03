@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
           stats.avgPageViews += path.pageViews
           stats.conversionPaths.push({
             entryPage: path.entryPage,
-            pageSequence: JSON.parse(path.pageSequence || '[]'),
+            pageSequence: JSON.parse(String(path.pageSequence || '[]')),
             conversionDate: path.conversionDate
           })
         }
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
 
         // 페이지 시퀀스 분석
         try {
-          const sequence = JSON.parse(path.pageSequence || '[]')
+          const sequence = JSON.parse(String(path.pageSequence || '[]'))
           if (sequence.length > 0) {
             const journeyKey = sequence.map(s => s.page).join(' → ')
             if (!pageJourneys.has(journeyKey)) {

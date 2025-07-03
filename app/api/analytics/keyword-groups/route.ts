@@ -23,7 +23,7 @@ export async function GET() {
     // JSON 문자열을 배열로 변환
     const processedGroups = groups.map(group => ({
       ...group,
-      keywords: JSON.parse(group.keywords)
+      keywords: JSON.parse(String(group.keywords))
     }))
 
     return NextResponse.json({
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         success: true,
         group: {
           ...newGroup,
-          keywords: JSON.parse(newGroup.keywords)
+          keywords: JSON.parse(String(newGroup.keywords))
         },
         message: '키워드 그룹이 생성되었습니다.'
       })
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         success: true,
         group: {
           ...updatedGroup,
-          keywords: JSON.parse(updatedGroup.keywords)
+          keywords: JSON.parse(String(updatedGroup.keywords))
         },
         message: '키워드 그룹이 수정되었습니다.'
       })

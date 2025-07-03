@@ -37,7 +37,7 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    goalType: 'EVENT' as const,
+    goalType: 'EVENT' as Goal['goalType'],
     eventName: '',
     pagePath: '',
     revenueThreshold: '',

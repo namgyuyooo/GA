@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
     const pageInterest = new Map()
     interestProfiles.forEach(profile => {
       try {
-        const pages = JSON.parse(profile.pageSequence || '[]')
+        const pageSequence = typeof profile.pageSequence === 'string' ? profile.pageSequence : JSON.stringify(profile.pageSequence);
+        const pages = JSON.parse(pageSequence || '[]')
         pages.forEach(pageInfo => {
           const page = pageInfo.page || pageInfo
           if (!pageInterest.has(page)) {
@@ -462,7 +463,7 @@ async function fetchUserBehaviorData(propertyId: string) {
 
 // 관심도 프로필 계산
 function calculateInterestProfile(userData) {
-  const profile = {
+  const profile: any = {
     sessionId: userData.sessionId,
     userId: userData.userId,
     profileDate: new Date(userData.date),

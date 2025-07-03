@@ -153,7 +153,7 @@ export default function PropertyCheckPage() {
                 <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1">
                   <li><a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Search Console</a> 접속</li>
                   <li>속성 선택 (rtm.ai)</li>
-                  <li><strong>설정</strong> > <strong>사용자 및 권한</strong></li>
+                  <li><strong>설정</strong> &gt; <strong>사용자 및 권한</strong></li>
                   <li><strong>사용자 추가</strong> 클릭</li>
                   <li>이메일: <code className="bg-gray-100 px-1 rounded text-xs">{data.serviceAccount?.email}</code></li>
                   <li>권한: <strong>모든 권한</strong> 선택</li>

@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
       const processedData = processGTMData(containerData, tagsData, triggersData, variablesData)
 
       // 저장된 Goal 설정 로드
-      const savedGoals = await prisma.GTMGoal.findMany({
+      const savedGoals = await prisma.gTMGoal.findMany({
         where: {
           accountId,
           containerId: publicId
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
 
     // 기존 Goal 설정 삭제
     console.log('기존 Goal 설정 삭제 중...')
-    await prisma.GTMGoal.deleteMany({
+    await prisma.gTMGoal.deleteMany({
       where: {
         accountId,
         containerId
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
     
     const goalPromises = validGoals.map((goal: any, index: number) => {
       console.log(`Goal 저장: ${goal.name} (${goal.tagId})`)
-      return prisma.GTMGoal.create({
+      return prisma.gTMGoal.create({
         data: {
           accountId,
           containerId,
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
     console.log('모든 Goal 저장 완료')
 
     // 저장된 Goal 목록 조회
-    const savedGoals = await prisma.GTMGoal.findMany({
+    const savedGoals = await prisma.gTMGoal.findMany({
       where: {
         accountId,
         containerId
