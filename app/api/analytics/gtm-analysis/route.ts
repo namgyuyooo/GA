@@ -68,24 +68,30 @@ export async function GET(request: NextRequest) {
       console.log('DB 모드로 GTM 데이터 요청됨')
     }
 
-    // /secrets 폴더에서 서비스 계정 JSON 파일 읽기
+    // 서비스 계정 정보 가져오기 (환경 변수 또는 파일에서)
     const fs = require('fs')
     const path = require('path')
 
     let serviceAccount
     try {
-      const serviceAccountPath = path.join(
-        process.cwd(),
-        'secrets/ga-auto-464002-672370fda082.json'
-      )
-      const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
-      serviceAccount = JSON.parse(serviceAccountData)
+      // 먼저 환경 변수에서 서비스 계정 정보 확인
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+        serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
+      } else {
+        // 환경 변수가 없으면 파일에서 읽기
+        const serviceAccountPath = path.join(
+          process.cwd(),
+          'secrets/ga-auto-464002-672370fda082.json'
+        )
+        const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
+        serviceAccount = JSON.parse(serviceAccountData)
+      }
     } catch (fileError) {
-      console.error('서비스 계정 파일 오류:', fileError)
+      console.error('서비스 계정 정보 오류:', fileError)
       return NextResponse.json(
         {
-          error: '서비스 계정 파일을 찾을 수 없습니다',
-          message: 'secrets/ga-auto-464002-672370fda082.json 파일을 확인해주세요.',
+          error: '서비스 계정 정보를 찾을 수 없습니다',
+          message: 'GOOGLE_SERVICE_ACCOUNT_KEY 환경 변수 또는 secrets/ga-auto-464002-672370fda082.json 파일을 확인해주세요.',
           needsSetup: true,
         },
         { status: 500 }

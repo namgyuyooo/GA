@@ -10,7 +10,7 @@ import {
   XMarkIcon,
   CodeBracketIcon,
 } from '@heroicons/react/24/outline'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import SourceMediumTag from './SourceMediumTag'
 import ReactMarkdown from 'react-markdown'
@@ -77,29 +77,6 @@ export default function TrafficSourceAnalysis({
   const [insightLoading, setInsightLoading] = useState(false)
   const [promptTemplates, setPromptTemplates] = useState<any[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
-
-  useEffect(() => {
-    loadTrafficData()
-    loadKeywordGroups()
-    fetchLatestInsight()
-    fetch('/api/ai-insight/models')
-      .then((res) => res.json())
-      .then((result) => {
-        if (result.success) {
-          setAvailableModels(result.models)
-          if (result.models.length > 0) setSelectedModel(result.models[0].id)
-        }
-      })
-    fetch('/api/settings/prompt-templates?type=traffic-insight')
-      .then((res) => res.json())
-      .then((result) => {
-        if (result.success) {
-          setPromptTemplates(result.templates)
-          const defaultTemplate = result.templates.find((t: any) => t.isDefault)
-          if (defaultTemplate) setSelectedTemplate(defaultTemplate.id)
-        }
-      })
-  }, [dateRange, propertyId, loadTrafficData, loadKeywordGroups, fetchLatestInsight])
 
   const loadTrafficData = useCallback(async () => {
     setIsLoading(true)
@@ -251,6 +228,36 @@ export default function TrafficSourceAnalysis({
     return categories
   }
 
+  const fetchLatestInsight = useCallback(async () => {
+    const res = await fetch(`/api/ai-insight?type=traffic&propertyId=${propertyId}`)
+    const result = await res.json()
+    if (result.success && result.insight) setLatestInsight(result.insight)
+    else setLatestInsight(null)
+  }, [propertyId])
+
+  useEffect(() => {
+    loadTrafficData()
+    loadKeywordGroups()
+    fetchLatestInsight()
+    fetch('/api/ai-insight/models')
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success) {
+          setAvailableModels(result.models)
+          if (result.models.length > 0) setSelectedModel(result.models[0].id)
+        }
+      })
+    fetch('/api/settings/prompt-templates?type=traffic-insight')
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success) {
+          setPromptTemplates(result.templates)
+          const defaultTemplate = result.templates.find((t: any) => t.isDefault)
+          if (defaultTemplate) setSelectedTemplate(defaultTemplate.id)
+        }
+      })
+  }, [dateRange, propertyId, loadTrafficData, loadKeywordGroups, fetchLatestInsight])
+
   const filteredSources = data?.data?.sources
     ? sourceFilter === 'all'
       ? data.data.sources
@@ -271,13 +278,6 @@ export default function TrafficSourceAnalysis({
   const keywords = data?.data?.keywords || []
   const pages = data?.data?.pages || []
   const categorizedSources = categorizeTrafficSources(sources)
-
-  const fetchLatestInsight = useCallback(async () => {
-    const res = await fetch(`/api/ai-insight?type=traffic&propertyId=${propertyId}`)
-    const result = await res.json()
-    if (result.success && result.insight) setLatestInsight(result.insight)
-    else setLatestInsight(null)
-  }, [propertyId])
 
   const handleGenerateInsight = async () => {
     setInsightLoading(true)

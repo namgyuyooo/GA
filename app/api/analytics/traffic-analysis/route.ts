@@ -16,24 +16,30 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || '30daysAgo'
     const propertyId = searchParams.get('propertyId') || DEFAULT_PROPERTIES[0]
 
-    // Service Account 기반 실제 데이터 가져오기
+    // 서비스 계정 정보 가져오기 (환경 변수 또는 파일에서)
     const fs = require('fs')
     const path = require('path')
 
     let serviceAccount
     try {
-      const serviceAccountPath = path.join(
-        process.cwd(),
-        'secrets/ga-auto-464002-672370fda082.json'
-      )
-      const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
-      serviceAccount = JSON.parse(serviceAccountData)
+      // 먼저 환경 변수에서 서비스 계정 정보 확인
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+        serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
+      } else {
+        // 환경 변수가 없으면 파일에서 읽기
+        const serviceAccountPath = path.join(
+          process.cwd(),
+          'secrets/ga-auto-464002-672370fda082.json'
+        )
+        const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
+        serviceAccount = JSON.parse(serviceAccountData)
+      }
     } catch (fileError) {
-      console.error('Service account file error:', fileError)
+      console.error('서비스 계정 정보 오류:', fileError)
       return NextResponse.json(
         {
-          error: 'Service account file not found',
-          message: 'ga-auto-464002-672370fda082.json 파일을 secrets 폴더에 배치해주세요.',
+          error: '서비스 계정 정보를 찾을 수 없습니다',
+          message: 'GOOGLE_SERVICE_ACCOUNT_KEY 환경 변수 또는 secrets/ga-auto-464002-672370fda082.json 파일을 확인해주세요.',
         },
         { status: 500 }
       )
@@ -171,6 +177,14 @@ export async function GET(request: NextRequest) {
     const sources = processTrafficSources(trafficData, registeredUTMs)
     const pages = processPagePaths(pageData)
     const keywords = processKeywords(keywordData)
+
+    // UnifiedEventSequence에 트래픽 데이터 저장
+    try {
+      await saveToUnifiedEventSequence(sources, pages, keywords, propertyId)
+      console.log('✅ UnifiedEventSequence에 트래픽 데이터 저장 완료')
+    } catch (saveError) {
+      console.error('UnifiedEventSequence 저장 오류:', saveError)
+    }
 
     // 디버깅 정보 추가
     console.log('🔍 트래픽 소스 분석 디버깅:')
@@ -385,6 +399,81 @@ function processKeywords(gaData: any) {
       }
     })
     .sort((a, b) => b.sessions - a.sessions)
+}
+
+// UnifiedEventSequence에 트래픽 데이터 저장
+async function saveToUnifiedEventSequence(sources: any[], pages: any[], keywords: any[], propertyId: string) {
+  const events = []
+  const now = new Date()
+
+  // 트래픽 소스 이벤트 생성
+  sources.forEach((source, index) => {
+    events.push({
+      sessionId: `traffic_${propertyId}_${Date.now()}_${index}`,
+      propertyId,
+      timestamp: now,
+      eventType: 'traffic_source',
+      eventData: {
+        source: source.source,
+        medium: source.medium,
+        campaign: source.campaign,
+        sessions: source.sessions,
+        users: source.users,
+        pageViews: source.pageViews,
+        avgSessionDuration: source.avgSessionDuration,
+        bounceRate: source.bounceRate,
+        conversions: source.conversions,
+        revenue: source.revenue,
+        isRegisteredUTM: source.isRegisteredUTM,
+        category: source.category,
+        matchedUTM: source.matchedUTM,
+      },
+    })
+  })
+
+  // 페이지 경로 이벤트 생성
+  pages.forEach((page, index) => {
+    events.push({
+      sessionId: `page_${propertyId}_${Date.now()}_${index}`,
+      propertyId,
+      timestamp: now,
+      eventType: 'page_view',
+      eventData: {
+        pagePath: page.pagePath,
+        pageViews: page.pageViews,
+        users: page.users,
+        avgTimeOnPage: page.avgTimeOnPage,
+        bounceRate: page.bounceRate,
+        topSource: page.topSource,
+        sources: page.sources,
+      },
+    })
+  })
+
+  // 키워드 이벤트 생성
+  keywords.forEach((keyword, index) => {
+    events.push({
+      sessionId: `keyword_${propertyId}_${Date.now()}_${index}`,
+      propertyId,
+      timestamp: now,
+      eventType: 'search_inflow',
+      eventData: {
+        keyword: keyword.keyword,
+        source: keyword.source,
+        sessions: keyword.sessions,
+        users: keyword.users,
+        conversions: keyword.conversions,
+      },
+    })
+  })
+
+  // 배치로 저장
+  if (events.length > 0) {
+    await prisma.unifiedEventSequence.createMany({
+      data: events,
+      skipDuplicates: true,
+    })
+  }
 }
 
 // 시간 포맷팅

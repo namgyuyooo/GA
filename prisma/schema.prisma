@@ -212,10 +212,6 @@ model ConversionGoal {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
-  // 관련 전환 경로 데이터
-  conversionPaths     ConversionPath[]
-  userJourneyAnalyses UserJourneyAnalysis[]
-  
   @@unique([name, propertyId])
   @@index([propertyId, isActive])
 }
@@ -234,83 +230,6 @@ model GTMGoal {
   
   @@unique([accountId, containerId, tagId])
   @@index([accountId, containerId])
-}
-
-model ConversionPath {
-  id               String   @id @default(cuid())
-  goalId           String
-  goal             ConversionGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  sessionId        String
-  userId           String?
-  propertyId       String
-  conversionDate   DateTime
-  
-  // 전환 경로 정보
-  entryKeyword     String?  // 진입 키워드 (GSC 데이터)
-  entrySource      String?  // 진입 소스
-  entryMedium      String?  // 진입 미디엄
-  entryPage        String?  // 첫 방문 페이지
-  
-  // 경유 경로 (JSON 배열로 저장)
-  pageSequence     Json     // JSON: [{"page": "/", "timestamp": "...", "events": [...]}]
-  eventSequence    Json     // JSON: [{"event": "page_view", "timestamp": "...", "page": "/"}]
-  
-  // 전환 메트릭
-  sessionDuration  Int      @default(0) // 초 단위
-  pageViews        Int      @default(0)
-  totalEvents      Int      @default(0)
-  revenue          Float    @default(0)
-  
-  createdAt        DateTime @default(now())
-  
-  @@index([goalId, conversionDate])
-  @@index([propertyId, conversionDate])
-  @@index([entryKeyword])
-}
-
-model UserInterestProfile {
-  id                    String   @id @default(cuid())
-  userId                String?  // GA4 사용자 ID (있는 경우)
-  sessionId             String   // 세션 ID
-  propertyId            String
-  profileDate           DateTime
-  
-  // 진입 정보
-  entryKeyword          String?
-  entrySource           String?
-  entryMedium           String?
-  entryPage             String?
-  
-  // 행동 패턴 메트릭
-  sessionDuration       Int      @default(0) // 초 단위
-  pageViews             Int      @default(0)
-  totalEvents           Int      @default(0)
-  scrollDepth           Float    @default(0) // 평균 스크롤 깊이 (0-1)
-  
-  // 관심도 지표
-  goalProximityScore    Float    @default(0) // Goal 페이지 근접도 점수 (0-1)
-  engagementScore       Float    @default(0) // 전체 참여도 점수 (0-1)
-  returnVisitCount      Int      @default(0) // 재방문 횟수
-  
-  // 전환 가능성
-  conversionProbability Float    @default(0) // 전환 가능성 점수 (0-1)
-  riskOfChurn           Float    @default(0) // 이탈 위험도 (0-1)
-  
-  // 방문 패턴 (JSON)
-  pageSequence          Json     // 방문한 페이지 순서
-  eventSequence         Json     // 발생한 이벤트 순서
-  visitPattern          Json     // 방문 패턴 분석 결과
-  
-  // 관심 카테고리 (Goal 기반)
-  interestedGoals       Json     // JSON: Goal ID 배열과 관심도 점수
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
-  @@unique([sessionId, propertyId])
-  @@index([propertyId, profileDate])
-  @@index([conversionProbability])
-  @@index([userId])
 }
 
 model Insight {
@@ -414,64 +333,35 @@ model PromptTemplate {
   @@index([type, isActive])
 }
 
-model UserJourneyAnalysis {
-  id                String   @id @default(cuid())
-  sessionId         String
-  userId            String?
-  propertyId        String
-  goalId            String?
-  goal              ConversionGoal? @relation(fields: [goalId], references: [id])
-  analysisDate      DateTime @default(now())
-  
-  // 진입 정보 (트래픽 획득)
-  entryKeyword      String?  // 검색어 (GSC 데이터)
-  entrySource       String?  // 진입 소스
-  entryMedium       String?  // 진입 미디엄
-  entryCampaign     String?  // UTM 캠페인
-  entryPage         String?  // 첫 방문 페이지
-  
-  // 페이지 전환 여정
-  pageSequence      Json     // JSON: [{"page": "/", "timestamp": "...", "duration": 120, "scrollDepth": 0.8}]
-  totalPages        Int      @default(0)
-  uniquePages       Int      @default(0)
-  
-  // 체류시간 분석
-  totalDuration     Int      @default(0) // 초 단위
-  avgPageDuration   Float    @default(0) // 페이지당 평균 체류시간
-  maxPageDuration   Int      @default(0) // 가장 오래 머문 페이지 시간
-  
-  // 스크롤 깊이 분석
-  avgScrollDepth    Float    @default(0) // 평균 스크롤 깊이 (0-1)
-  maxScrollDepth    Float    @default(0) // 최대 스크롤 깊이
-  scrollEngagement  Float    @default(0) // 스크롤 참여도 점수
-  
-  // 전환 관련
-  isConverted       Boolean  @default(false) // 실제 전환 여부
-  conversionPage    String?  // 전환 발생 페이지
-  conversionTime    Int?     // 전환까지 걸린 시간 (초)
-  
-  // 관심도 분석
-  interestScore     Float    @default(0) // 종합 관심도 점수 (0-1)
-  engagementLevel   String   @default("LOW") // HIGH, MEDIUM, LOW
-  intentStrength    Float    @default(0) // 구매 의도 강도 (0-1)
-  
-  // 재방문 패턴
-  returnVisitCount  Int      @default(0) // 재방문 횟수
-  lastVisitDate     DateTime? // 마지막 방문일
-  
-  // 분석 결과
-  journeyType       String   @default("EXPLORATORY") // CONVERSION, EXPLORATORY, BOUNCE
-  bottleneckPages   Json?    // JSON: 이탈이 많은 페이지들
-  opportunityPages  Json?    // JSON: 전환 기회가 높은 페이지들
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  @@unique([sessionId, propertyId])
-  @@index([propertyId, analysisDate])
-  @@index([goalId, isConverted])
-  @@index([entryKeyword])
-  @@index([interestScore])
+model UnifiedEventSequence {
+  id          String   @id @default(cuid())
+  sessionId   String
+  userId      String?
+  propertyId  String
+  timestamp   DateTime
+  eventType   String   // e.g., 'page_view', 'click', 'conversion', 'search_inflow'
+  eventData   Json     // Flexible data structure for event details
+  createdAt   DateTime @default(now())
+
+  @@unique([sessionId, propertyId, timestamp])
+  @@index([propertyId, timestamp])
+  @@index([userId])
+  @@index([eventType])
+}
+
+model Competitor {
+  id          String   @id @default(cuid())
+  name        String
+  domain      String   @unique
+  description String?
+  industry    String?
+  keywords    Json     // JSON array of keywords to monitor
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([domain])
+  @@index([isActive])
 }
 
 model UserBehaviorPattern {
