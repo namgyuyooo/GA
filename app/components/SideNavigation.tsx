@@ -31,36 +31,6 @@ import {
 } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 
-
-import {
-  Bars3Icon,
-  BookOpenIcon,
-  BuildingOfficeIcon,
-  ChartBarIcon,
-  CogIcon,
-  FunnelIcon,
-  GlobeAltIcon,
-  HomeIcon,
-  LinkIcon,
-  MagnifyingGlassIcon,
-  PresentationChartLineIcon,
-  TagIcon,
-  UserIcon,
-  XMarkIcon,
-  ArrowDownTrayIcon,
-  ServerIcon,
-  BoltIcon,
-  DocumentTextIcon,
-  CalendarDaysIcon,
-  CodeBracketIcon,
-  UsersIcon,
-  EyeIcon,
-  CurrencyDollarIcon,
-  ChevronDownIcon, // Added for dropdown
-  ChevronUpIcon // Added for dropdown
-} from '@heroicons/react/24/outline'
-
-
 interface NavigationItem {
   name: string
   href: string
@@ -135,7 +105,6 @@ const navigation: NavigationEntry[] = [
       { name: 'UTM 관리', href: '#', icon: ChartBarIcon, id: 'utm-list' },
       { name: 'UTM 코호트 분석', href: '#', icon: PresentationChartLineIcon, id: 'utm-cohort' },
       { name: '경쟁사 분석', href: '/tools/competitor-intelligence', icon: BuildingOfficeIcon, id: 'competitor-intelligence' },
-      { name: '마케팅 시뮬레이터', href: '/tools/marketing-simulator', icon: RocketLaunchIcon, id: 'marketing-simulator' },
     ],
   },
   {
@@ -145,7 +114,6 @@ const navigation: NavigationEntry[] = [
       { name: '설정', href: '/settings', icon: CogIcon, id: 'settings' },
       { name: 'API 문서', href: '/api-docs', icon: CodeBracketIcon, id: 'api-docs' },
       { name: '속성 연결 확인', href: '#', icon: BuildingOfficeIcon, id: 'property-check' },
-      { name: '데이터 동기화 현황판', href: '/settings/data-management', icon: CloudArrowUpIcon, id: 'data-management' },
     ],
   },
 ];
