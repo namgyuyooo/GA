@@ -4,10 +4,12 @@ import {
   ArrowPathIcon,
   FunnelIcon,
   MagnifyingGlassIcon,
-  CodeBracketIcon
+  CodeBracketIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
+import GoogleTrendsAnalysis from './GoogleTrendsAnalysis'
 
 interface KeywordCohortAnalysisProps {
   propertyId?: string
@@ -64,6 +66,7 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
   const [insightLoading, setInsightLoading] = useState(false)
   const [promptTemplates, setPromptTemplates] = useState<any[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<'cohort' | 'trends'>('cohort')
 
   useEffect(() => {
     loadCohortData()
@@ -685,16 +688,51 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
 
   return (
     <div className="space-y-6">
-      {/* Header Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">키워드 코호트 분석</h1>
-            <p className="text-sm text-gray-600">
-              마지막 업데이트: {formatLastUpdate(lastUpdate)} 
-              {lastUpdate && <span className="text-gray-400 ml-1">(매일 9시 자동 업데이트)</span>}
-            </p>
-          </div>
+      {/* Tab Header */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('cohort')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              activeTab === 'cohort'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <MagnifyingGlassIcon className="h-5 w-5 inline mr-2" />
+            키워드 코호트 분석
+          </button>
+          <button
+            onClick={() => setActiveTab('trends')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              activeTab === 'trends'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <GlobeAltIcon className="h-5 w-5 inline mr-2" />
+            Google Trends 분석
+          </button>
+        </nav>
+      </div>
+
+      {activeTab === 'trends' ? (
+        <GoogleTrendsAnalysis 
+          keyword={selectedKeyword !== 'all' ? selectedKeyword : 'AI 제조업'}
+          onKeywordChange={(keyword) => setSelectedKeyword(keyword)}
+        />
+      ) : (
+        <>
+          {/* Header Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">키워드 코호트 분석</h1>
+                <p className="text-sm text-gray-600">
+                  마지막 업데이트: {formatLastUpdate(lastUpdate)} 
+                  {lastUpdate && <span className="text-gray-400 ml-1">(매일 9시 자동 업데이트)</span>}
+                </p>
+              </div>
           <div className="flex items-center space-x-2">
             <select
               value={dateRange}
@@ -1192,6 +1230,8 @@ export default function KeywordCohortAnalysis({ propertyId = '464147982' }: Keyw
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   )

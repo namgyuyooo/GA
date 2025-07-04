@@ -9,6 +9,7 @@ import UTMCohortAnalysis from './UTMCohortAnalysis'
 import KeywordCohortAnalysis from './KeywordCohortAnalysis'
 import TrafficSourceAnalysis from './TrafficSourceAnalysis'
 import GTMAnalysis from './GTMAnalysis'
+import WeeklyReport from './WeeklyReport'
 import Settings from './Settings'
 
 interface MainLayoutProps {
@@ -31,7 +32,7 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const tabParam = urlParams.get('tab')
-      if (tabParam && ['dashboard', 'utm-builder', 'utm-list', 'utm-cohort', 'keyword-cohort', 'traffic-analysis', 'gtm-analysis', 'user-journey', 'settings', 'property-check'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'utm-builder', 'utm-list', 'utm-cohort', 'keyword-cohort', 'traffic-analysis', 'gtm-analysis', 'user-journey', 'weekly-report', 'settings', 'property-check'].includes(tabParam)) {
         setActiveTab(tabParam)
       }
     }
@@ -125,6 +126,8 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
             </div>
           </div>
         )
+      case 'weekly-report':
+        return <WeeklyReport propertyId={activeProperty} />
       case 'settings':
         return <Settings />
       case 'property-check':

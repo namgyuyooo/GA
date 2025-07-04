@@ -16,7 +16,8 @@ import {
   ArrowDownTrayIcon,
   ServerIcon,
   BoltIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  CalendarDaysIcon
 } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 
@@ -58,6 +59,7 @@ const navigation: NavigationItem[] = [
   { name: '트래픽 소스 분석', href: '#', icon: GlobeAltIcon, id: 'traffic-analysis' },
   { name: 'GTM 분석', href: '#', icon: TagIcon, id: 'gtm-analysis' },
   { name: '사용자 여정 분석', href: '#', icon: UserIcon, id: 'user-journey' },
+  { name: '주간보고서', href: '#', icon: CalendarDaysIcon, id: 'weekly-report' },
   { name: '보고서 관리', href: '/reports', icon: DocumentTextIcon, id: 'reports' }
 ]
 
