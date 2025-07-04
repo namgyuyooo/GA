@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { google } from 'googleapis'
+import { JWT } from 'google-auth-library'
+import * as fs from 'fs'
+import * as path from 'path'
 
 interface BlogPostPerformance {
   title: string
@@ -10,73 +14,154 @@ interface BlogPostPerformance {
   revenue: number
   keywords: string[]
   recommendations: string[]
+  category: string // Added category
+}
+
+// GA4에서 데이터 가져오기
+async function fetchDataFromGA4(propertyId: string, period: string) {
+  const serviceAccountPath = path.join(process.cwd(), 'secrets/ga-auto-464002-672370fda082.json')
+  const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
+  const serviceAccount = JSON.parse(serviceAccountData)
+
+  const jwtClient = new JWT({
+    email: serviceAccount.client_email,
+    key: serviceAccount.private_key,
+    scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+  })
+
+  const analyticsDataClient = google.analyticsdata({
+    version: 'v1beta',
+    auth: jwtClient,
+  })
+
+  const [startDate, endDate] = period.includes('daysAgo')
+    ? [period, 'today']
+    : ['2023-01-01', 'today'] // Fallback for custom date ranges
+
+  const response = await analyticsDataClient.properties.runReport({
+    property: `properties/${propertyId}`,
+    requestBody: {
+      dateRanges: [{
+        startDate: startDate,
+        endDate: endDate,
+      }],
+      dimensions: [
+        { name: 'pagePath' },
+        { name: 'pageTitle' },
+        { name: 'sessionSource' }, // For keywords
+        { name: 'sessionMedium' }, // For keywords
+        { name: 'unifiedScreenName' }, // For blog post titles
+      ],
+      metrics: [
+        { name: 'screenPageViews' },
+        { name: 'averageSessionDuration' },
+        { name: 'bounceRate' },
+        { name: 'conversions' },
+        { name: 'totalRevenue' },
+      ],
+      dimensionFilter: {
+        orGroup: {
+          expressionBuilders: [
+            { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'CONTAINS', value: '/blog/' } } },
+            { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'CONTAINS', value: '/success-stories/' } } },
+            { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'CONTAINS', value: '/news/' } } },
+          ],
+        },
+      },
+      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+      limit: 1000,
+    },
+  })
+
+  return response.data.rows || []
+}
+
+// 페이지 경로 분류
+function classifyPagePath(pagePath: string): string {
+  if (pagePath.startsWith('/success-stories/')) {
+    return 'success-stories'
+  } else if (pagePath.startsWith('/blog/')) {
+    return 'blog'
+  } else if (pagePath.startsWith('/news/')) {
+    return 'news'
+  } else {
+    return 'other'
+  }
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const propertyId = searchParams.get('propertyId')
-    const period = searchParams.get('period')
+    const propertyId = searchParams.get('propertyId') || '464147982' // Default property ID
+    const period = searchParams.get('period') || '30daysAgo'
 
-    // Mock 데이터 - 실제로는 GA4 데이터와 AI 모델 연동
-    const mockBlogPosts: BlogPostPerformance[] = [
-      {
-        title: '2024년 AI 트렌드 분석: 제조업의 미래',
-        pagePath: '/blog/ai-trends-manufacturing',
-        pageViews: 15230,
-        avgSessionDuration: 180,
-        bounceRate: 0.45,
-        conversions: 120,
-        revenue: 1200000,
-        keywords: ['AI 트렌드', '제조업 AI', '스마트팩토리'],
-        recommendations: [
-          '이탈률이 다소 높으니, 초반에 핵심 내용을 요약하여 독자의 흥미를 유발하세요.',
-          '관련 제품/서비스로의 CTA(Call to Action)를 명확하게 배치하여 전환율을 높이세요.',
-          ''AI 트렌드' 관련 최신 데이터를 업데이트하여 콘텐츠의 신뢰도를 유지하세요.'
-        ]
-      },
-      {
-        title: '디지털 전환 성공 전략: 중소기업을 위한 가이드',
-        pagePath: '/blog/digital-transformation-sme',
-        pageViews: 8500,
-        avgSessionDuration: 240,
-        bounceRate: 0.30,
-        conversions: 80,
-        revenue: 800000,
-        keywords: ['디지털 전환', '중소기업 디지털', 'DX 전략'],
-        recommendations: [
-          '이 블로그는 전환율이 우수합니다. 유사한 성공 사례 콘텐츠를 추가하여 독자의 공감을 얻으세요.',
-          ''디지털 전환' 관련 웨비나 또는 컨설팅 페이지로의 링크를 강화하여 리드 생성을 유도하세요.'
-        ]
-      },
-      {
-        title: '데이터 분석, 왜 중요한가? 비즈니스 의사결정의 핵심',
-        pagePath: '/blog/importance-of-data-analysis',
-        pageViews: 5100,
-        avgSessionDuration: 150,
-        bounceRate: 0.55,
-        conversions: 30,
-        revenue: 300000,
-        keywords: ['데이터 분석', '비즈니스 의사결정', '데이터 중요성'],
-        recommendations: [
-          '이탈률이 매우 높습니다. 서론을 간결하게 하고, 독자가 얻을 수 있는 가치를 명확히 제시하세요.',
-          ''데이터 분석 툴' 관련 제품 소개나 데모 신청 CTA를 추가하여 전환 기회를 만드세요.',
-          '관련 검색어 '데이터 시각화'를 활용한 새로운 블로그 주제를 기획해보세요.'
-        ]
+    const ga4Data = await fetchDataFromGA4(propertyId, period)
+
+    const blogPerformanceMap = new Map<string, BlogPostPerformance>()
+
+    ga4Data.forEach((row: any) => {
+      const pagePath = row.dimensionValues[0].value
+      const pageTitle = row.dimensionValues[1].value
+      const sessionSource = row.dimensionValues[2].value
+      const sessionMedium = row.dimensionValues[3].value
+      const unifiedScreenName = row.dimensionValues[4].value
+
+      const pageViews = parseFloat(row.metricValues[0].value)
+      const avgSessionDuration = parseFloat(row.metricValues[1].value)
+      const bounceRate = parseFloat(row.metricValues[2].value)
+      const conversions = parseFloat(row.metricValues[3].value)
+      const revenue = parseFloat(row.metricValues[4].value)
+
+      const category = classifyPagePath(pagePath)
+
+      if (!blogPerformanceMap.has(pagePath)) {
+        blogPerformanceMap.set(pagePath, {
+          title: unifiedScreenName || pageTitle || pagePath,
+          pagePath,
+          pageViews: 0,
+          avgSessionDuration: 0,
+          bounceRate: 0,
+          conversions: 0,
+          revenue: 0,
+          keywords: [], // To be populated from GSC or other sources
+          recommendations: [], // To be generated by AI
+          category,
+        })
       }
-    ]
+
+      const currentData = blogPerformanceMap.get(pagePath)!
+      currentData.pageViews += pageViews
+      currentData.avgSessionDuration += avgSessionDuration // This needs to be averaged later
+      currentData.bounceRate += bounceRate // This needs to be averaged later
+      currentData.conversions += conversions
+      currentData.revenue += revenue
+
+      // Simple keyword extraction (can be improved)
+      if (sessionSource === 'google' && sessionMedium === 'organic' && unifiedScreenName) {
+        currentData.keywords.push(unifiedScreenName)
+      }
+    })
+
+    // Calculate averages for duration and bounce rate
+    const finalBlogPosts = Array.from(blogPerformanceMap.values()).map(post => ({
+      ...post,
+      avgSessionDuration: post.pageViews > 0 ? post.avgSessionDuration / post.pageViews : 0,
+      bounceRate: post.pageViews > 0 ? post.bounceRate / post.pageViews : 0,
+      keywords: Array.from(new Set(post.keywords)), // Remove duplicates
+    }))
 
     return NextResponse.json({
       success: true,
-      data: mockBlogPosts,
-      message: '블로그 성과 데이터 및 추천 로드 완료'
+      data: finalBlogPosts,
+      message: '블로그 성과 데이터 로드 완료'
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Blog performance API error:', error)
     return NextResponse.json({
       success: false,
-      message: 'Failed to fetch blog performance data'
+      message: 'Failed to fetch blog performance data',
+      details: error.message
     }, { status: 500 })
   }
 }

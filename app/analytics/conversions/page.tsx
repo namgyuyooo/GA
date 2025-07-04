@@ -4,6 +4,7 @@ import { ArrowLeftIcon, CurrencyDollarIcon, TrophyIcon, ChartPieIcon, FunnelIcon
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
+import ReactMarkdown from 'react-markdown'
 
 export default function ConversionsAnalysis() {
   const [data, setData] = useState<any>(null)
@@ -256,7 +257,7 @@ export default function ConversionsAnalysis() {
             </div>
           ) : latestInsight?.result ? (
             <div className="prose prose-indigo max-w-none text-gray-800">
-              <p>{latestInsight.result}</p>
+              <ReactMarkdown>{latestInsight.result}</ReactMarkdown>
             </div>
           ) : (
             <div className="text-center text-gray-500 py-8">

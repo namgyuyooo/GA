@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import SourceMediumTag from './SourceMediumTag'
+import ReactMarkdown from 'react-markdown'
 
 interface TrafficSourceAnalysisProps {
   propertyId?: string
@@ -798,7 +799,7 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
           </div>
         </div>
         <div className="whitespace-pre-line text-gray-800 text-sm min-h-[60px]">
-          {latestInsight?.result ? latestInsight.result : '아직 생성된 인사이트가 없습니다.'}
+          {latestInsight?.result ? <ReactMarkdown>{latestInsight.result}</ReactMarkdown> : '아직 생성된 인사이트가 없습니다.'}
         </div>
         {latestInsight?.model && (
           <div className="mt-2 text-xs text-gray-500">모델: {latestInsight.model}</div>

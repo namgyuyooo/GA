@@ -63,35 +63,47 @@ export function getGeminiProjectId() {
 }
 
 // 무료(exp) 모델 중 사용 가능한 최적의 모델을 반환
-export async function getBestFreeGeminiModel() {
+export async function getBestFreeGeminiModel(priorityList?: string[]) {
   const apiKey = getGeminiApiKey()
+  const modelsToConsider = priorityList && priorityList.length > 0 ? priorityList : FREE_GEMINI_MODELS
   // 1. 실제 사용 가능한 모델 리스트 조회
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
   if (!res.ok) throw new Error('Gemini 모델 리스트 조회 실패')
   const data = await res.json()
   // 2. exp/free + generateContent 지원 모델만 추출
-  const expModels = (data.models || [])
+  const availableModels = (data.models || [])
     .filter((m: any) =>
-      m.name?.includes('exp') &&
       (m.supportedGenerationMethods || []).includes('generateContent')
     )
     .map((m: any) => m.name.replace('models/', ''))
-  if (expModels.length > 0) return expModels[0] // 우선순위: 첫 번째 exp 모델
-  // fallback: 기존 FREE_GEMINI_MODELS 중 사용 가능한 것
-  for (const model of FREE_GEMINI_MODELS) {
-    if ((data.models || []).some((m: any) => m.name?.endsWith(model))) return model
+
+  // 3. 우선순위 리스트에 따라 사용 가능한 모델 반환
+  for (const model of modelsToConsider) {
+    if (availableModels.includes(model)) {
+      return model
+    }
   }
-  throw new Error('사용 가능한 무료(exp) Gemini 모델이 없습니다. (실제 사용 가능 모델: ' +
-    (data.models || []).map((m: any) => m.name).join(', ') + ')')
-}
+
+  // fallback: 우선순위 리스트에 없지만 사용 가능한 exp 모델 반환
+  const expModels = availableModels.filter((m: string) => m.includes('exp'))
+  if (expModels.length > 0) return expModels[0]
+
+  // 최종 fallback: 사용 가능한 모델 중 첫 번째 모델 반환
+  if (availableModels.length > 0) return availableModels[0]
+
+  throw new Error('사용 가능한 Gemini 모델이 없습니다. (실제 사용 가능 모델: ' +
+    availableModels.join(', ') + ')')
 
 // Gemini API로 프롬프트 전송 (무료 모델만)
 export async function runGeminiPrompt(prompt: string, context?: any, modelOverride?: string) {
   const apiKey = getGeminiApiKey()
   const model = modelOverride || (await getBestFreeGeminiModel())
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
-  const body = {
+  const body: any = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }]
+  }
+  if (context) {
+    body.contents[0].parts.push({ text: JSON.stringify(context) })
   }
   const res = await fetch(url, {
     method: 'POST',

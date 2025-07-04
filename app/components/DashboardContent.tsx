@@ -25,6 +25,7 @@ import { toast } from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { getDataSourceInfo } from '../utils/dataExplanations'
 import { CalculationTooltip, DataSourceTooltip } from './Tooltip'
+import ReactMarkdown from 'react-markdown'
 
 interface DashboardContentProps {
   propertyId?: string
@@ -975,7 +976,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           </div>
         ) : latestInsight?.result ? (
           <div className="prose prose-indigo max-w-none text-gray-800">
-            <p>{latestInsight.result}</p>
+            <ReactMarkdown>{latestInsight.result}</ReactMarkdown>
           </div>
         ) : (
           <div className="text-center text-gray-500 py-8">

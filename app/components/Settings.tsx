@@ -6,14 +6,15 @@ import {
   InformationCircleIcon, 
   ClockIcon,
   DocumentTextIcon,
-  EnvelopeIcon,
   CalendarIcon,
   SparklesIcon,
   PlusIcon,
   PencilIcon,
   TrashIcon,
   EyeIcon,
-  EyeSlashIcon
+  EyeSlashIcon,
+  EnvelopeIcon, // For backup settings
+  CpuChipIcon // For AI settings
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -50,6 +51,11 @@ interface PromptTemplate {
   sortOrder: number
   createdAt: string
   updatedAt: string
+}
+
+interface GeminiModel {
+  id: string
+  displayName: string
 }
 
 export default function Settings() {
@@ -91,11 +97,17 @@ export default function Settings() {
         isDefault: false,
         sortOrder: 0
     })
+    const [availableModels, setAvailableModels] = useState<GeminiModel[]>([])
+    const [selectedGeminiModel, setSelectedGeminiModel] = useState<string>('')
+    const [selectedDefaultPromptTemplateId, setSelectedDefaultPromptTemplateId] = useState<string>('')
+    const [geminiModelPriority, setGeminiModelPriority] = useState<string>('')
 
     useEffect(() => {
         fetchSettings()
         fetchWeeklySchedule()
         fetchPromptTemplates()
+        fetchGeminiConfig()
+        fetchAvailableModels()
     }, [])
 
     const fetchSettings = async () => {
@@ -140,6 +152,32 @@ export default function Settings() {
         } catch (error) {
             console.error('프롬프트 템플릿 조회 오류:', error)
         }
+    }
+
+    const fetchAvailableModels = async () => {
+      try {
+        const response = await fetch('/api/ai-insight/models')
+        const data = await response.json()
+        if (data.success) {
+          setAvailableModels(data.models)
+        }
+      } catch (error) {
+        console.error('사용 가능한 모델 조회 오류:', error)
+      }
+    }
+
+    const fetchGeminiConfig = async () => {
+      try {
+        const response = await fetch('/api/settings/gemini-config')
+        const data = await response.json()
+        if (data.success && data.config) {
+          setSelectedGeminiModel(data.config.selectedGeminiModel || '')
+          setSelectedDefaultPromptTemplateId(data.config.selectedDefaultPromptTemplateId || '')
+          setGeminiModelPriority(data.config.geminiModelPriority || '')
+        }
+      } catch (error) {
+        console.error('Gemini 설정 조회 오류:', error)
+      }
     }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -196,6 +234,31 @@ export default function Settings() {
         } finally {
             setIsSaving(false)
         }
+    }
+
+    const handleSaveGeminiSettings = async () => {
+      setIsSaving(true)
+      try {
+        const response = await fetch('/api/settings/gemini-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            selectedGeminiModel,
+            selectedDefaultPromptTemplateId,
+            geminiModelPriority,
+          })
+        })
+
+        if (response.ok) {
+          toast.success('Gemini 설정이 성공적으로 저장되었습니다!')
+        } else {
+          toast.error('Gemini 설정 저장에 실패했습니다.')
+        }
+      } catch (error) {
+        toast.error('Gemini 설정 저장 중 오류가 발생했습니다.')
+      } finally {
+        setIsSaving(false)
+      }
     }
 
     const handleBackup = async () => {
@@ -410,8 +473,9 @@ export default function Settings() {
         { id: 'schedule', name: '스케줄러', icon: ClockIcon },
         { id: 'report', name: '주간 보고서', icon: DocumentTextIcon },
         { id: 'prompts', name: '프롬프트 템플릿', icon: SparklesIcon },
+        { id: 'ai', name: 'AI 설정', icon: CpuChipIcon },
         { id: 'backup', name: '백업', icon: EnvelopeIcon }
-    ]
+    ];
 
     return (
         <div className="space-y-8">
@@ -878,211 +942,75 @@ export default function Settings() {
                 </div>
             )}
 
-            {/* 템플릿 편집 모달 */}
-            {showTemplateModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                            {editingTemplate ? '템플릿 수정' : '새 템플릿 생성'}
-                        </h3>
-                        
-                        <div className="space-y-4">
-                            <div>
-                                <label className="label">템플릿 이름</label>
-                                <input
-                                    type="text"
-                                    value={editingTemplate?.name || newTemplate.name}
-                                    onChange={(e) => {
-                                        if (editingTemplate) {
-                                            setEditingTemplate({ ...editingTemplate, name: e.target.value })
-                                        } else {
-                                            setNewTemplate({ ...newTemplate, name: e.target.value })
-                                        }
-                                    }}
-                                    className="input-field"
-                                    placeholder="예: 주간보고서 기본"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="label">템플릿 유형</label>
-                                <select
-                                    value={editingTemplate?.type || newTemplate.type}
-                                    onChange={(e) => {
-                                        if (editingTemplate) {
-                                            setEditingTemplate({ ...editingTemplate, type: e.target.value })
-                                        } else {
-                                            setNewTemplate({ ...newTemplate, type: e.target.value })
-                                        }
-                                    }}
-                                    className="input-field"
-                                >
-                                    <option value="weekly-report">주간보고서</option>
-                                    <option value="monthly-report">월간보고서</option>
-                                    <option value="traffic-insight">트래픽분석</option>
-                                    <option value="utm-cohort-insight">UTM코호트</option>
-                                    <option value="keyword-cohort-insight">키워드코호트</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="label">설명</label>
-                                <input
-                                    type="text"
-                                    value={editingTemplate?.description || newTemplate.description}
-                                    onChange={(e) => {
-                                        if (editingTemplate) {
-                                            setEditingTemplate({ ...editingTemplate, description: e.target.value })
-                                        } else {
-                                            setNewTemplate({ ...newTemplate, description: e.target.value })
-                                        }
-                                    }}
-                                    className="input-field"
-                                    placeholder="템플릿에 대한 간단한 설명"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="label">프롬프트 템플릿</label>
-                                <textarea
-                                    value={editingTemplate?.prompt || newTemplate.prompt}
-                                    onChange={(e) => {
-                                        if (editingTemplate) {
-                                            setEditingTemplate({ ...editingTemplate, prompt: e.target.value })
-                                        } else {
-                                            setNewTemplate({ ...newTemplate, prompt: e.target.value })
-                                        }
-                                    }}
-                                    className="input-field min-h-[200px] font-mono text-sm"
-                                    placeholder="프롬프트 템플릿을 입력하세요. {변수명} 형태로 변수를 사용할 수 있습니다."
-                                />
-                            </div>
-
-                            <div>
-                                <label className="label">사용 가능한 변수 (JSON 배열)</label>
-                                <input
-                                    type="text"
-                                    value={editingTemplate?.variables || newTemplate.variables}
-                                    onChange={(e) => {
-                                        if (editingTemplate) {
-                                            setEditingTemplate({ ...editingTemplate, variables: e.target.value })
-                                        } else {
-                                            setNewTemplate({ ...newTemplate, variables: e.target.value })
-                                        }
-                                    }}
-                                    className="input-field font-mono text-sm"
-                                    placeholder='["변수1", "변수2", "변수3"]'
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <label className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={editingTemplate?.isActive ?? newTemplate.isActive}
-                                        onChange={(e) => {
-                                            if (editingTemplate) {
-                                                setEditingTemplate({ ...editingTemplate, isActive: e.target.checked })
-                                            } else {
-                                                setNewTemplate({ ...newTemplate, isActive: e.target.checked })
-                                            }
-                                        }}
-                                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                                    />
-                                    <span className="ml-2 text-sm text-gray-700">활성화</span>
-                                </label>
-                                <label className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={editingTemplate?.isDefault ?? newTemplate.isDefault}
-                                        onChange={(e) => {
-                                            if (editingTemplate) {
-                                                setEditingTemplate({ ...editingTemplate, isDefault: e.target.checked })
-                                            } else {
-                                                setNewTemplate({ ...newTemplate, isDefault: e.target.checked })
-                                            }
-                                        }}
-                                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                                    />
-                                    <span className="ml-2 text-sm text-gray-700">기본 템플릿</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 mt-6">
-                            <button
-                                onClick={() => {
-                                    setShowTemplateModal(false)
-                                    setEditingTemplate(null)
-                                }}
-                                className="btn-secondary"
-                            >
-                                취소
-                            </button>
-                            <button
-                                onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}
-                                className="btn-primary"
-                            >
-                                {editingTemplate ? '수정' : '생성'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* 백업 탭 */}
-            {activeTab === 'backup' && (
+            {/* AI 설정 탭 */}
+            {activeTab === 'ai' && (
                 <div className="space-y-6 bg-white p-6 rounded-lg shadow">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <EnvelopeIcon className="h-5 w-5 mr-2" />
-                        데이터 백업
+                        <CpuChipIcon className="h-5 w-5 mr-2" />
+                        Gemini AI 설정
                     </h2>
 
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
                         <div className="flex">
-                            <InformationCircleIcon className="h-5 w-5 text-yellow-400" />
+                            <InformationCircleIcon className="h-5 w-5 text-blue-400" />
                             <div className="ml-3">
-                                <p className="text-sm text-yellow-800">
-                                    <strong>백업 기능:</strong> 현재 데이터베이스의 모든 데이터를 Google Sheets로 백업할 수 있습니다.
+                                <p className="text-sm text-blue-800">
+                                    <strong>Gemini AI 설정:</strong> AI 분석에 사용할 기본 모델과 프롬프트 템플릿을 설정합니다.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-md font-medium text-gray-900 mb-2">백업할 데이터</h3>
-                            <ul className="text-sm text-gray-600 space-y-1">
-                                <li>• UTM 캠페인 데이터</li>
-                                <li>• 키워드 코호트 그룹</li>
-                                <li>• 전환 목표 설정</li>
-                                <li>• GTM 목표 설정</li>
-                                <li>• 주간 보고서 스케줄</li>
-                                <li>• 시스템 설정</li>
-                            </ul>
-                        </div>
+                    <div>
+                        <label className="label">기본 Gemini 모델 선택</label>
+                        <select
+                            value={selectedGeminiModel}
+                            onChange={(e) => setSelectedGeminiModel(e.target.value)}
+                            className="input-field"
+                        >
+                            <option value="">자동 선택 (권장)</option>
+                            {availableModels.map(model => (
+                                <option key={model.id} value={model.id}>{model.displayName}</option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                            AI 분석에 사용할 기본 Gemini 모델을 선택합니다. '자동 선택' 시 시스템이 최적의 모델을 선택합니다.
+                        </p>
+                    </div>
 
-                        <div>
-                            <h3 className="text-md font-medium text-gray-900 mb-2">주의사항</h3>
-                            <ul className="text-sm text-gray-600 space-y-1">
-                                <li>• Google Sheets API 권한이 필요합니다</li>
-                                <li>• 대용량 데이터의 경우 시간이 오래 걸릴 수 있습니다</li>
-                                <li>• 기존 백업 파일이 있다면 덮어쓰기됩니다</li>
-                            </ul>
-                        </div>
+                    <div>
+                        <label className="label">Gemini 모델 우선순위 (쉼표로 구분)</label>
+                        <textarea
+                            value={geminiModelPriority}
+                            onChange={(e) => setGeminiModelPriority(e.target.value)}
+                            className="input-field min-h-[80px]"
+                            placeholder="예: gemini-1.5-flash-exp, gemini-1.5-pro-exp, gemini-1.0-pro"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            AI 분석에 사용할 Gemini 모델의 우선순위를 쉼표로 구분하여 입력합니다. 목록의 첫 번째 모델부터 사용 가능한지 확인합니다.
+                        </p>
                     </div>
 
                     <div className="flex justify-end">
                         <button
-                            onClick={handleBackup}
-                            disabled={isBackingUp}
-                            className="btn-primary flex items-center gap-2 disabled:opacity-50 bg-green-600 hover:bg-green-700"
+                            onClick={handleSaveGeminiSettings}
+                            disabled={isSaving}
+                            className="btn-primary flex items-center gap-2 disabled:opacity-50"
                         >
-                            {isBackingUp ? '백업 중...' : 'Google Sheets로 백업하기'}
+                            {isSaving ? (
+                                '저장 중...'
+                            ) : (
+                                <>
+                                    <CheckCircleIcon className="h-5 w-5" />
+                                    Gemini 설정 저장
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
             )}
+
+            {/* 백업 탭 제거됨 */}
 
             <style jsx>{`
                 .label {
@@ -1100,4 +1028,4 @@ export default function Settings() {
             `}</style>
         </div>
     )
-} 
+}  
