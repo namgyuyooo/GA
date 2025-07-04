@@ -1,6 +1,9 @@
 import fs from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // .env에서 Gemini 모델 우선순위 읽기
 function getGeminiModelPriorityFromEnv() {
@@ -152,4 +155,92 @@ export async function runGeminiPrompt(prompt: string, context?: any, modelOverri
     return data.candidates[0].content.parts[0].text
   }
   throw new Error('Gemini 응답이 올바르지 않습니다: ' + JSON.stringify(data))
+}
+
+export async function generateComprehensiveInsight(
+  propertyId: string,
+  startDate: Date,
+  endDate: Date,
+  modelOverride?: string
+) {
+  // 1. Fetch individual insights for the period
+  const insights = await prisma.insight.findMany({
+    where: {
+      propertyId,
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+      isComprehensive: false, // Exclude already comprehensive insights
+      type: {
+        in: ['dashboard', 'traffic', 'utm-cohort', 'keyword-cohort'],
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  if (insights.length === 0) {
+    console.log('No individual insights found for the period.');
+    return null;
+  }
+
+  // 2. Combine insights into a single prompt
+  let combinedPrompt = `
+    다음은 지난 주 각 영역별 데이터 분석 결과입니다. 
+    이들을 종합하여 경영진을 위한 주간 보고서 형식의 종합적인 분석을 생성해주세요. 
+    각 분석의 핵심 내용을 요약하고, 전체적인 트렌드와 주요 이슈, 그리고 다음 주에 집중해야 할 액션 아이템을 명확하게 제시해주세요.
+    결과는 마크다운 형식으로 구조화하여 가독성을 높여주세요.
+
+    ---
+  `;
+
+  const sourceInsightIds: string[] = [];
+  const dataSourceTypes = new Set<string>();
+
+  insights.forEach(insight => {
+    combinedPrompt += `
+### ${insight.type} 분석 결과:
+`;
+    combinedPrompt += `${insight.result}
+
+`;
+    sourceInsightIds.push(insight.id);
+    if (insight.dataSourceTypes && Array.isArray(insight.dataSourceTypes)) {
+        (insight.dataSourceTypes as string[]).forEach(type => dataSourceTypes.add(type));
+    }
+  });
+  
+  combinedPrompt += `
+    ---
+    
+    위 내용을 바탕으로, 다음 항목을 포함하는 종합 주간 보고서를 작성해주세요:
+    1.  **종합 요약 (Executive Summary):** 지난 주 성과에 대한 핵심 요약.
+    2.  **주요 성과 및 동향:** 긍정적인 변화와 주목할 만한 트렌드.
+    3.  **주요 이슈 및 개선점:** 부정적인 변화와 개선이 필요한 영역.
+    4.  **권장 액션 아이템:** 다음 주에 실행해야 할 구체적인 행동 계획.
+  `;
+
+  // 3. Run Gemini with the combined prompt
+  const model = modelOverride || (await getBestFreeGeminiModel());
+  const comprehensiveResult = await runGeminiPrompt(combinedPrompt, null, model);
+
+  // 4. Save the new comprehensive insight
+  const newInsight = await prisma.insight.create({
+    data: {
+      propertyId,
+      type: 'comprehensive',
+      model,
+      prompt: combinedPrompt,
+      result: comprehensiveResult,
+      dataSourceTypes: Array.from(dataSourceTypes),
+      analysisStartDate: startDate,
+      analysisEndDate: endDate,
+      sourceInsightIds,
+      isComprehensive: true,
+    },
+  });
+
+  return newInsight;
 }
