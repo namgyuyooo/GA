@@ -44,13 +44,73 @@ export async function GET(request: NextRequest) {
       `)
     }
 
+    // Insight 테이블 확인 및 생성
+    const insightTableResult = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_name = 'Insight'
+    `)
+
+    if (insightTableResult.rows.length === 0) {
+      await client.query(`
+        CREATE TABLE "Insight" (
+          "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          "type" TEXT NOT NULL,
+          "propertyId" TEXT NOT NULL,
+          "model" TEXT NOT NULL,
+          "prompt" TEXT NOT NULL,
+          "result" TEXT NOT NULL,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+          "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+      `)
+    }
+
+    // PromptTemplate 테이블 확인 및 생성
+    const promptTableResult = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_name = 'PromptTemplate'
+    `)
+
+    if (promptTableResult.rows.length === 0) {
+      await client.query(`
+        CREATE TABLE "PromptTemplate" (
+          "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          "name" TEXT NOT NULL,
+          "type" TEXT NOT NULL,
+          "description" TEXT,
+          "prompt" TEXT NOT NULL,
+          "variables" JSONB,
+          "isActive" BOOLEAN NOT NULL DEFAULT true,
+          "isDefault" BOOLEAN NOT NULL DEFAULT false,
+          "sortOrder" INTEGER NOT NULL DEFAULT 0,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+          "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+          UNIQUE("name", "type")
+        )
+      `)
+    }
+
     await client.end()
 
     return NextResponse.json({
       success: true,
-      tableExists: tableResult.rows.length > 0,
-      created: !!createResult,
-      message: tableResult.rows.length > 0 ? 'User table already exists' : 'User table created'
+      tables: {
+        User: {
+          exists: tableResult.rows.length > 0,
+          created: !!createResult
+        },
+        Insight: {
+          exists: insightTableResult.rows.length > 0,
+          created: insightTableResult.rows.length === 0
+        },
+        PromptTemplate: {
+          exists: promptTableResult.rows.length > 0,
+          created: promptTableResult.rows.length === 0
+        }
+      },
+      message: 'Database tables checked and created if needed'
     })
 
   } catch (error) {

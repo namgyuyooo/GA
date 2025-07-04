@@ -12,6 +12,7 @@ import {
   EyeIcon,
   GlobeAltIcon,
   InformationCircleIcon,
+  SparklesIcon,
   TagIcon,
   UsersIcon,
   MagnifyingGlassIcon,
@@ -349,7 +350,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div 
           className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
-          onClick={handleUsersClick}
+          onClick={() => handleUsersClick()}
         >
           <div className="p-5">
             <div className="flex items-center">
@@ -409,7 +410,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
 
         <div 
           className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
-          onClick={handleSessionsClick}
+          onClick={() => handleSessionsClick()}
         >
           <div className="p-5">
             <div className="flex items-center">
@@ -455,7 +456,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
 
         <div 
           className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
-          onClick={handlePageViewsClick}
+          onClick={() => handlePageViewsClick()}
         >
           <div className="p-5">
             <div className="flex items-center">
@@ -501,7 +502,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
 
         <div 
           className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
-          onClick={handleConversionsClick}
+          onClick={() => handleConversionsClick()}
         >
           <div className="p-5">
             <div className="flex items-center">
@@ -947,19 +948,39 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
       </div>
 
       {/* AI 인사이트 섹션 */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-4">
-        <div className="flex items-center mb-2">
-          <CodeBracketIcon className="h-5 w-5 mr-2 text-primary-600" />
-          <span className="font-bold text-primary-700 text-lg">AI 자동 인사이트</span>
-          {latestInsight?.createdAt && (
-            <span className="ml-3 text-xs text-gray-500">{new Date(latestInsight.createdAt).toLocaleString('ko-KR')}</span>
-          )}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <SparklesIcon className="h-7 w-7 text-indigo-600" />
+            <h2 className="text-xl font-bold text-gray-900">AI 기반 인사이트</h2>
+          </div>
+          <button
+            onClick={handleGenerateInsight}
+            disabled={insightLoading || !selectedModel}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {insightLoading ? (
+              <ArrowPathIcon className="animate-spin -ml-1 mr-2 h-5 w-5 text-indigo-500" />
+            ) : (
+              <SparklesIcon className="-ml-1 mr-2 h-5 w-5 text-indigo-500" />
+            )}
+            {insightLoading ? '인사이트 생성 중...' : '인사이트 다시 생성'}
+          </button>
         </div>
-        <div className="whitespace-pre-line text-gray-800 text-sm min-h-[60px]">
-          {latestInsight?.result ? latestInsight.result : '아직 생성된 인사이트가 없습니다.'}
-        </div>
-        {latestInsight?.model && (
-          <div className="mt-2 text-xs text-gray-500">모델: {latestInsight.model}</div>
+
+        {insightLoading ? (
+          <div className="flex justify-center items-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <p className="ml-3 text-gray-600">AI가 데이터를 분석하고 있습니다...</p>
+          </div>
+        ) : latestInsight?.result ? (
+          <div className="prose prose-indigo max-w-none text-gray-800">
+            <p>{latestInsight.result}</p>
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 py-8">
+            <p>아직 생성된 AI 인사이트가 없습니다. '인사이트 다시 생성' 버튼을 눌러주세요.</p>
+          </div>
         )}
       </div>
     </div>

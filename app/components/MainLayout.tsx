@@ -27,7 +27,7 @@ export default function MainLayout() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const tabParam = urlParams.get('tab')
-      if (tabParam && ['dashboard', 'utm-builder', 'utm-list', 'utm-cohort', 'keyword-cohort', 'traffic-analysis', 'gtm-analysis', 'user-journey', 'weekly-report', 'settings', 'property-check'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'utm-builder', 'utm-list', 'utm-cohort', 'keyword-cohort', 'traffic-analysis', 'gtm-analysis', 'weekly-report'].includes(tabParam)) {
         setActiveTab(tabParam)
       }
     }
@@ -102,70 +102,8 @@ export default function MainLayout() {
         return <TrafficSourceAnalysis {...commonProps} />
       case 'gtm-analysis':
         return <GTMAnalysis {...commonProps} />
-      case 'user-journey':
-        return (
-          <div className="space-y-6">
-            <div className="card">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">사용자 여정 분석</h2>
-              <p className="text-gray-600 mb-4">
-                사용자의 페이지 전환 경로, 체류 시간, 스크롤 깊이, 재방문율 등을 분석합니다.
-              </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-blue-800">
-                  사용자 여정 분석은 별도 페이지에서 제공됩니다. 
-                  <a href={`/analytics/user-journey?propertyId=${activeProperty}`} className="text-blue-600 hover:text-blue-800 underline ml-1">
-                    상세 분석 보기 →
-                  </a>
-                </p>
-              </div>
-            </div>
-          </div>
-        )
       case 'weekly-report':
         return <WeeklyReport propertyId={activeProperty} />
-      case 'settings':
-        return <Settings />
-      case 'property-check':
-        return (
-          <div className="space-y-6">
-            <div className="card">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">속성 연결 확인</h2>
-              <p className="text-gray-600 mb-4">
-                현재 연결된 Google Analytics 속성들을 확인하고 테스트합니다.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900">Property 1</h3>
-                  <p className="text-sm text-gray-600">ID: 464147982</p>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
-                    연결됨
-                  </span>
-                </div>
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900">Property 2</h3>
-                  <p className="text-sm text-gray-600">ID: 482625214</p>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
-                    연결됨
-                  </span>
-                </div>
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900">Property 3</h3>
-                  <p className="text-sm text-gray-600">ID: 483589217</p>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
-                    연결됨
-                  </span>
-                </div>
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900">Original Property</h3>
-                  <p className="text-sm text-gray-600">ID: 462871516</p>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 mt-2">
-                    테스트 필요
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
       default:
         return <DashboardContent {...commonProps} />
     }
