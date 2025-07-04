@@ -6,10 +6,7 @@ export async function GET(request: NextRequest) {
     const token = request.cookies.get('auth-token')?.value
 
     if (!token) {
-      return NextResponse.json(
-        { error: '인증 토큰이 없습니다.' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: '인증 토큰이 없습니다.' }, { status: 401 })
     }
 
     // JWT 토큰 검증
@@ -34,24 +31,17 @@ export async function GET(request: NextRequest) {
     await client.end()
 
     if (userResult.rows.length === 0) {
-      return NextResponse.json(
-        { error: '사용자를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: '사용자를 찾을 수 없습니다.' }, { status: 404 })
     }
 
     const user = userResult.rows[0]
 
     return NextResponse.json({
       success: true,
-      user
+      user,
     })
-
   } catch (error) {
     console.error('Auth verification error:', error)
-    return NextResponse.json(
-      { error: '인증 토큰이 유효하지 않습니다.' },
-      { status: 401 }
-    )
+    return NextResponse.json({ error: '인증 토큰이 유효하지 않습니다.' }, { status: 401 })
   }
 }

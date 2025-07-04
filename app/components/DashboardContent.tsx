@@ -18,34 +18,38 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   CodeBracketIcon,
-  XMarkIcon
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { getDataSourceInfo } from '../utils/dataExplanations'
 import { CalculationTooltip, DataSourceTooltip } from './Tooltip'
 import ReactMarkdown from 'react-markdown'
+import AIInsightCard from './AIInsightCard'
 
 interface DashboardContentProps {
   propertyId?: string
   dataMode?: 'realtime' | 'database'
 }
 
-export default function DashboardContent({ propertyId = '464147982', dataMode = 'database' }: DashboardContentProps) {
+export default function DashboardContent({
+  propertyId = '464147982',
+  dataMode = 'database',
+}: DashboardContentProps) {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [period, setPeriod] = useState('7daysAgo')
   const [refreshing, setRefreshing] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1)
   const [utmCohortData, setUtmCohortData] = useState<any>(null)
   const [keywordCohortData, setKeywordCohortData] = useState<any>(null)
   const [trafficData, setTrafficData] = useState<any>(null)
   const [gtmData, setGtmData] = useState<any>(null)
-  const rowsPerPage = 10;
+  const rowsPerPage = 10
   const router = useRouter()
   const [insightLoading, setInsightLoading] = useState(false)
-  const [insight, setInsight] = useState<string|null>(null)
+  const [insight, setInsight] = useState<string | null>(null)
   const [showInsight, setShowInsight] = useState(false)
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [selectedModel, setSelectedModel] = useState<string>('')
@@ -96,47 +100,28 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
   }
 
   // 인사이트 조회
-  const fetchLatestInsight = async () => {
+  const fetchLatestInsight = useCallback(async () => {
     const res = await fetch(`/api/ai-insight?type=dashboard&propertyId=${propertyId}`)
     const result = await res.json()
     if (result.success && result.insight) setLatestInsight(result.insight)
     else setLatestInsight(null)
-  }
+  }, [propertyId])
 
-  useEffect(() => {
-    loadDashboardData()
-    loadAnalysisData()
-    fetchLatestInsight()
-    fetch('/api/ai-insight/models')
-      .then(res => res.json())
-      .then(result => {
-        if (result.success) {
-          setAvailableModels(result.models)
-          if (result.models.length > 0) setSelectedModel(result.models[0].id)
-        }
-      })
-    fetch('/api/settings/prompt-templates?type=weekly-report')
-      .then(res => res.json())
-      .then(result => {
-        if (result.success) {
-          setPromptTemplates(result.templates)
-          const defaultTemplate = result.templates.find((t: any) => t.isDefault)
-          if (defaultTemplate) setSelectedTemplate(defaultTemplate.id)
-        }
-      })
-  }, [period, propertyId])
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`/api/dashboard/overview?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
+      const response = await fetch(
+        `/api/dashboard/overview?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`
+      )
       const result = await response.json()
 
       setData(result)
 
       if (response.ok) {
-        toast.success(`대시보드 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`)
+        toast.success(
+          `대시보드 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`
+        )
       } else {
         toast.error('데이터 로드 실패')
       }
@@ -146,34 +131,64 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [period, propertyId, dataMode])
 
-  const loadAnalysisData = async () => {
+  const loadAnalysisData = useCallback(async () => {
     try {
       // UTM 코호트 데이터 로드
-      const utmResponse = await fetch(`/api/analytics/utm-cohort?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
+      const utmResponse = await fetch(
+        `/api/analytics/utm-cohort?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`
+      )
       const utmResult = await utmResponse.json()
       setUtmCohortData(utmResult)
 
       // 키워드 코호트 데이터 로드
-      const keywordResponse = await fetch(`/api/analytics/keyword-groups?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
+      const keywordResponse = await fetch(
+        `/api/analytics/keyword-groups?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`
+      )
       const keywordResult = await keywordResponse.json()
       setKeywordCohortData(keywordResult)
 
       // 트래픽 소스 데이터 로드
-      const trafficResponse = await fetch(`/api/analytics/traffic-analysis?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
-      const trafficResult = await trafficResponse.json()
+      const trafficResponse = await fetch(
+        `/api/analytics/traffic-analysis?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`
+      )
+      const trafficResult = trafficResponse.json()
       setTrafficData(trafficResult)
 
       // GTM 데이터 로드
-      const gtmResponse = await fetch(`/api/analytics/gtm-analysis?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`)
-      const gtmResult = await gtmResponse.json()
+      const gtmResponse = await fetch(
+        `/api/analytics/gtm-analysis?period=${period}&propertyId=${propertyId}&dataMode=${dataMode}`
+      )
+      const gtmResult = gtmResponse.json()
       setGtmData(gtmResult)
-
     } catch (err: any) {
       console.error('Analysis data load error:', err)
     }
-  }
+  }, [period, propertyId, dataMode])
+
+  useEffect(() => {
+    loadDashboardData()
+    loadAnalysisData()
+    fetchLatestInsight()
+    fetch('/api/ai-insight/models')
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success) {
+          setAvailableModels(result.models)
+          if (result.models.length > 0) setSelectedModel(result.models[0].id)
+        }
+      })
+    fetch('/api/settings/prompt-templates?type=weekly-report')
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success) {
+          setPromptTemplates(result.templates)
+          const defaultTemplate = result.templates.find((t: any) => t.isDefault)
+          if (defaultTemplate) setSelectedTemplate(defaultTemplate.id)
+        }
+      })
+  }, [period, propertyId, dataMode, loadDashboardData, loadAnalysisData, fetchLatestInsight])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -188,7 +203,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
       const requestBody: any = {
         model: selectedModel,
         type: 'dashboard',
-        propertyId
+        propertyId,
       }
 
       if (selectedTemplate) {
@@ -202,10 +217,11 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           totalClicks: data?.data?.kpis?.totalClicks || 0,
           totalImpressions: data?.data?.kpis?.totalImpressions || 0,
           avgCtr: data?.data?.kpis?.avgCtr || 0,
-          avgPosition: data?.data?.kpis?.avgPosition || 0
+          avgPosition: data?.data?.kpis?.avgPosition || 0,
         }
       } else {
-        requestBody.prompt = `다음은 대시보드 주요 데이터입니다.\n\n` +
+        requestBody.prompt =
+          `다음은 대시보드 주요 데이터입니다.\n\n` +
           `기간: ${period}\n` +
           `총 세션: ${data?.data?.kpis?.totalSessions || 0}\n` +
           `총 사용자: ${data?.data?.kpis?.totalUsers || 0}\n` +
@@ -217,7 +233,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
       const res = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
       const result = await res.json()
       if (result.success) {
@@ -225,7 +241,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
       } else {
         toast.error('AI 인사이트 생성 실패: ' + (result.error || ''))
       }
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error('AI 인사이트 생성 중 오류: ' + (e.message || ''))
     } finally {
       setInsightLoading(false)
@@ -243,7 +259,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
   const kpis = data?.data?.kpis || {}
   const campaigns = data?.data?.topCampaigns || []
   const realTimeData = data?.data?.realTimeData || {}
-  const pages = data?.data?.topPages || [];
+  const pages = data?.data?.topPages || []
 
   // 기간에 따른 비교 텍스트 동적 생성
   const getComparisonText = (period: string) => {
@@ -290,12 +306,14 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           {availableModels.length > 0 && (
             <select
               value={selectedModel}
-              onChange={e => setSelectedModel(e.target.value)}
+              onChange={(e) => setSelectedModel(e.target.value)}
               className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
               title="사용할 Gemini 모델 선택"
             >
-              {availableModels.map(m => (
-                <option key={m.id} value={m.id}>{m.displayName}</option>
+              {availableModels.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.displayName}
+                </option>
               ))}
             </select>
           )}
@@ -303,13 +321,15 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           {promptTemplates.length > 0 && (
             <select
               value={selectedTemplate}
-              onChange={e => setSelectedTemplate(e.target.value)}
+              onChange={(e) => setSelectedTemplate(e.target.value)}
               className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
               title="사용할 프롬프트 템플릿 선택"
             >
               <option value="">기본 프롬프트</option>
-              {promptTemplates.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+              {promptTemplates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
               ))}
             </select>
           )}
@@ -339,9 +359,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           <div className="flex">
             <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
             <div className="ml-3">
-              <p className="text-sm text-yellow-800">
-                {data.message}
-              </p>
+              <p className="text-sm text-yellow-800">{data.message}</p>
             </div>
           </div>
         </div>
@@ -349,7 +367,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div 
+        <div
           className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
           onClick={() => handleUsersClick()}
         >
@@ -409,7 +427,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           </div>
         </div>
 
-        <div 
+        <div
           className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
           onClick={() => handleSessionsClick()}
         >
@@ -455,7 +473,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           </div>
         </div>
 
-        <div 
+        <div
           className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
           onClick={() => handlePageViewsClick()}
         >
@@ -501,7 +519,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
           </div>
         </div>
 
-        <div 
+        <div
           className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
           onClick={() => handleConversionsClick()}
         >
@@ -551,7 +569,10 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
       {/* Analysis Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* UTM 코호트 분석 */}
-        <div className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={handleUtmCohortClick}>
+        <div
+          className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+          onClick={handleUtmCohortClick}
+        >
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
@@ -576,7 +597,9 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">평균 전환율:</span>
                 <span className="font-medium text-gray-900">
-                  {utmCohortData?.data?.avgConversionRate ? `${(utmCohortData.data.avgConversionRate * 100).toFixed(1)}%` : '0%'}
+                  {utmCohortData?.data?.avgConversionRate
+                    ? `${(utmCohortData.data.avgConversionRate * 100).toFixed(1)}%`
+                    : '0%'}
                 </span>
               </div>
             </div>
@@ -585,7 +608,10 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
         </div>
 
         {/* 키워드 코호트 분석 */}
-        <div className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={handleKeywordCohortClick}>
+        <div
+          className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+          onClick={handleKeywordCohortClick}
+        >
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
@@ -610,7 +636,9 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">평균 순위:</span>
                 <span className="font-medium text-gray-900">
-                  {keywordCohortData?.data?.avgRank ? keywordCohortData.data.avgRank.toFixed(1) : '0'}
+                  {keywordCohortData?.data?.avgRank
+                    ? keywordCohortData.data.avgRank.toFixed(1)
+                    : '0'}
                 </span>
               </div>
             </div>
@@ -619,7 +647,10 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
         </div>
 
         {/* 트래픽 소스 분석 */}
-        <div className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={handleTrafficAnalysisClick}>
+        <div
+          className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+          onClick={handleTrafficAnalysisClick}
+        >
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
@@ -653,7 +684,10 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
         </div>
 
         {/* GTM 분석 */}
-        <div className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={handleGtmAnalysisClick}>
+        <div
+          className="bg-white shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200"
+          onClick={handleGtmAnalysisClick}
+        >
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
@@ -928,21 +962,47 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {pages.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((page, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{page.path}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{page.views}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{page.users}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{page.avgTime}</td>
-                  </tr>
-                ))}
+                {pages
+                  .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+                  .map((page, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {page.path}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {page.views}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {page.users}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {page.avgTime}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
             {/* Pagination */}
             <div className="flex justify-end items-center mt-4 space-x-2">
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 text-sm border rounded disabled:opacity-50">이전</button>
-              <span className="text-sm">{currentPage} / {Math.ceil(pages.length / rowsPerPage)}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(pages.length / rowsPerPage), p + 1))} disabled={currentPage === Math.ceil(pages.length / rowsPerPage)} className="px-2 py-1 text-sm border rounded disabled:opacity-50">다음</button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+              >
+                이전
+              </button>
+              <span className="text-sm">
+                {currentPage} / {Math.ceil(pages.length / rowsPerPage)}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(Math.ceil(pages.length / rowsPerPage), p + 1))
+                }
+                disabled={currentPage === Math.ceil(pages.length / rowsPerPage)}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+              >
+                다음
+              </button>
             </div>
           </div>
         </div>
@@ -975,9 +1035,7 @@ export default function DashboardContent({ propertyId = '464147982', dataMode = 
             <p className="ml-3 text-gray-600">AI가 데이터를 분석하고 있습니다...</p>
           </div>
         ) : latestInsight?.result ? (
-          <div className="prose prose-indigo max-w-none text-gray-800">
-            <ReactMarkdown>{latestInsight.result}</ReactMarkdown>
-          </div>
+          <AIInsightCard result={latestInsight.result} />
         ) : (
           <div className="text-center text-gray-500 py-8">
             <p>아직 생성된 AI 인사이트가 없습니다. '인사이트 다시 생성' 버튼을 눌러주세요.</p>

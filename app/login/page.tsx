@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -22,23 +22,23 @@ export default function LoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (data.success) {
-        router.push('/');
-        router.refresh();
+        router.push('/')
+        router.refresh()
       } else {
-        setError(data.error || '로그인에 실패했습니다.');
+        setError(data.error || '로그인에 실패했습니다.')
       }
     } catch (error) {
-      setError('로그인 중 오류가 발생했습니다.');
-      console.error('Login error:', error);
+      setError('로그인 중 오류가 발생했습니다.')
+      console.error('Login error:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -47,9 +47,7 @@ export default function LoginPage() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             RTM Analytics Dashboard
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            관리자 계정으로 로그인하세요
-          </p>
+          <p className="mt-2 text-center text-sm text-gray-600">관리자 계정으로 로그인하세요</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -107,11 +105,9 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            계정이 필요하신가요? 관리자에게 문의하세요.
-          </p>
+          <p className="text-xs text-gray-500">계정이 필요하신가요? 관리자에게 문의하세요.</p>
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -27,7 +27,13 @@ export default function CompetitorIntelligencePage() {
   const [isLoading, setIsLoading] = useState(false)
 
   const fetchCompetitorData = async () => {
-    if (!competitorName.trim() && !homepageUrl.trim() && !koreanName.trim() && !englishName.trim() && !relatedInfo.trim()) {
+    if (
+      !competitorName.trim() &&
+      !homepageUrl.trim() &&
+      !koreanName.trim() &&
+      !englishName.trim() &&
+      !relatedInfo.trim()
+    ) {
       toast.error('분석할 경쟁사 정보를 하나 이상 입력해주세요.')
       return
     }
@@ -37,7 +43,7 @@ export default function CompetitorIntelligencePage() {
       const response = await fetch('/api/tools/competitor-intelligence', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           competitorName: competitorName.trim(),
@@ -45,7 +51,7 @@ export default function CompetitorIntelligencePage() {
           koreanName: koreanName.trim(),
           englishName: englishName.trim(),
           relatedInfo: relatedInfo.trim(),
-        })
+        }),
       })
 
       const result = await response.json()
@@ -72,12 +78,17 @@ export default function CompetitorIntelligencePage() {
           <BuildingOfficeIcon className="h-10 w-10 text-purple-600" />
           <h1 className="text-3xl font-bold text-gray-900">경쟁사 분석 대시보드</h1>
         </div>
-        <p className="text-gray-600 mb-8">주요 경쟁사의 웹사이트 트래픽, 키워드 순위 등을 분석하여 시장 내 위치를 파악하고 전략을 수립합니다.</p>
+        <p className="text-gray-600 mb-8">
+          주요 경쟁사의 웹사이트 트래픽, 키워드 순위 등을 분석하여 시장 내 위치를 파악하고 전략을
+          수립합니다.
+        </p>
 
         {/* 검색 입력 */}
         <div className="space-y-4 mb-8">
           <div>
-            <label htmlFor="competitorName" className="block text-sm font-medium text-gray-700">경쟁사 이름 (필수 아님)</label>
+            <label htmlFor="competitorName" className="block text-sm font-medium text-gray-700">
+              경쟁사 이름 (필수 아님)
+            </label>
             <input
               type="text"
               id="competitorName"
@@ -88,7 +99,9 @@ export default function CompetitorIntelligencePage() {
             />
           </div>
           <div>
-            <label htmlFor="homepageUrl" className="block text-sm font-medium text-gray-700">홈페이지 URL (필수 아님)</label>
+            <label htmlFor="homepageUrl" className="block text-sm font-medium text-gray-700">
+              홈페이지 URL (필수 아님)
+            </label>
             <input
               type="text"
               id="homepageUrl"
@@ -100,7 +113,9 @@ export default function CompetitorIntelligencePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="koreanName" className="block text-sm font-medium text-gray-700">한글명 (필수 아님)</label>
+              <label htmlFor="koreanName" className="block text-sm font-medium text-gray-700">
+                한글명 (필수 아님)
+              </label>
               <input
                 type="text"
                 id="koreanName"
@@ -111,7 +126,9 @@ export default function CompetitorIntelligencePage() {
               />
             </div>
             <div>
-              <label htmlFor="englishName" className="block text-sm font-medium text-gray-700">영문명 (필수 아님)</label>
+              <label htmlFor="englishName" className="block text-sm font-medium text-gray-700">
+                영문명 (필수 아님)
+              </label>
               <input
                 type="text"
                 id="englishName"
@@ -123,7 +140,9 @@ export default function CompetitorIntelligencePage() {
             </div>
           </div>
           <div>
-            <label htmlFor="relatedInfo" className="block text-sm font-medium text-gray-700">관련 정보 (필수 아님)</label>
+            <label htmlFor="relatedInfo" className="block text-sm font-medium text-gray-700">
+              관련 정보 (필수 아님)
+            </label>
             <textarea
               id="relatedInfo"
               value={relatedInfo}
@@ -151,22 +170,50 @@ export default function CompetitorIntelligencePage() {
         ) : competitorData ? (
           <div className="space-y-6">
             {competitorData.map((data, index) => (
-              <div key={index} className="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-lg shadow-md">
-                <h3 className="text-2xl font-bold text-purple-800 mb-4">경쟁사: {data.competitorName || data.koreanName || data.englishName || data.homepageUrl}</h3>
-                {data.homepageUrl && <p className="text-sm text-gray-600">홈페이지: <a href={data.homepageUrl} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">{data.homepageUrl}</a></p>}
-                {data.koreanName && <p className="text-sm text-gray-600">한글명: {data.koreanName}</p>}
-                {data.englishName && <p className="text-sm text-gray-600">영문명: {data.englishName}</p>}
-                {data.relatedInfo && <p className="text-sm text-gray-600">관련 정보: {data.relatedInfo}</p>}
+              <div
+                key={index}
+                className="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-lg shadow-md"
+              >
+                <h3 className="text-2xl font-bold text-purple-800 mb-4">
+                  경쟁사:{' '}
+                  {data.competitorName || data.koreanName || data.englishName || data.homepageUrl}
+                </h3>
+                {data.homepageUrl && (
+                  <p className="text-sm text-gray-600">
+                    홈페이지:{' '}
+                    <a
+                      href={data.homepageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-purple-600 hover:underline"
+                    >
+                      {data.homepageUrl}
+                    </a>
+                  </p>
+                )}
+                {data.koreanName && (
+                  <p className="text-sm text-gray-600">한글명: {data.koreanName}</p>
+                )}
+                {data.englishName && (
+                  <p className="text-sm text-gray-600">영문명: {data.englishName}</p>
+                )}
+                {data.relatedInfo && (
+                  <p className="text-sm text-gray-600">관련 정보: {data.relatedInfo}</p>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div>
                     <p className="text-lg font-medium text-gray-700">예상 월간 트래픽:</p>
-                    <p className="text-3xl font-bold text-purple-700">{data.estimatedTraffic.toLocaleString()}</p>
+                    <p className="text-3xl font-bold text-purple-700">
+                      {data.estimatedTraffic.toLocaleString()}
+                    </p>
                   </div>
                   <div>
                     <p className="text-lg font-medium text-gray-700">주요 키워드:</p>
                     <ul className="list-disc list-inside text-gray-600">
                       {data.topKeywords.map((kw, kwIndex) => (
-                        <li key={kwIndex}>{kw.keyword} (순위: {kw.rank})</li>
+                        <li key={kwIndex}>
+                          {kw.keyword} (순위: {kw.rank})
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -176,7 +223,9 @@ export default function CompetitorIntelligencePage() {
           </div>
         ) : (
           <div className="text-center py-10">
-            <p className="text-lg text-gray-600">경쟁사 데이터를 불러올 수 없습니다. 검색어를 입력하고 분석 버튼을 눌러주세요.</p>
+            <p className="text-lg text-gray-600">
+              경쟁사 데이터를 불러올 수 없습니다. 검색어를 입력하고 분석 버튼을 눌러주세요.
+            </p>
           </div>
         )}
       </div>

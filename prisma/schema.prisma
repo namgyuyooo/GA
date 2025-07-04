@@ -314,15 +314,87 @@ model UserInterestProfile {
 }
 
 model Insight {
-  id          String   @id @default(cuid())
-  type        String   // dashboard, traffic, utm-cohort, keyword-cohort 등
-  propertyId  String
-  model       String
-  prompt      String
-  result      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  // 추후: userId, status 등 추가 가능
+  id              String   @id @default(cuid())
+  type            String   // dashboard, traffic, utm-cohort, keyword-cohort, comprehensive 등
+  propertyId      String
+  model           String
+  prompt          String
+  result          String
+  dataSourceTypes Json?    // JSON: 사용된 데이터 소스 타입들 ["ga4", "gsc", "gtm"]
+  analysisStartDate DateTime? // 분석 대상 데이터의 시작일
+  analysisEndDate   DateTime? // 분석 대상 데이터의 종료일
+  sourceInsightIds  Json?    // JSON: 종합 인사이트인 경우 참조한 개별 인사이트 ID들
+  isComprehensive   Boolean  @default(false) // 종합 인사이트 여부
+  weeklyTrend       Json?    // JSON: 4주간 주간 변화율 데이터
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([type, propertyId, createdAt])
+  @@index([isComprehensive, createdAt])
+}
+
+// 캐시된 GA4 데이터
+model CachedAnalyticsData {
+  id               String   @id @default(cuid())
+  propertyId       String
+  dataType         String   // 'overview', 'users', 'sessions', 'pageviews', 'conversions', 'traffic'
+  period           String   // '7daysAgo', '30daysAgo' 등
+  data             Json     // 실제 GA4 API 응답 데이터
+  lastUpdated      DateTime @default(now())
+  expiresAt        DateTime // 캐시 만료 시간
+  updateFrequency  Int      @default(3600) // 업데이트 주기 (초)
+  
+  @@unique([propertyId, dataType, period])
+  @@index([expiresAt])
+  @@index([propertyId, dataType])
+}
+
+// 캐시된 GSC 데이터
+model CachedSearchData {
+  id               String   @id @default(cuid())
+  siteUrl          String   // GSC 사이트 URL
+  dataType         String   // 'query', 'page', 'country', 'device'
+  period           String   // 시작일-종료일 형태
+  data             Json     // 실제 GSC API 응답 데이터
+  lastUpdated      DateTime @default(now())
+  expiresAt        DateTime
+  updateFrequency  Int      @default(86400) // 1일 기본값
+  
+  @@unique([siteUrl, dataType, period])
+  @@index([expiresAt])
+  @@index([siteUrl, dataType])
+}
+
+// 캐시된 GTM 데이터
+model CachedGTMData {
+  id               String   @id @default(cuid())
+  accountId        String
+  containerId      String
+  dataType         String   // 'tags', 'triggers', 'variables', 'versions'
+  data             Json     // GTM API 응답 데이터
+  lastUpdated      DateTime @default(now())
+  expiresAt        DateTime
+  updateFrequency  Int      @default(43200) // 12시간 기본값
+  
+  @@unique([accountId, containerId, dataType])
+  @@index([expiresAt])
+  @@index([accountId, containerId])
+}
+
+// 주간 변화율 데이터
+model WeeklyTrendData {
+  id               String   @id @default(cuid())
+  propertyId       String
+  dataType         String   // 'users', 'sessions', 'pageviews', 'conversions'
+  week1            Json     // 가장 최근 주 데이터
+  week2            Json     // 1주 전 데이터
+  week3            Json     // 2주 전 데이터
+  week4            Json     // 3주 전 데이터
+  changeRates      Json     // 주차별 변화율 계산 결과
+  calculatedAt     DateTime @default(now())
+  
+  @@unique([propertyId, dataType])
+  @@index([propertyId, calculatedAt])
 }
 
 model PromptTemplate {

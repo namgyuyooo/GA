@@ -49,10 +49,13 @@ export async function POST(request: NextRequest) {
     const { keyword, timeframe = 'today 3-m', geo = 'KR' }: TrendsRequest = await request.json()
 
     if (!keyword) {
-      return NextResponse.json({
-        success: false,
-        error: 'Keyword is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Keyword is required',
+        },
+        { status: 400 }
+      )
     }
 
     // Google Trends 데이터를 가져오는 함수
@@ -60,55 +63,88 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: trendsData
+      data: trendsData,
     })
-
   } catch (error) {
     console.error('Google Trends API error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch Google Trends data'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch Google Trends data',
+      },
+      { status: 500 }
+    )
   }
 }
 
 import googleTrends from 'google-trends-api'
 
-async function fetchGoogleTrends(keyword: string, timeframe: string, geo: string): Promise<TrendsData> {
-  const interestOverTimeData = await googleTrends.interestOverTime({ keyword, startTime: new Date(new Date().setMonth(new Date().getMonth() - 3)), geo })
-  const relatedQueriesData = await googleTrends.relatedQueries({ keyword, startTime: new Date(new Date().setMonth(new Date().getMonth() - 3)), geo })
-  const relatedTopicsData = await googleTrends.relatedTopics({ keyword, startTime: new Date(new Date().setMonth(new Date().getMonth() - 3)), geo })
-  const interestByRegionData = await googleTrends.interestByRegion({ keyword, startTime: new Date(new Date().setMonth(new Date().getMonth() - 3)), geo, resolution: 'REGION' })
+async function fetchGoogleTrends(
+  keyword: string,
+  timeframe: string,
+  geo: string
+): Promise<TrendsData> {
+  const interestOverTimeData = await googleTrends.interestOverTime({
+    keyword,
+    startTime: new Date(new Date().setMonth(new Date().getMonth() - 3)),
+    geo,
+  })
+  const relatedQueriesData = await googleTrends.relatedQueries({
+    keyword,
+    startTime: new Date(new Date().setMonth(new Date().getMonth() - 3)),
+    geo,
+  })
+  const relatedTopicsData = await googleTrends.relatedTopics({
+    keyword,
+    startTime: new Date(new Date().setMonth(new Date().getMonth() - 3)),
+    geo,
+  })
+  const interestByRegionData = await googleTrends.interestByRegion({
+    keyword,
+    startTime: new Date(new Date().setMonth(new Date().getMonth() - 3)),
+    geo,
+    resolution: 'REGION',
+  })
 
-  const parsedInterestOverTime = JSON.parse(interestOverTimeData).default.timelineData.map((item: any) => ({
-    time: item.formattedTime,
-    value: item.value[0]
-  }))
+  const parsedInterestOverTime = JSON.parse(interestOverTimeData).default.timelineData.map(
+    (item: any) => ({
+      time: item.formattedTime,
+      value: item.value[0],
+    })
+  )
 
   const parsedRelatedQueries = JSON.parse(relatedQueriesData).default.rankedList[0]
-  const topQueries = parsedRelatedQueries ? parsedRelatedQueries.rankedKeyword.map((item: any) => ({
-    query: item.query,
-    value: item.value
-  })) : []
-  const risingQueries = parsedRelatedQueries ? parsedRelatedQueries.rankedKeyword.map((item: any) => ({
-    query: item.query,
-    value: item.value
-  })) : []
+  const topQueries = parsedRelatedQueries
+    ? parsedRelatedQueries.rankedKeyword.map((item: any) => ({
+        query: item.query,
+        value: item.value,
+      }))
+    : []
+  const risingQueries = parsedRelatedQueries
+    ? parsedRelatedQueries.rankedKeyword.map((item: any) => ({
+        query: item.query,
+        value: item.value,
+      }))
+    : []
 
   const parsedRelatedTopics = JSON.parse(relatedTopicsData).default.rankedList[0]
-  const topTopics = parsedRelatedTopics ? parsedRelatedTopics.rankedKeyword.map((item: any) => ({
-    topic: item.topic.title,
-    value: item.value
-  })) : []
-  const risingTopics = parsedRelatedTopics ? parsedRelatedTopics.rankedKeyword.map((item: any) => ({
-    topic: item.topic.title,
-    value: item.value
-  })) : []
+  const topTopics = parsedRelatedTopics
+    ? parsedRelatedTopics.rankedKeyword.map((item: any) => ({
+        topic: item.topic.title,
+        value: item.value,
+      }))
+    : []
+  const risingTopics = parsedRelatedTopics
+    ? parsedRelatedTopics.rankedKeyword.map((item: any) => ({
+        topic: item.topic.title,
+        value: item.value,
+      }))
+    : []
 
   const parsedGeoMap = JSON.parse(interestByRegionData).default.geoMapData.map((item: any) => ({
     geoCode: item.geoCode,
     geoName: item.geoName,
-    value: item.value[0]
+    value: item.value[0],
   }))
 
   const trendsData: TrendsData = {
@@ -116,13 +152,13 @@ async function fetchGoogleTrends(keyword: string, timeframe: string, geo: string
     interestOverTime: parsedInterestOverTime,
     relatedQueries: {
       top: topQueries,
-      rising: risingQueries
+      rising: risingQueries,
     },
     relatedTopics: {
       top: topTopics,
-      rising: risingTopics
+      rising: risingTopics,
     },
-    geoMap: parsedGeoMap
+    geoMap: parsedGeoMap,
   }
 
   return trendsData
@@ -135,24 +171,30 @@ export async function GET(request: NextRequest) {
   const geo = searchParams.get('geo') || 'KR'
 
   if (!keyword) {
-    return NextResponse.json({
-      success: false,
-      error: 'Keyword parameter is required'
-    }, { status: 400 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Keyword parameter is required',
+      },
+      { status: 400 }
+    )
   }
 
   try {
     const trendsData = await fetchGoogleTrends(keyword, timeframe, geo)
-    
+
     return NextResponse.json({
       success: true,
-      data: trendsData
+      data: trendsData,
     })
   } catch (error) {
     console.error('Google Trends API error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch Google Trends data'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch Google Trends data',
+      },
+      { status: 500 }
+    )
   }
 }

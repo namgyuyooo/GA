@@ -14,10 +14,10 @@ async function verifyAuth(request: NextRequest) {
   }
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any
-  
+
   const user = await prisma.user.findUnique({
     where: { id: decoded.userId },
-    select: { id: true, role: true }
+    select: { id: true, role: true },
   })
 
   if (!user || (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN')) {
@@ -39,22 +39,23 @@ export async function GET(request: NextRequest) {
         name: true,
         role: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     })
 
     return NextResponse.json({
       success: true,
-      users
+      users,
     })
-
   } catch (error) {
     console.error('Get users error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '사용자 목록 조회 중 오류가 발생했습니다.' },
+      {
+        error: error instanceof Error ? error.message : '사용자 목록 조회 중 오류가 발생했습니다.',
+      },
       { status: error instanceof Error && error.message.includes('권한') ? 403 : 500 }
     )
   } finally {
@@ -69,10 +70,7 @@ export async function POST(request: NextRequest) {
     const { email, password, name, role } = await request.json()
 
     if (!email || !password || !name || !role) {
-      return NextResponse.json(
-        { error: '모든 필드를 입력해주세요.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: '모든 필드를 입력해주세요.' }, { status: 400 })
     }
 
     // SUPER_ADMIN만 다른 ADMIN을 생성할 수 있음
@@ -85,22 +83,16 @@ export async function POST(request: NextRequest) {
 
     // 유효한 역할인지 확인
     if (!['USER', 'ADMIN', 'SUPER_ADMIN'].includes(role)) {
-      return NextResponse.json(
-        { error: '유효하지 않은 역할입니다.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: '유효하지 않은 역할입니다.' }, { status: 400 })
     }
 
     // 이미 존재하는 이메일인지 확인
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     })
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: '이미 존재하는 이메일입니다.' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: '이미 존재하는 이메일입니다.' }, { status: 409 })
     }
 
     // 비밀번호 해시화
@@ -113,23 +105,22 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         name,
         role,
-        emailVerified: new Date()
+        emailVerified: new Date(),
       },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     })
 
     return NextResponse.json({
       success: true,
       message: '사용자가 생성되었습니다.',
-      user
+      user,
     })
-
   } catch (error) {
     console.error('Create user error:', error)
     return NextResponse.json(

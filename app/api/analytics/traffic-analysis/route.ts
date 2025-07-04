@@ -22,15 +22,21 @@ export async function GET(request: NextRequest) {
 
     let serviceAccount
     try {
-      const serviceAccountPath = path.join(process.cwd(), 'secrets/ga-auto-464002-672370fda082.json')
+      const serviceAccountPath = path.join(
+        process.cwd(),
+        'secrets/ga-auto-464002-672370fda082.json'
+      )
       const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
       serviceAccount = JSON.parse(serviceAccountData)
     } catch (fileError) {
       console.error('Service account file error:', fileError)
-      return NextResponse.json({
-        error: 'Service account file not found',
-        message: 'ga-auto-464002-672370fda082.json 파일을 secrets 폴더에 배치해주세요.'
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'Service account file not found',
+          message: 'ga-auto-464002-672370fda082.json 파일을 secrets 폴더에 배치해주세요.',
+        },
+        { status: 500 }
+      )
     }
 
     // JWT 토큰으로 Google API 인증
@@ -60,10 +66,13 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json()
 
     if (!tokenData.access_token) {
-      return NextResponse.json({
-        error: 'Failed to get access token',
-        details: tokenData
-      }, { status: 401 })
+      return NextResponse.json(
+        {
+          error: 'Failed to get access token',
+          details: tokenData,
+        },
+        { status: 401 }
+      )
     }
 
     // 등록된 UTM 캠페인 목록 가져오기 (Prisma)
@@ -75,8 +84,8 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           dateRanges: [{ startDate: period, endDate: 'today' }],
@@ -87,16 +96,16 @@ export async function GET(request: NextRequest) {
             { name: 'averageSessionDuration' },
             { name: 'bounceRate' },
             { name: 'conversions' },
-            { name: 'totalRevenue' }
+            { name: 'totalRevenue' },
           ],
           dimensions: [
             { name: 'sessionSource' },
             { name: 'sessionMedium' },
-            { name: 'sessionCampaignName' }
+            { name: 'sessionCampaignName' },
           ],
           orderBys: [{ desc: true, metric: { metricName: 'sessions' } }],
-          limit: 1000
-        })
+          limit: 1000,
+        }),
       }
     )
 
@@ -108,8 +117,8 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           dateRanges: [{ startDate: period, endDate: 'today' }],
@@ -117,16 +126,12 @@ export async function GET(request: NextRequest) {
             { name: 'screenPageViews' },
             { name: 'activeUsers' },
             { name: 'averageSessionDuration' },
-            { name: 'bounceRate' }
+            { name: 'bounceRate' },
           ],
-          dimensions: [
-            { name: 'pagePath' },
-            { name: 'sessionSource' },
-            { name: 'sessionMedium' }
-          ],
+          dimensions: [{ name: 'pagePath' }, { name: 'sessionSource' }, { name: 'sessionMedium' }],
           orderBys: [{ desc: true, metric: { metricName: 'screenPageViews' } }],
-          limit: 100
-        })
+          limit: 100,
+        }),
       }
     )
 
@@ -138,32 +143,25 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           dateRanges: [{ startDate: period, endDate: 'today' }],
-          metrics: [
-            { name: 'sessions' },
-            { name: 'activeUsers' },
-            { name: 'conversions' }
-          ],
-          dimensions: [
-            { name: 'googleAdsKeyword' },
-            { name: 'sessionSource' }
-          ],
+          metrics: [{ name: 'sessions' }, { name: 'activeUsers' }, { name: 'conversions' }],
+          dimensions: [{ name: 'googleAdsKeyword' }, { name: 'sessionSource' }],
           dimensionFilter: {
             filter: {
               fieldName: 'sessionMedium',
               stringFilter: {
                 value: 'organic',
-                matchType: 'EXACT'
-              }
-            }
+                matchType: 'EXACT',
+              },
+            },
           },
           orderBys: [{ desc: true, metric: { metricName: 'sessions' } }],
-          limit: 500
-        })
+          limit: 500,
+        }),
       }
     )
 
@@ -178,19 +176,19 @@ export async function GET(request: NextRequest) {
     console.log('🔍 트래픽 소스 분석 디버깅:')
     console.log(`- 등록된 UTM 캠페인: ${registeredUTMs.length}개`)
     console.log(`- GA4 트래픽 소스: ${trafficData.rows?.length || 0}개`)
-    console.log(`- 매칭된 UTM: ${sources.filter(s => s.isRegisteredUTM).length}개`)
-    
+    console.log(`- 매칭된 UTM: ${sources.filter((s) => s.isRegisteredUTM).length}개`)
+
     // UTM 매칭 상세 정보
-    const utmMatches = sources.filter(s => s.isRegisteredUTM)
+    const utmMatches = sources.filter((s) => s.isRegisteredUTM)
     if (utmMatches.length > 0) {
       console.log('✅ 매칭된 UTM 캠페인:')
-      utmMatches.forEach(match => {
+      utmMatches.forEach((match) => {
         console.log(`  - ${match.source}/${match.medium}/${match.campaign}: ${match.sessions} 세션`)
       })
     } else {
       console.log('⚠️ 매칭된 UTM 캠페인이 없습니다.')
       console.log('등록된 UTM 캠페인:')
-      registeredUTMs.forEach(utm => {
+      registeredUTMs.forEach((utm) => {
         console.log(`  - ${utm.source}/${utm.medium}/${utm.campaign}`)
       })
     }
@@ -207,18 +205,22 @@ export async function GET(request: NextRequest) {
         debug: {
           totalSources: trafficData.rows?.length || 0,
           matchedUTMs: utmMatches.length,
-          registeredUTMList: registeredUTMs.map(utm => `${utm.source}/${utm.medium}/${utm.campaign}`)
-        }
+          registeredUTMList: registeredUTMs.map(
+            (utm) => `${utm.source}/${utm.medium}/${utm.campaign}`
+          ),
+        },
       },
-      message: '✅ 트래픽 소스 분석 데이터가 성공적으로 로드되었습니다.'
+      message: '✅ 트래픽 소스 분석 데이터가 성공적으로 로드되었습니다.',
     })
-
   } catch (error: any) {
     console.error('Traffic Analysis API error:', error)
-    return NextResponse.json({
-      error: 'Failed to load traffic analysis data',
-      details: error.message
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Failed to load traffic analysis data',
+        details: error.message,
+      },
+      { status: 500 }
+    )
   }
 }
 
@@ -227,12 +229,12 @@ function processTrafficSources(gaData: any, registeredUTMs: any[]) {
   if (!gaData.rows) return []
 
   const registeredCampaigns = new Set(
-    registeredUTMs.map(utm => `${utm.source}_${utm.medium}_${utm.campaign}`)
+    registeredUTMs.map((utm) => `${utm.source}_${utm.medium}_${utm.campaign}`)
   )
 
   // 추가 매칭을 위한 맵 생성
   const utmMap = new Map()
-  registeredUTMs.forEach(utm => {
+  registeredUTMs.forEach((utm) => {
     // 정확한 매칭
     utmMap.set(`${utm.source}_${utm.medium}_${utm.campaign}`, utm)
     // 부분 매칭 (캠페인만)
@@ -295,12 +297,14 @@ function processTrafficSources(gaData: any, registeredUTMs: any[]) {
       revenue,
       isRegisteredUTM,
       category,
-      matchedUTM: matchedUTM ? {
-        name: matchedUTM.name,
-        url: matchedUTM.url,
-        description: matchedUTM.description
-      } : null,
-      topPages: [] // 추후 연결
+      matchedUTM: matchedUTM
+        ? {
+            name: matchedUTM.name,
+            url: matchedUTM.url,
+            description: matchedUTM.description,
+          }
+        : null,
+      topPages: [], // 추후 연결
     }
   })
 }
@@ -313,8 +317,9 @@ function processPagePaths(gaData: any) {
 
   gaData.rows.forEach((row: any) => {
     const [pagePath, source, medium] = row.dimensionValues.map((d: any) => d.value)
-    const [pageViews, users, avgDuration, bounceRate] =
-      row.metricValues.map((m: any) => parseFloat(m.value) || 0)
+    const [pageViews, users, avgDuration, bounceRate] = row.metricValues.map(
+      (m: any) => parseFloat(m.value) || 0
+    )
 
     if (!pageStats[pagePath]) {
       pageStats[pagePath] = {
@@ -324,7 +329,7 @@ function processPagePaths(gaData: any) {
         avgTimeOnPage: 0,
         bounceRate: 0,
         sources: {},
-        topSource: ''
+        topSource: '',
       }
     }
 
@@ -334,21 +339,26 @@ function processPagePaths(gaData: any) {
     pageStats[pagePath].bounceRate += bounceRate
 
     const sourceKey = `${source}/${medium}`
-    pageStats[pagePath].sources[sourceKey] = (pageStats[pagePath].sources[sourceKey] || 0) + pageViews
+    pageStats[pagePath].sources[sourceKey] =
+      (pageStats[pagePath].sources[sourceKey] || 0) + pageViews
   })
 
-  return Object.values(pageStats).map((page: any) => {
-    // 최상위 소스 찾기
-    const topSource = Object.entries(page.sources)
-      .sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] || 'unknown'
+  return Object.values(pageStats)
+    .map((page: any) => {
+      // 최상위 소스 찾기
+      const topSource =
+        Object.entries(page.sources).sort(
+          ([, a], [, b]) => (b as number) - (a as number)
+        )[0]?.[0] || 'unknown'
 
-    return {
-      ...page,
-      topSource,
-      avgTimeOnPage: formatDuration(page.avgTimeOnPage),
-      bounceRate: page.bounceRate / Object.keys(page.sources).length
-    }
-  }).sort((a, b) => b.pageViews - a.pageViews)
+      return {
+        ...page,
+        topSource,
+        avgTimeOnPage: formatDuration(page.avgTimeOnPage),
+        bounceRate: page.bounceRate / Object.keys(page.sources).length,
+      }
+    })
+    .sort((a, b) => b.pageViews - a.pageViews)
 }
 
 // 키워드 데이터 처리
@@ -362,14 +372,16 @@ function processKeywords(gaData: any) {
     })
     .map((row: any) => {
       const [keyword, source] = row.dimensionValues.map((d: any) => d.value)
-      const [sessions, users, conversions] = row.metricValues.map((m: any) => parseFloat(m.value) || 0)
+      const [sessions, users, conversions] = row.metricValues.map(
+        (m: any) => parseFloat(m.value) || 0
+      )
 
       return {
         keyword,
         source,
         sessions,
         users,
-        conversions
+        conversions,
       }
     })
     .sort((a, b) => b.sessions - a.sessions)

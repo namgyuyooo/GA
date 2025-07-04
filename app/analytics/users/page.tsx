@@ -1,38 +1,58 @@
-import { ArrowLeftIcon, UsersIcon, UserPlusIcon, ArrowPathIcon, ChartPieIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowLeftIcon,
+  UsersIcon,
+  UserPlusIcon,
+  ArrowPathIcon,
+  ChartPieIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import ReactMarkdown from 'react-markdown'
+import AIInsightCard from '../../components/AIInsightCard'
 
 export default function UsersAnalysis() {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [period, setPeriod] = useState('30daysAgo')
+  const [propertyId, setPropertyId] = useState('464147982') // Default property ID
   const [insightLoading, setInsightLoading] = useState(false)
   const [latestInsight, setLatestInsight] = useState<any>(null)
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [selectedModel, setSelectedModel] = useState<string>('')
 
+  // URL 파라미터에서 초기값 설정
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const propId = urlParams.get('propertyId') || '464147982'
+      setPropertyId(propId)
+    }
+  }, [])
+
   useEffect(() => {
     loadUsersData()
     fetchLatestInsight()
     fetch('/api/ai-insight/models')
-      .then(res => res.json())
-      .then(result => {
+      .then((res) => res.json())
+      .then((result) => {
         if (result.success) {
           setAvailableModels(result.models)
           if (result.models.length > 0) setSelectedModel(result.models[0].id)
         }
       })
-  }, [period])
+  }, [period, propertyId, loadUsersData, fetchLatestInsight])
 
-  const loadUsersData = async () => {
+  const loadUsersData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/analytics/users-detail?period=${period}`)
+      const response = await fetch(
+        `/api/analytics/users-detail?period=${period}&propertyId=${propertyId}`
+      )
       const result = await response.json()
       setData(result)
-      
+
       if (response.ok) {
         toast.success('사용자 분석 데이터 로드 완료')
       }
@@ -42,14 +62,14 @@ export default function UsersAnalysis() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [period, propertyId])
 
-  const fetchLatestInsight = async () => {
-    const res = await fetch(`/api/ai-insight?type=users&propertyId=464147982`) // propertyId needs to be dynamic
+  const fetchLatestInsight = useCallback(async () => {
+    const res = await fetch(`/api/ai-insight?type=users&propertyId=${propertyId}`)
     const result = await res.json()
     if (result.success && result.insight) setLatestInsight(result.insight)
     else setLatestInsight(null)
-  }
+  }, [propertyId])
 
   const handleGenerateInsight = async () => {
     setInsightLoading(true)
@@ -57,8 +77,9 @@ export default function UsersAnalysis() {
       const requestBody: any = {
         model: selectedModel,
         type: 'users',
-        propertyId: '464147982', // propertyId needs to be dynamic
-        prompt: `다음은 사용자 분석 데이터입니다.\n\n` +
+        propertyId: propertyId, // propertyId needs to be dynamic
+        prompt:
+          `다음은 사용자 분석 데이터입니다.\n\n` +
           `총 사용자: ${data?.totalUsers || 0}\n` +
           `신규 사용자: ${data?.newUsers || 0}\n` +
           `재방문 사용자: ${data?.returningUsers || 0}\n` +
@@ -72,13 +93,13 @@ export default function UsersAnalysis() {
           `사용자 세분화 (신규 방문자): ${data?.segmentation?.newVisitors || 0}\n` +
           `사용자 세분화 (활성 사용자): ${data?.segmentation?.activeUsers || 0}\n` +
           `사용자 세분화 (고가치 사용자): ${data?.segmentation?.highValueUsers || 0}\n` +
-          `주요 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
+          `주요 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`,
       }
 
       const res = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
       const result = await res.json()
       if (result.success) {
@@ -86,7 +107,7 @@ export default function UsersAnalysis() {
       } else {
         toast.error('AI 인사이트 생성 실패: ' + (result.error || ''))
       }
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error('AI 인사이트 생성 중 오류: ' + (e.message || ''))
     } finally {
       setInsightLoading(false)
@@ -112,8 +133,8 @@ export default function UsersAnalysis() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <select 
-              value={period} 
+            <select
+              value={period}
               onChange={(e) => setPeriod(e.target.value)}
               className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             >
@@ -125,12 +146,14 @@ export default function UsersAnalysis() {
             {availableModels.length > 0 && (
               <select
                 value={selectedModel}
-                onChange={e => setSelectedModel(e.target.value)}
+                onChange={(e) => setSelectedModel(e.target.value)}
                 className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
                 title="사용할 Gemini 모델 선택"
               >
-                {availableModels.map(m => (
-                  <option key={m.id} value={m.id}>{m.displayName}</option>
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.displayName}
+                  </option>
                 ))}
               </select>
             )}
@@ -173,9 +196,7 @@ export default function UsersAnalysis() {
               <p className="ml-3 text-gray-600">AI가 데이터를 분석하고 있습니다...</p>
             </div>
           ) : latestInsight?.result ? (
-            <div className="prose prose-indigo max-w-none text-gray-800">
-              <ReactMarkdown>{latestInsight.result}</ReactMarkdown>
-            </div>
+            <AIInsightCard result={latestInsight.result} />
           ) : (
             <div className="text-center text-gray-500 py-8">
               <p>아직 생성된 AI 인사이트가 없습니다. '인사이트 다시 생성' 버튼을 눌러주세요.</p>
@@ -242,24 +263,28 @@ export default function UsersAnalysis() {
           <div className="p-6">
             <div className="space-y-4">
               {data?.acquisitionChannels?.map((channel: any) => (
-                <div key={channel.source} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div
+                  key={channel.source}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                >
                   <div className="flex items-center">
-                    <div className="w-4 h-4 rounded-full mr-3" style={{backgroundColor: channel.color}}></div>
+                    <div
+                      className="w-4 h-4 rounded-full mr-3"
+                      style={{ backgroundColor: channel.color }}
+                    ></div>
                     <div>
                       <div className="font-medium text-gray-900">{channel.source}</div>
                       <div className="text-sm text-gray-500">{channel.medium}</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-semibold text-gray-900">{channel.users.toLocaleString()}</div>
+                    <div className="font-semibold text-gray-900">
+                      {channel.users.toLocaleString()}
+                    </div>
                     <div className="text-sm text-gray-500">{channel.percentage}%</div>
                   </div>
                 </div>
-              )) || (
-                <div className="text-center text-gray-500 py-8">
-                  데이터를 불러오는 중...
-                </div>
-              )}
+              )) || <div className="text-center text-gray-500 py-8">데이터를 불러오는 중...</div>}
             </div>
           </div>
         </div>
@@ -284,11 +309,7 @@ export default function UsersAnalysis() {
                       <span className="text-sm">재방문: {item.returningUsers}</span>
                     </div>
                   </div>
-                )) || (
-                  <div className="text-center text-gray-500 py-8">
-                    데이터를 불러오는 중...
-                  </div>
-                )}
+                )) || <div className="text-center text-gray-500 py-8">데이터를 불러오는 중...</div>}
               </div>
             </div>
           </div>
@@ -302,13 +323,17 @@ export default function UsersAnalysis() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">평균 참여 시간</span>
                   <span className="font-semibold text-gray-900">
-                    {data?.avgEngagementTime ? `${Math.round(data.avgEngagementTime / 60)}분` : '0분'}
+                    {data?.avgEngagementTime
+                      ? `${Math.round(data.avgEngagementTime / 60)}분`
+                      : '0분'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">참여 세션 비율</span>
                   <span className="font-semibold text-gray-900">
-                    {data?.engagedSessionsRate ? `${(data.engagedSessionsRate * 100).toFixed(1)}%` : '0.0%'}
+                    {data?.engagedSessionsRate
+                      ? `${(data.engagedSessionsRate * 100).toFixed(1)}%`
+                      : '0.0%'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -320,7 +345,9 @@ export default function UsersAnalysis() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">재방문율</span>
                   <span className="font-semibold text-gray-900">
-                    {data?.returnVisitorRate ? `${(data.returnVisitorRate * 100).toFixed(1)}%` : '0.0%'}
+                    {data?.returnVisitorRate
+                      ? `${(data.returnVisitorRate * 100).toFixed(1)}%`
+                      : '0.0%'}
                   </span>
                 </div>
               </div>

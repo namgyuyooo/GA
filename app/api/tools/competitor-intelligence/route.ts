@@ -15,7 +15,13 @@ interface CompetitorData {
 
 export async function POST(request: NextRequest) {
   try {
-    const { competitorName, homepageUrl, koreanName, englishName, relatedInfo }: {
+    const {
+      competitorName,
+      homepageUrl,
+      koreanName,
+      englishName,
+      relatedInfo,
+    }: {
       competitorName?: string
       homepageUrl?: string
       koreanName?: string
@@ -24,10 +30,14 @@ export async function POST(request: NextRequest) {
     } = await request.json()
 
     if (!competitorName && !homepageUrl && !koreanName && !englishName && !relatedInfo) {
-      return NextResponse.json({
-        success: false,
-        message: 'At least one competitor identifier (name, URL, Korean name, English name, or related info) is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'At least one competitor identifier (name, URL, Korean name, English name, or related info) is required',
+        },
+        { status: 400 }
+      )
     }
 
     const displayCompetitorName = koreanName || englishName || competitorName || homepageUrl
@@ -46,21 +56,23 @@ export async function POST(request: NextRequest) {
           { keyword: `${displayCompetitorName} 가격`, rank: 2 },
           { keyword: `경쟁사 ${displayCompetitorName}`, rank: 3 },
           { keyword: `대안 ${displayCompetitorName}`, rank: 4 },
-          { keyword: `리뷰 ${displayCompetitorName}`, rank: 5 }
-        ]
-      }
+          { keyword: `리뷰 ${displayCompetitorName}`, rank: 5 },
+        ],
+      },
     ]
 
     return NextResponse.json({
       success: true,
-      data: mockData
+      data: mockData,
     })
-
   } catch (error) {
     console.error('Competitor intelligence API error:', error)
-    return NextResponse.json({
-      success: false,
-      message: 'Failed to fetch competitor intelligence data'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to fetch competitor intelligence data',
+      },
+      { status: 500 }
+    )
   }
 }

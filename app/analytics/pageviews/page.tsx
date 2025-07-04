@@ -1,40 +1,61 @@
 'use client'
 
-import { ArrowLeftIcon, EyeIcon, DocumentTextIcon, ClockIcon, ArrowTrendingUpIcon, SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowLeftIcon,
+  EyeIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  ArrowTrendingUpIcon,
+  SparklesIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import ReactMarkdown from 'react-markdown'
+import AIInsightCard from '../../components/AIInsightCard'
 
 export default function PageViewsAnalysis() {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [period, setPeriod] = useState('30daysAgo')
+  const [propertyId, setPropertyId] = useState('464147982') // Default property ID
   const [insightLoading, setInsightLoading] = useState(false)
   const [latestInsight, setLatestInsight] = useState<any>(null)
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [selectedModel, setSelectedModel] = useState<string>('')
 
+  // URL 파라미터에서 초기값 설정
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const propId = urlParams.get('propertyId') || '464147982'
+      setPropertyId(propId)
+    }
+  }, [])
+
   useEffect(() => {
     loadPageViewsData()
     fetchLatestInsight()
     fetch('/api/ai-insight/models')
-      .then(res => res.json())
-      .then(result => {
+      .then((res) => res.json())
+      .then((result) => {
         if (result.success) {
           setAvailableModels(result.models)
           if (result.models.length > 0) setSelectedModel(result.models[0].id)
         }
       })
-  }, [period])
+  }, [period, propertyId, loadPageViewsData, fetchLatestInsight])
 
-  const loadPageViewsData = async () => {
+  const loadPageViewsData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/analytics/pageviews-detail?period=${period}`)
+      const response = await fetch(
+        `/api/analytics/pageviews-detail?period=${period}&propertyId=${propertyId}`
+      )
       const result = await response.json()
       setData(result)
-      
+
       if (response.ok) {
         toast.success('페이지뷰 분석 데이터 로드 완료')
       }
@@ -44,14 +65,14 @@ export default function PageViewsAnalysis() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [period, propertyId])
 
-  const fetchLatestInsight = async () => {
-    const res = await fetch(`/api/ai-insight?type=pageviews&propertyId=464147982`) // propertyId needs to be dynamic
+  const fetchLatestInsight = useCallback(async () => {
+    const res = await fetch(`/api/ai-insight?type=pageviews&propertyId=${propertyId}`)
     const result = await res.json()
     if (result.success && result.insight) setLatestInsight(result.insight)
     else setLatestInsight(null)
-  }
+  }, [propertyId])
 
   const handleGenerateInsight = async () => {
     setInsightLoading(true)
@@ -59,8 +80,9 @@ export default function PageViewsAnalysis() {
       const requestBody: any = {
         model: selectedModel,
         type: 'pageviews',
-        propertyId: '464147982', // propertyId needs to be dynamic
-        prompt: `다음은 페이지뷰 분석 데이터입니다.\n\n` +
+        propertyId: propertyId, // propertyId needs to be dynamic
+        prompt:
+          `다음은 페이지뷰 분석 데이터입니다.\n\n` +
           `총 페이지뷰: ${data?.totalPageViews || 0}\n` +
           `순 페이지뷰: ${data?.uniquePageViews || 0}\n` +
           `평균 페이지 체류시간: ${data?.avgTimeOnPage || 0}초\n` +
@@ -74,13 +96,13 @@ export default function PageViewsAnalysis() {
           `페이지 플로우 분석 (랜딩 페이지): ${data?.flowAnalysis?.landingPages || 0}\n` +
           `페이지 플로우 분석 (중간 페이지): ${data?.flowAnalysis?.intermediatePages || 0}\n` +
           `페이지 플로우 분석 (출구 페이지): ${data?.flowAnalysis?.exitPages || 0}\n` +
-          `주요 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
+          `주요 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`,
       }
 
       const res = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
       const result = await res.json()
       if (result.success) {
@@ -88,7 +110,7 @@ export default function PageViewsAnalysis() {
       } else {
         toast.error('AI 인사이트 생성 실패: ' + (result.error || ''))
       }
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error('AI 인사이트 생성 중 오류: ' + (e.message || ''))
     } finally {
       setInsightLoading(false)
@@ -114,8 +136,8 @@ export default function PageViewsAnalysis() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <select 
-              value={period} 
+            <select
+              value={period}
               onChange={(e) => setPeriod(e.target.value)}
               className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
@@ -127,12 +149,14 @@ export default function PageViewsAnalysis() {
             {availableModels.length > 0 && (
               <select
                 value={selectedModel}
-                onChange={e => setSelectedModel(e.target.value)}
+                onChange={(e) => setSelectedModel(e.target.value)}
                 className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
                 title="사용할 Gemini 모델 선택"
               >
-                {availableModels.map(m => (
-                  <option key={m.id} value={m.id}>{m.displayName}</option>
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.displayName}
+                  </option>
                 ))}
               </select>
             )}
@@ -175,9 +199,7 @@ export default function PageViewsAnalysis() {
               <p className="ml-3 text-gray-600">AI가 데이터를 분석하고 있습니다...</p>
             </div>
           ) : latestInsight?.result ? (
-            <div className="prose prose-indigo max-w-none text-gray-800">
-              <ReactMarkdown>{latestInsight.result}</ReactMarkdown>
-            </div>
+            <AIInsightCard result={latestInsight.result} />
           ) : (
             <div className="text-center text-gray-500 py-8">
               <p>아직 생성된 AI 인사이트가 없습니다. '인사이트 다시 생성' 버튼을 눌러주세요.</p>
@@ -229,7 +251,9 @@ export default function PageViewsAnalysis() {
               <div className="ml-4">
                 <p className="text-sm text-gray-600">페이지별 전환율</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {data?.pageConversionRate ? `${(data.pageConversionRate * 100).toFixed(2)}%` : '0.00%'}
+                  {data?.pageConversionRate
+                    ? `${(data.pageConversionRate * 100).toFixed(2)}%`
+                    : '0.00%'}
                 </p>
               </div>
             </div>
@@ -273,7 +297,9 @@ export default function PageViewsAnalysis() {
                       {page.pageViews?.toLocaleString() || '0'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {page.uniquePageViews?.toLocaleString() || page.users?.toLocaleString() || '0'}
+                      {page.uniquePageViews?.toLocaleString() ||
+                        page.users?.toLocaleString() ||
+                        '0'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {page.avgTimeOnPage ? `${Math.round(page.avgTimeOnPage)}초` : '0초'}
@@ -305,19 +331,20 @@ export default function PageViewsAnalysis() {
                 {data?.pageCategories?.map((category: any) => (
                   <div key={category.name} className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className="w-4 h-4 rounded-full mr-3" style={{backgroundColor: category.color}}></div>
+                      <div
+                        className="w-4 h-4 rounded-full mr-3"
+                        style={{ backgroundColor: category.color }}
+                      ></div>
                       <span className="text-sm font-medium text-gray-900">{category.name}</span>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-semibold text-gray-900">{category.pageViews.toLocaleString()}</div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {category.pageViews.toLocaleString()}
+                      </div>
                       <div className="text-xs text-gray-500">{category.percentage}%</div>
                     </div>
                   </div>
-                )) || (
-                  <div className="text-center text-gray-500 py-8">
-                    데이터를 불러오는 중...
-                  </div>
-                )}
+                )) || <div className="text-center text-gray-500 py-8">데이터를 불러오는 중...</div>}
               </div>
             </div>
           </div>

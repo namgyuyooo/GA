@@ -21,7 +21,7 @@ export default function UserManagement() {
     email: '',
     password: '',
     name: '',
-    role: 'USER'
+    role: 'USER',
   })
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState('')
@@ -262,7 +262,9 @@ export default function UserManagement() {
                       <div className="text-sm text-gray-900">{user.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}
+                      >
                         {getRoleText(user.role)}
                       </span>
                     </td>
@@ -271,9 +273,7 @@ export default function UserManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {user.id !== currentUser?.id && (
-                        <button className="text-blue-600 hover:text-blue-900 mr-3">
-                          편집
-                        </button>
+                        <button className="text-blue-600 hover:text-blue-900 mr-3">편집</button>
                       )}
                       {user.id === currentUser?.id && (
                         <span className="text-gray-400">현재 사용자</span>

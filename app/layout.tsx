@@ -11,11 +11,7 @@ export const metadata: Metadata = {
   description: 'UTM 캠페인 관리 및 성과 분석 대시보드',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
       <body className={inter.className}>

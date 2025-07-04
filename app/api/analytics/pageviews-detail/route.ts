@@ -11,30 +11,36 @@ export async function GET(request: NextRequest) {
     // Service Account 기반 실제 데이터 가져오기
     const fs = require('fs')
     const path = require('path')
-    
+
     let serviceAccount
     try {
-      const serviceAccountPath = path.join(process.cwd(), 'secrets/ga-auto-464002-672370fda082.json')
+      const serviceAccountPath = path.join(
+        process.cwd(),
+        'secrets/ga-auto-464002-672370fda082.json'
+      )
       const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
       serviceAccount = JSON.parse(serviceAccountData)
     } catch (fileError) {
       console.error('Service account file error:', fileError)
-      return NextResponse.json({
-        error: 'Service account file not found',
-        message: 'ga-auto-464002-672370fda082.json 파일을 secrets 폴더에 배치해주세요.'
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'Service account file not found',
+          message: 'ga-auto-464002-672370fda082.json 파일을 secrets 폴더에 배치해주세요.',
+        },
+        { status: 500 }
+      )
     }
 
     // JWT 토큰으로 Google API 인증
     const jwt = require('jsonwebtoken')
-    
+
     const now = Math.floor(Date.now() / 1000)
     const tokenPayload = {
       iss: serviceAccount.client_email,
       scope: 'https://www.googleapis.com/auth/analytics.readonly',
       aud: 'https://oauth2.googleapis.com/token',
       iat: now,
-      exp: now + 3600
+      exp: now + 3600,
     }
 
     const token = jwt.sign(tokenPayload, serviceAccount.private_key, { algorithm: 'RS256' })
@@ -42,7 +48,7 @@ export async function GET(request: NextRequest) {
     const authResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
+      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`,
     })
 
     if (!authResponse.ok) {
@@ -57,8 +63,8 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           dateRanges: [{ startDate: period, endDate: 'today' }],
@@ -66,9 +72,9 @@ export async function GET(request: NextRequest) {
             { name: 'screenPageViews' },
             { name: 'sessions' },
             { name: 'averageSessionDuration' },
-            { name: 'bounceRate' }
-          ]
-        })
+            { name: 'bounceRate' },
+          ],
+        }),
       }
     )
 
@@ -76,18 +82,18 @@ export async function GET(request: NextRequest) {
       totalPageViews: 0,
       uniquePageViews: 0,
       avgTimeOnPage: 0,
-      pageConversionRate: 0
+      pageConversionRate: 0,
     }
 
     if (pageViewMetricsResponse.ok) {
       const metricsData = await pageViewMetricsResponse.json()
       const row = metricsData.rows?.[0]?.metricValues || []
-      
+
       pageViewMetrics = {
         totalPageViews: Number(row[0]?.value || 0),
         uniquePageViews: Math.round(Number(row[0]?.value || 0) * 0.8), // Estimate unique views
         avgTimeOnPage: Number(row[2]?.value || 0),
-        pageConversionRate: Math.random() * 0.05 // Mock conversion rate
+        pageConversionRate: Math.random() * 0.05, // Mock conversion rate
       }
     }
 
@@ -97,50 +103,48 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           dateRanges: [{ startDate: period, endDate: 'today' }],
-          dimensions: [
-            { name: 'pagePath' },
-            { name: 'pageTitle' }
-          ],
+          dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
           metrics: [
             { name: 'screenPageViews' },
             { name: 'activeUsers' },
             { name: 'averageSessionDuration' },
-            { name: 'bounceRate' }
+            { name: 'bounceRate' },
           ],
           orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
-          limit: 20
-        })
+          limit: 20,
+        }),
       }
     )
 
     let topPages = []
     if (topPagesResponse.ok) {
       const pagesData = await topPagesResponse.json()
-      topPages = pagesData.rows?.map((row: any) => ({
-        path: row.dimensionValues[0].value,
-        title: row.dimensionValues[1].value || row.dimensionValues[0].value,
-        pageViews: Number(row.metricValues[0].value || 0),
-        users: Number(row.metricValues[1].value || 0),
-        avgTimeOnPage: Number(row.metricValues[2].value || 0),
-        bounceRate: Number(row.metricValues[3].value || 0)
-      })) || []
+      topPages =
+        pagesData.rows?.map((row: any) => ({
+          path: row.dimensionValues[0].value,
+          title: row.dimensionValues[1].value || row.dimensionValues[0].value,
+          pageViews: Number(row.metricValues[0].value || 0),
+          users: Number(row.metricValues[1].value || 0),
+          avgTimeOnPage: Number(row.metricValues[2].value || 0),
+          bounceRate: Number(row.metricValues[3].value || 0),
+        })) || []
     }
 
     // 3. 페이지 카테고리별 분석 (path 기반으로 카테고리 분류)
     const pageCategories = []
     if (topPages.length > 0) {
       const categories = {
-        'Home': { pages: [], color: '#3B82F6' },
-        'Blog': { pages: [], color: '#10B981' },
-        'Product': { pages: [], color: '#F59E0B' },
-        'About': { pages: [], color: '#8B5CF6' },
-        'Contact': { pages: [], color: '#EF4444' },
-        'Other': { pages: [], color: '#6B7280' }
+        Home: { pages: [], color: '#3B82F6' },
+        Blog: { pages: [], color: '#10B981' },
+        Product: { pages: [], color: '#F59E0B' },
+        About: { pages: [], color: '#8B5CF6' },
+        Contact: { pages: [], color: '#EF4444' },
+        Other: { pages: [], color: '#6B7280' },
       }
 
       topPages.forEach((page: any) => {
@@ -164,12 +168,15 @@ export async function GET(request: NextRequest) {
 
       Object.entries(categories).forEach(([name, category]: [string, any]) => {
         if (category.pages.length > 0) {
-          const categoryPageViews = category.pages.reduce((sum: number, page: any) => sum + page.pageViews, 0)
+          const categoryPageViews = category.pages.reduce(
+            (sum: number, page: any) => sum + page.pageViews,
+            0
+          )
           pageCategories.push({
             name,
             pageViews: categoryPageViews,
             percentage: ((categoryPageViews / totalPageViews) * 100).toFixed(1),
-            color: category.color
+            color: category.color,
           })
         }
       })
@@ -180,14 +187,14 @@ export async function GET(request: NextRequest) {
       avgLoadTime: (Math.random() * 2 + 1).toFixed(1), // 1-3초
       avgScrollDepth: Math.round(Math.random() * 40 + 50), // 50-90%
       avgEventsPerPage: Math.random() * 3 + 2, // 2-5 이벤트
-      mobileViewsRate: Math.random() * 0.4 + 0.5 // 50-90%
+      mobileViewsRate: Math.random() * 0.4 + 0.5, // 50-90%
     }
 
     // 5. 페이지 플로우 분석 (mock data)
     const flowAnalysis = {
       landingPages: Math.round(topPages.length * 0.3),
       intermediatePages: Math.round(topPages.length * 0.5),
-      exitPages: Math.round(topPages.length * 0.2)
+      exitPages: Math.round(topPages.length * 0.2),
     }
 
     return NextResponse.json({
@@ -198,14 +205,16 @@ export async function GET(request: NextRequest) {
       ...performanceMetrics,
       topPages,
       pageCategories,
-      flowAnalysis
+      flowAnalysis,
     })
-
   } catch (error: any) {
     console.error('PageViews detail analysis error:', error)
-    return NextResponse.json({
-      error: 'Failed to load pageviews detail analysis',
-      details: error.message
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Failed to load pageviews detail analysis',
+        details: error.message,
+      },
+      { status: 500 }
+    )
   }
 }

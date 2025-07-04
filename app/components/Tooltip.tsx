@@ -13,14 +13,14 @@ interface TooltipProps {
   maxWidth?: string
 }
 
-export default function Tooltip({ 
-  content, 
+export default function Tooltip({
+  content,
   title,
-  children, 
-  position = 'top', 
+  children,
+  position = 'top',
   size = 'md',
   type = 'info',
-  maxWidth = 'max-w-xs'
+  maxWidth = 'max-w-xs',
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false)
 
@@ -102,10 +102,12 @@ export default function Tooltip({
       >
         {children || getTypeIcon()}
       </div>
-      
+
       {isVisible && (
         <div className={`absolute z-50 ${getPositionClasses()}`}>
-          <div className={`${maxWidth} ${getSizeClasses()} ${getTypeColor()} text-white rounded-lg shadow-lg border transition-opacity duration-200`}>
+          <div
+            className={`${maxWidth} ${getSizeClasses()} ${getTypeColor()} text-white rounded-lg shadow-lg border transition-opacity duration-200`}
+          >
             {title && (
               <div className="font-semibold mb-1 text-white border-b border-gray-600 pb-1">
                 {title}
@@ -119,13 +121,17 @@ export default function Tooltip({
               )}
             </div>
           </div>
-          
+
           {/* Arrow */}
-          <div className={`absolute w-0 h-0 border-4 ${getArrowClasses()} ${
-            type === 'calculation' ? 'border-blue-900' :
-            type === 'datasource' ? 'border-green-900' :
-            'border-gray-900'
-          }`} />
+          <div
+            className={`absolute w-0 h-0 border-4 ${getArrowClasses()} ${
+              type === 'calculation'
+                ? 'border-blue-900'
+                : type === 'datasource'
+                  ? 'border-green-900'
+                  : 'border-gray-900'
+            }`}
+          />
         </div>
       )}
     </div>

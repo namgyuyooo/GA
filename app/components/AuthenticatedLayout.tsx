@@ -11,10 +11,10 @@ interface AuthenticatedLayoutProps {
   showSidebar?: boolean
 }
 
-export default function AuthenticatedLayout({ 
-  children, 
+export default function AuthenticatedLayout({
+  children,
   activeTab = 'dashboard',
-  showSidebar = true 
+  showSidebar = true,
 }: AuthenticatedLayoutProps) {
   const { user, loading } = useAuth()
   const router = useRouter()
@@ -83,15 +83,17 @@ export default function AuthenticatedLayout({
           propertyId: '464147982',
           dateRange: {
             startDate: '30daysAgo',
-            endDate: 'today'
-          }
+            endDate: 'today',
+          },
         }),
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
-        alert(`일괄 데이터 로드 완료!\n트래픽: ${result.data.trafficRows}행\n페이지: ${result.data.pageRows}행\n검색어: ${result.data.searchRows}행`)
+        alert(
+          `일괄 데이터 로드 완료!\n트래픽: ${result.data.trafficRows}행\n페이지: ${result.data.pageRows}행\n검색어: ${result.data.searchRows}행`
+        )
       } else {
         alert(`오류: ${result.error}`)
       }
@@ -123,11 +125,7 @@ export default function AuthenticatedLayout({
 
   // 사이드바가 없는 레이아웃 (전체 화면)
   if (!showSidebar) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        {children}
-      </div>
-    )
+    return <div className="min-h-screen bg-gray-100">{children}</div>
   }
 
   // 기본 레이아웃 (사이드바 포함)
@@ -145,14 +143,12 @@ export default function AuthenticatedLayout({
         dataMode="realtime"
         onDataModeChange={handleDataModeChange}
       />
-      
+
       {/* Main content */}
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
         <main className="flex-1 relative overflow-y-auto focus:outline-none">
           <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              {children}
-            </div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">{children}</div>
           </div>
         </main>
       </div>

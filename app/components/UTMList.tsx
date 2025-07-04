@@ -6,7 +6,7 @@ import {
   LinkIcon,
   PauseIcon,
   PlayIcon,
-  TrashIcon
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -64,13 +64,11 @@ export default function UTMList() {
       const response = await fetch(`/api/utm/campaigns/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status }),
       })
 
       if (response.ok) {
-        setCampaigns(campaigns.map(c =>
-          c.id === id ? { ...c, status } : c
-        ))
+        setCampaigns(campaigns.map((c) => (c.id === id ? { ...c, status } : c)))
         toast.success(`캠페인이 ${status === 'ACTIVE' ? '활성화' : '일시정지'} 되었습니다.`)
       }
     } catch (error) {
@@ -83,11 +81,11 @@ export default function UTMList() {
 
     try {
       const response = await fetch(`/api/utm/campaigns/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
 
       if (response.ok) {
-        setCampaigns(campaigns.filter(c => c.id !== id))
+        setCampaigns(campaigns.filter((c) => c.id !== id))
         toast.success('캠페인이 삭제되었습니다.')
       }
     } catch (error) {
@@ -95,9 +93,10 @@ export default function UTMList() {
     }
   }
 
-  const filteredCampaigns = campaigns.filter(campaign => {
+  const filteredCampaigns = campaigns.filter((campaign) => {
     const matchesFilter = filter === 'ALL' || campaign.status === filter
-    const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch =
+      campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       campaign.campaign.toLowerCase().includes(searchTerm.toLowerCase()) ||
       campaign.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
       campaign.medium.toLowerCase().includes(searchTerm.toLowerCase())
@@ -108,7 +107,7 @@ export default function UTMList() {
     const statusConfig = {
       ACTIVE: { color: 'bg-green-100 text-green-800', text: '활성' },
       PAUSED: { color: 'bg-yellow-100 text-yellow-800', text: '일시정지' },
-      ARCHIVED: { color: 'bg-gray-100 text-gray-800', text: '보관됨' }
+      ARCHIVED: { color: 'bg-gray-100 text-gray-800', text: '보관됨' },
     }
 
     const config = statusConfig[status as keyof typeof statusConfig]
@@ -136,26 +135,29 @@ export default function UTMList() {
           <LinkIcon className="w-6 h-6 text-primary-600" />
           <h2 className="text-2xl font-bold text-gray-900">UTM 캠페인 목록</h2>
         </div>
-        <div className="text-sm text-gray-500">
-          총 {campaigns.length}개 캠페인
-        </div>
+        <div className="text-sm text-gray-500">총 {campaigns.length}개 캠페인</div>
       </div>
 
       {/* 필터 및 검색 */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="flex gap-2">
-          {['ALL', 'ACTIVE', 'PAUSED', 'ARCHIVED'].map(status => (
+          {['ALL', 'ACTIVE', 'PAUSED', 'ARCHIVED'].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status as any)}
-              className={`px-3 py-1 text-sm rounded-lg transition-colors ${filter === status
+              className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                filter === status
                   ? 'bg-primary-600 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+              }`}
             >
-              {status === 'ALL' ? '전체' :
-                status === 'ACTIVE' ? '활성' :
-                  status === 'PAUSED' ? '일시정지' : '보관됨'}
+              {status === 'ALL'
+                ? '전체'
+                : status === 'ACTIVE'
+                  ? '활성'
+                  : status === 'PAUSED'
+                    ? '일시정지'
+                    : '보관됨'}
             </button>
           ))}
         </div>
@@ -178,7 +180,10 @@ export default function UTMList() {
       ) : (
         <div className="space-y-4">
           {filteredCampaigns.map((campaign) => (
-            <div key={campaign.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div
+              key={campaign.id}
+              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -203,7 +208,8 @@ export default function UTMList() {
                     )}
                     {campaign.content && (
                       <div>
-                        <span className="font-medium text-gray-500">콘텐츠:</span> {campaign.content}
+                        <span className="font-medium text-gray-500">콘텐츠:</span>{' '}
+                        {campaign.content}
                       </div>
                     )}
                   </div>
@@ -215,7 +221,9 @@ export default function UTMList() {
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <span>생성일: {new Date(campaign.createdAt).toLocaleDateString('ko-KR')}</span>
                     {campaign.updatedAt !== campaign.createdAt && (
-                      <span>• 수정일: {new Date(campaign.updatedAt).toLocaleDateString('ko-KR')}</span>
+                      <span>
+                        • 수정일: {new Date(campaign.updatedAt).toLocaleDateString('ko-KR')}
+                      </span>
                     )}
                   </div>
 

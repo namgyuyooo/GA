@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import { BookOpenIcon, ChartBarIcon, LightBulbIcon } from '@heroicons/react/24/outline'
 
@@ -26,7 +26,7 @@ export default function BlogPerformanceAnalysisPage() {
     fetchBlogPerformance()
   }, [propertyId, period])
 
-  const fetchBlogPerformance = async () => {
+  const fetchBlogPerformance = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -53,7 +53,7 @@ export default function BlogPerformanceAnalysisPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [propertyId, period])
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -62,12 +62,16 @@ export default function BlogPerformanceAnalysisPage() {
           <BookOpenIcon className="h-10 w-10 text-green-600" />
           <h1 className="text-3xl font-bold text-gray-900">블로그 성과 분석 및 추천</h1>
         </div>
-        <p className="text-gray-600 mb-8">블로그 게시물별 성과를 분석하고, AI 기반의 최적화 및 신규 콘텐츠 추천을 받으세요.</p>
+        <p className="text-gray-600 mb-8">
+          블로그 게시물별 성과를 분석하고, AI 기반의 최적화 및 신규 콘텐츠 추천을 받으세요.
+        </p>
 
         {/* 필터 섹션 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <div>
-            <label htmlFor="propertyId" className="block text-sm font-medium text-gray-700">속성 ID</label>
+            <label htmlFor="propertyId" className="block text-sm font-medium text-gray-700">
+              속성 ID
+            </label>
             <input
               type="text"
               id="propertyId"
@@ -77,7 +81,9 @@ export default function BlogPerformanceAnalysisPage() {
             />
           </div>
           <div>
-            <label htmlFor="period" className="block text-sm font-medium text-gray-700">기간</label>
+            <label htmlFor="period" className="block text-sm font-medium text-gray-700">
+              기간
+            </label>
             <select
               id="period"
               value={period}
@@ -103,31 +109,43 @@ export default function BlogPerformanceAnalysisPage() {
               <div key={index} className="bg-white shadow rounded-lg p-6 border border-green-200">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{post.title}</h3>
                 <p className="text-sm text-gray-600 mb-4">경로: {post.pagePath}</p>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
                   <div>
                     <p className="font-medium text-gray-700">조회수:</p>
-                    <p className="text-lg font-semibold text-green-700">{post.pageViews.toLocaleString()}</p>
+                    <p className="text-lg font-semibold text-green-700">
+                      {post.pageViews.toLocaleString()}
+                    </p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-700">평균 세션 시간:</p>
-                    <p className="text-lg font-semibold text-green-700">{post.avgSessionDuration}초</p>
+                    <p className="text-lg font-semibold text-green-700">
+                      {post.avgSessionDuration}초
+                    </p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-700">이탈률:</p>
-                    <p className="text-lg font-semibold text-green-700">{(post.bounceRate * 100).toFixed(2)}%</p>
+                    <p className="text-lg font-semibold text-green-700">
+                      {(post.bounceRate * 100).toFixed(2)}%
+                    </p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-700">전환수:</p>
-                    <p className="text-lg font-semibold text-green-700">{post.conversions.toLocaleString()}</p>
+                    <p className="text-lg font-semibold text-green-700">
+                      {post.conversions.toLocaleString()}
+                    </p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-700">수익:</p>
-                    <p className="text-lg font-semibold text-green-700">{post.revenue.toLocaleString()}원</p>
+                    <p className="text-lg font-semibold text-green-700">
+                      {post.revenue.toLocaleString()}원
+                    </p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-700">주요 키워드:</p>
-                    <p className="text-lg font-semibold text-green-700">{post.keywords.join(', ')}</p>
+                    <p className="text-lg font-semibold text-green-700">
+                      {post.keywords.join(', ')}
+                    </p>
                   </div>
                 </div>
 
@@ -149,7 +167,9 @@ export default function BlogPerformanceAnalysisPage() {
           </div>
         ) : (
           <div className="text-center py-10">
-            <p className="text-lg text-gray-600">블로그 성과 데이터를 불러올 수 없습니다. 속성 ID와 기간을 확인해주세요.</p>
+            <p className="text-lg text-gray-600">
+              블로그 성과 데이터를 불러올 수 없습니다. 속성 ID와 기간을 확인해주세요.
+            </p>
           </div>
         )}
       </div>

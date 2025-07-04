@@ -13,53 +13,53 @@ export async function POST(request: NextRequest) {
 
     if (!SUPER_USER_EMAIL || !SUPER_USER_PASSWORD) {
       return NextResponse.json(
-        { error: '환경변수에 슈퍼유저 정보가 설정되지 않았습니다. SUPER_USER_EMAIL, SUPER_USER_PASSWORD를 설정해주세요.' },
+        {
+          error:
+            '환경변수에 슈퍼유저 정보가 설정되지 않았습니다. SUPER_USER_EMAIL, SUPER_USER_PASSWORD를 설정해주세요.',
+        },
         { status: 400 }
       )
     }
 
     // 이미 슈퍼유저가 존재하는지 확인
     const existingSuperUser = await prisma.user.findFirst({
-      where: { role: 'SUPER_ADMIN' }
+      where: { role: 'SUPER_ADMIN' },
     })
 
     if (existingSuperUser) {
-      return NextResponse.json(
-        { error: '슈퍼유저가 이미 존재합니다.' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: '슈퍼유저가 이미 존재합니다.' }, { status: 409 })
     }
 
     // 같은 이메일의 사용자가 있는지 확인
     const existingUser = await prisma.user.findUnique({
-      where: { email: SUPER_USER_EMAIL }
+      where: { email: SUPER_USER_EMAIL },
     })
 
     if (existingUser) {
       // 기존 사용자를 슈퍼유저로 업그레이드
       const hashedPassword = await bcrypt.hash(SUPER_USER_PASSWORD, 12)
-      
+
       const updatedUser = await prisma.user.update({
         where: { email: SUPER_USER_EMAIL },
         data: {
           password: hashedPassword,
           role: 'SUPER_ADMIN',
           name: SUPER_USER_NAME,
-          emailVerified: new Date()
+          emailVerified: new Date(),
         },
         select: {
           id: true,
           email: true,
           name: true,
           role: true,
-          createdAt: true
-        }
+          createdAt: true,
+        },
       })
 
       return NextResponse.json({
         success: true,
         message: '기존 사용자가 슈퍼유저로 업그레이드되었습니다.',
-        user: updatedUser
+        user: updatedUser,
       })
     }
 
@@ -73,29 +73,25 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         name: SUPER_USER_NAME,
         role: 'SUPER_ADMIN',
-        emailVerified: new Date()
+        emailVerified: new Date(),
       },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     })
 
     return NextResponse.json({
       success: true,
       message: '슈퍼유저가 생성되었습니다.',
-      user
+      user,
     })
-
   } catch (error) {
     console.error('Init superuser error:', error)
-    return NextResponse.json(
-      { error: '슈퍼유저 초기화 중 오류가 발생했습니다.' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: '슈퍼유저 초기화 중 오류가 발생했습니다.' }, { status: 500 })
   } finally {
     await prisma.$disconnect()
   }

@@ -11,9 +11,9 @@ export default function ApiDocsPage() {
   useEffect(() => {
     // Swagger JSON 파일 로드
     fetch('/swagger.json')
-      .then(response => response.json())
-      .then(data => setSwaggerSpec(data))
-      .catch(error => console.error('Failed to load swagger spec:', error))
+      .then((response) => response.json())
+      .then((data) => setSwaggerSpec(data))
+      .catch((error) => console.error('Failed to load swagger spec:', error))
   }, [])
 
   if (!swaggerSpec) {
@@ -43,14 +43,16 @@ export default function ApiDocsPage() {
               </div>
               <div className="flex items-center space-x-2">
                 <span className="inline-block w-3 h-3 bg-blue-500 rounded-full"></span>
-                <span className="text-gray-600">프로덕션: ga-git-main-namgyuyooos-projects.vercel.app</span>
+                <span className="text-gray-600">
+                  프로덕션: ga-git-main-namgyuyooos-projects.vercel.app
+                </span>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-          <SwaggerUI 
+          <SwaggerUI
             spec={swaggerSpec}
             deepLinking={true}
             displayRequestDuration={true}

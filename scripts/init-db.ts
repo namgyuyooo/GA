@@ -5,19 +5,19 @@ const prisma = new PrismaClient()
 async function main() {
   try {
     console.log('Initializing database...')
-    
+
     // 기존 테이블들이 있는지 확인
     const tableExists = await prisma.$queryRaw`
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public' AND table_name = 'User'
     `
-    
+
     console.log('Existing User table:', tableExists)
-    
+
     if (Array.isArray(tableExists) && tableExists.length === 0) {
       console.log('User table does not exist. Creating schema...')
-      
+
       // User 테이블 생성
       await prisma.$executeRaw`
         CREATE TABLE IF NOT EXISTS "User" (
@@ -32,12 +32,12 @@ async function main() {
           "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
         )
       `
-      
+
       console.log('User table created successfully')
     } else {
       console.log('User table already exists')
     }
-    
+
     // 다른 필수 테이블들도 확인 및 생성
     await prisma.$executeRaw`
       CREATE TABLE IF NOT EXISTS "Account" (
@@ -56,7 +56,7 @@ async function main() {
         UNIQUE("provider", "providerAccountId")
       )
     `
-    
+
     await prisma.$executeRaw`
       CREATE TABLE IF NOT EXISTS "Session" (
         "id" TEXT PRIMARY KEY,
@@ -65,7 +65,7 @@ async function main() {
         "expires" TIMESTAMP NOT NULL
       )
     `
-    
+
     await prisma.$executeRaw`
       CREATE TABLE IF NOT EXISTS "VerificationToken" (
         "identifier" TEXT NOT NULL,
@@ -74,9 +74,8 @@ async function main() {
         UNIQUE("identifier", "token")
       )
     `
-    
+
     console.log('Database initialization completed successfully')
-    
   } catch (error) {
     console.error('Database initialization failed:', error)
     throw error
@@ -85,8 +84,7 @@ async function main() {
   }
 }
 
-main()
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
+main().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})

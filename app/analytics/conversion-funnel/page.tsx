@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import { FunnelIcon, ChartBarIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
 
@@ -21,7 +21,14 @@ interface ConversionPathAnalysisData {
   goals: ConversionGoal[]
   pathAnalysis: { [goalId: string]: any }
   keywordAnalysis: { [goalId: string]: any }
-  pageJourneyAnalysis: { [goalId: string]: { goalName: string; entryPages: any[]; commonJourneys: PageJourney[]; totalConversions: number } }
+  pageJourneyAnalysis: {
+    [goalId: string]: {
+      goalName: string
+      entryPages: any[]
+      commonJourneys: PageJourney[]
+      totalConversions: number
+    }
+  }
   period: string
   message: string
 }
@@ -37,7 +44,7 @@ export default function ConversionFunnelPage() {
     fetchConversionData()
   }, [propertyId, period, selectedGoalId])
 
-  const fetchConversionData = async () => {
+  const fetchConversionData = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -65,7 +72,7 @@ export default function ConversionFunnelPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [propertyId, period, selectedGoalId])
 
   const renderFunnel = (goalId: string) => {
     const goalJourneys = analysisData?.pageJourneyAnalysis[goalId]?.commonJourneys || []
@@ -79,21 +86,23 @@ export default function ConversionFunnelPage() {
     // This is a simplified representation. A real funnel would require more sophisticated data processing
     // to aggregate unique steps and calculate drop-offs between them.
     const uniquePages = new Set<string>()
-    goalJourneys.forEach(journey => {
+    goalJourneys.forEach((journey) => {
       const pages = journey.journey.split(' → ')
-      pages.forEach(page => uniquePages.add(page))
+      pages.forEach((page) => uniquePages.add(page))
     })
 
-    const funnelSteps = Array.from(uniquePages).map(page => {
-      let conversionsAtStep = 0
-      goalJourneys.forEach(journey => {
-        const pages = journey.journey.split(' → ')
-        if (pages.includes(page)) {
-          conversionsAtStep += journey.conversions
-        }
+    const funnelSteps = Array.from(uniquePages)
+      .map((page) => {
+        let conversionsAtStep = 0
+        goalJourneys.forEach((journey) => {
+          const pages = journey.journey.split(' → ')
+          if (pages.includes(page)) {
+            conversionsAtStep += journey.conversions
+          }
+        })
+        return { page, conversions: conversionsAtStep }
       })
-      return { page, conversions: conversionsAtStep }
-    }).sort((a, b) => b.conversions - a.conversions)
+      .sort((a, b) => b.conversions - a.conversions)
 
     // For a true funnel, we need to define the sequence of steps and calculate drop-offs.
     // This mock will just show pages involved and their total conversions.
@@ -105,14 +114,19 @@ export default function ConversionFunnelPage() {
         {goalJourneys.slice(0, 5).map((journey, index) => (
           <div key={index} className="bg-gray-50 p-3 rounded-md shadow-sm">
             <p className="text-sm font-medium text-gray-700">{journey.journey}</p>
-            <p className="text-xs text-gray-500">전환수: {journey.conversions}회, 평균 소요 시간: {journey.avgDuration}초</p>
+            <p className="text-xs text-gray-500">
+              전환수: {journey.conversions}회, 평균 소요 시간: {journey.avgDuration}초
+            </p>
           </div>
         ))}
 
         <h4 className="text-lg font-semibold text-gray-800 mt-6">퍼널 단계별 참여</h4>
         <div className="space-y-2">
           {funnelSteps.map((step, index) => (
-            <div key={index} className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm border border-blue-200">
+            <div
+              key={index}
+              className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm border border-blue-200"
+            >
               <div className="flex items-center space-x-2">
                 <ChartBarIcon className="h-5 w-5 text-blue-500" />
                 <span className="font-medium text-gray-700">{step.page}</span>
@@ -134,12 +148,17 @@ export default function ConversionFunnelPage() {
           <FunnelIcon className="h-10 w-10 text-blue-600" />
           <h1 className="text-3xl font-bold text-gray-900">전환 퍼널 분석</h1>
         </div>
-        <p className="text-gray-600 mb-8">사용자의 전환 여정을 시각화하고, 각 단계별 전환율 및 이탈률을 분석하여 최적화 기회를 발견합니다.</p>
+        <p className="text-gray-600 mb-8">
+          사용자의 전환 여정을 시각화하고, 각 단계별 전환율 및 이탈률을 분석하여 최적화 기회를
+          발견합니다.
+        </p>
 
         {/* 필터 섹션 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div>
-            <label htmlFor="propertyId" className="block text-sm font-medium text-gray-700">속성 ID</label>
+            <label htmlFor="propertyId" className="block text-sm font-medium text-gray-700">
+              속성 ID
+            </label>
             <input
               type="text"
               id="propertyId"
@@ -149,7 +168,9 @@ export default function ConversionFunnelPage() {
             />
           </div>
           <div>
-            <label htmlFor="period" className="block text-sm font-medium text-gray-700">기간</label>
+            <label htmlFor="period" className="block text-sm font-medium text-gray-700">
+              기간
+            </label>
             <select
               id="period"
               value={period}
@@ -163,7 +184,9 @@ export default function ConversionFunnelPage() {
             </select>
           </div>
           <div>
-            <label htmlFor="goal" className="block text-sm font-medium text-gray-700">전환 목표</label>
+            <label htmlFor="goal" className="block text-sm font-medium text-gray-700">
+              전환 목표
+            </label>
             <select
               id="goal"
               value={selectedGoalId || ''}
@@ -171,8 +194,10 @@ export default function ConversionFunnelPage() {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">모든 목표</option>
-              {analysisData?.goals.map(goal => (
-                <option key={goal.id} value={goal.id}>{goal.name}</option>
+              {analysisData?.goals.map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.name}
+                </option>
               ))}
             </select>
           </div>
@@ -186,21 +211,28 @@ export default function ConversionFunnelPage() {
         ) : analysisData ? (
           <div className="space-y-10">
             {analysisData.goals.length > 0 ? (
-              analysisData.goals.map(goal => (
-                <div key={goal.id} className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg shadow-md">
+              analysisData.goals.map((goal) => (
+                <div
+                  key={goal.id}
+                  className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg shadow-md"
+                >
                   <h3 className="text-2xl font-bold text-blue-800 mb-4">목표: {goal.name}</h3>
                   {renderFunnel(goal.id)}
                 </div>
               ))
             ) : (
               <div className="text-center py-10">
-                <p className="text-lg text-gray-600">분석할 전환 목표가 없습니다. 설정을 확인해주세요.</p>
+                <p className="text-lg text-gray-600">
+                  분석할 전환 목표가 없습니다. 설정을 확인해주세요.
+                </p>
               </div>
             )}
           </div>
         ) : (
           <div className="text-center py-10">
-            <p className="text-lg text-gray-600">데이터를 불러올 수 없습니다. 속성 ID와 기간을 확인해주세요.</p>
+            <p className="text-lg text-gray-600">
+              데이터를 불러올 수 없습니다. 속성 ID와 기간을 확인해주세요.
+            </p>
           </div>
         )}
       </div>

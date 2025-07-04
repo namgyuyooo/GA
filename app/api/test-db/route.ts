@@ -4,11 +4,14 @@ export async function GET(request: NextRequest) {
   try {
     // 직접 SQL로 데이터베이스 테스트
     const databaseUrl = process.env.DATABASE_URL
-    
+
     if (!databaseUrl) {
-      return NextResponse.json({
-        error: 'DATABASE_URL not found'
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'DATABASE_URL not found',
+        },
+        { status: 500 }
+      )
     }
 
     // PostgreSQL 클라이언트로 직접 연결
@@ -99,24 +102,26 @@ export async function GET(request: NextRequest) {
       tables: {
         User: {
           exists: tableResult.rows.length > 0,
-          created: !!createResult
+          created: !!createResult,
         },
         Insight: {
           exists: insightTableResult.rows.length > 0,
-          created: insightTableResult.rows.length === 0
+          created: insightTableResult.rows.length === 0,
         },
         PromptTemplate: {
           exists: promptTableResult.rows.length > 0,
-          created: promptTableResult.rows.length === 0
-        }
+          created: promptTableResult.rows.length === 0,
+        },
       },
-      message: 'Database tables checked and created if needed'
+      message: 'Database tables checked and created if needed',
     })
-
   } catch (error) {
     console.error('Database test error:', error)
     return NextResponse.json(
-      { error: 'Database test failed', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Database test failed',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }

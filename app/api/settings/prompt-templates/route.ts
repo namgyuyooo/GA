@@ -60,9 +60,20 @@ const DEFAULT_TEMPLATES = [
 - 구체적인 수치 포함
 - 마케터 관점에서 실무적 조언
 - ROI와 비용 효율성 고려`,
-    variables: JSON.stringify(['startDate', 'endDate', 'totalSessions', 'totalUsers', 'totalConversions', 'avgEngagementRate', 'totalClicks', 'totalImpressions', 'avgCtr', 'avgPosition']),
+    variables: JSON.stringify([
+      'startDate',
+      'endDate',
+      'totalSessions',
+      'totalUsers',
+      'totalConversions',
+      'avgEngagementRate',
+      'totalClicks',
+      'totalImpressions',
+      'avgCtr',
+      'avgPosition',
+    ]),
     isDefault: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     name: '월간보고서 - 전략적 분석',
@@ -129,9 +140,23 @@ const DEFAULT_TEMPLATES = [
 - 실행 가능한 전략 제시
 - 리스크 관리 방안 포함
 - ROI 중심의 의사결정 지원`,
-    variables: JSON.stringify(['currentMonth', 'sessionsChange', 'usersChange', 'conversionsChange', 'engagementChange', 'totalSessions', 'totalUsers', 'totalConversions', 'avgEngagementRate', 'totalClicks', 'totalImpressions', 'avgCtr', 'avgPosition']),
+    variables: JSON.stringify([
+      'currentMonth',
+      'sessionsChange',
+      'usersChange',
+      'conversionsChange',
+      'engagementChange',
+      'totalSessions',
+      'totalUsers',
+      'totalConversions',
+      'avgEngagementRate',
+      'totalClicks',
+      'totalImpressions',
+      'avgCtr',
+      'avgPosition',
+    ]),
     isDefault: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     name: '트래픽분석 - 채널 최적화',
@@ -185,7 +210,7 @@ const DEFAULT_TEMPLATES = [
 - 마케터 관점의 실무적 조언`,
     variables: JSON.stringify(['dateRange']),
     isDefault: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     name: 'UTM코호트 - 캠페인 최적화',
@@ -245,7 +270,7 @@ const DEFAULT_TEMPLATES = [
 - 실무적 실행 가이드`,
     variables: JSON.stringify(['dateRange', 'selectedCampaign']),
     isDefault: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     name: '키워드코호트 - SEO 전략',
@@ -306,7 +331,7 @@ const DEFAULT_TEMPLATES = [
 - 예상 성과와 투자 대비 효과`,
     variables: JSON.stringify(['dateRange']),
     isDefault: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     name: '제조업 B2B 주간보고서 - 전문가 분석',
@@ -390,9 +415,17 @@ const DEFAULT_TEMPLATES = [
 - 기술적 정확성과 비즈니스 가치의 균형
 - 복잡한 구매 조직 구조 고려
 - 규제 환경과 품질 기준의 중요성`,
-    variables: JSON.stringify(['startDate', 'endDate', 'totalSessions', 'totalUsers', 'totalConversions', 'conversionRate', 'totalPageViews']),
+    variables: JSON.stringify([
+      'startDate',
+      'endDate',
+      'totalSessions',
+      'totalUsers',
+      'totalConversions',
+      'conversionRate',
+      'totalPageViews',
+    ]),
     isDefault: false,
-    sortOrder: 2
+    sortOrder: 2,
   },
   {
     name: '제조업 블로그 콘텐츠 전략 - 고전환율 최적화',
@@ -447,10 +480,15 @@ const DEFAULT_TEMPLATES = [
 - 지속적 개선을 위한 데이터 추적
 
 각 섹션별로 구체적이고 실행 가능한 권장사항을 제시해주세요.`,
-    variables: JSON.stringify(['currentPerformance', 'topKeywords', 'trafficSources', 'contentPerformance']),
+    variables: JSON.stringify([
+      'currentPerformance',
+      'topKeywords',
+      'trafficSources',
+      'contentPerformance',
+    ]),
     isDefault: false,
-    sortOrder: 3
-  }
+    sortOrder: 3,
+  },
 ]
 
 export async function GET(request: NextRequest) {
@@ -458,17 +496,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
-    
+
     const where = type ? { type, isActive: true } : { isActive: true }
-    
+
     const templates = await prisma.promptTemplate.findMany({
       where,
-      orderBy: [
-        { sortOrder: 'asc' },
-        { name: 'asc' }
-      ]
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     })
-    
+
     return NextResponse.json({ success: true, templates })
   } catch (error: any) {
     console.error('프롬프트 템플릿 조회 오류:', error)
@@ -482,62 +517,62 @@ export async function POST(request: NextRequest) {
   const prisma = new PrismaClient()
   try {
     const { action, template } = await request.json()
-    
+
     switch (action) {
       case 'create':
         const created = await prisma.promptTemplate.create({
-          data: template
+          data: template,
         })
         return NextResponse.json({ success: true, template: created })
-        
+
       case 'update':
         const { id, ...updateData } = template
         const updated = await prisma.promptTemplate.update({
           where: { id },
-          data: updateData
+          data: updateData,
         })
         return NextResponse.json({ success: true, template: updated })
-        
+
       case 'delete':
         await prisma.promptTemplate.delete({
-          where: { id: template.id }
+          where: { id: template.id },
         })
         return NextResponse.json({ success: true })
-        
+
       case 'toggle-active':
         const toggled = await prisma.promptTemplate.update({
           where: { id: template.id },
-          data: { isActive: !template.isActive }
+          data: { isActive: !template.isActive },
         })
         return NextResponse.json({ success: true, template: toggled })
-        
+
       case 'set-default':
         // 같은 타입의 다른 템플릿들의 isDefault를 false로 설정
         await prisma.promptTemplate.updateMany({
           where: { type: template.type },
-          data: { isDefault: false }
+          data: { isDefault: false },
         })
         // 선택된 템플릿을 기본으로 설정
         const defaultSet = await prisma.promptTemplate.update({
           where: { id: template.id },
-          data: { isDefault: true }
+          data: { isDefault: true },
         })
         return NextResponse.json({ success: true, template: defaultSet })
-        
+
       case 'seed-defaults':
         // 기본 템플릿이 없으면 생성
         for (const defaultTemplate of DEFAULT_TEMPLATES) {
           const existing = await prisma.promptTemplate.findFirst({
-            where: { name: defaultTemplate.name, type: defaultTemplate.type }
+            where: { name: defaultTemplate.name, type: defaultTemplate.type },
           })
           if (!existing) {
             await prisma.promptTemplate.create({
-              data: defaultTemplate
+              data: defaultTemplate,
             })
           }
         }
         return NextResponse.json({ success: true, message: '기본 템플릿이 생성되었습니다.' })
-        
+
       default:
         return NextResponse.json({ success: false, error: '잘못된 액션입니다.' }, { status: 400 })
     }
@@ -547,4 +582,4 @@ export async function POST(request: NextRequest) {
   } finally {
     await prisma.$disconnect()
   }
-} 
+}

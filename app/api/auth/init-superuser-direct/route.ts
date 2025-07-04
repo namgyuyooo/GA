@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
 
     if (!SUPER_USER_EMAIL || !SUPER_USER_PASSWORD) {
       return NextResponse.json(
-        { error: '환경변수에 슈퍼유저 정보가 설정되지 않았습니다. SUPER_USER_EMAIL, SUPER_USER_PASSWORD를 설정해주세요.' },
+        {
+          error:
+            '환경변수에 슈퍼유저 정보가 설정되지 않았습니다. SUPER_USER_EMAIL, SUPER_USER_PASSWORD를 설정해주세요.',
+        },
         { status: 400 }
       )
     }
@@ -30,17 +33,13 @@ export async function POST(request: NextRequest) {
 
     if (existingSuperUser.rows.length > 0) {
       await client.end()
-      return NextResponse.json(
-        { error: '슈퍼유저가 이미 존재합니다.' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: '슈퍼유저가 이미 존재합니다.' }, { status: 409 })
     }
 
     // 같은 이메일의 사용자가 있는지 확인
-    const existingUser = await client.query(
-      `SELECT * FROM "User" WHERE "email" = $1`,
-      [SUPER_USER_EMAIL]
-    )
+    const existingUser = await client.query(`SELECT * FROM "User" WHERE "email" = $1`, [
+      SUPER_USER_EMAIL,
+    ])
 
     // 비밀번호 해시화
     const hashedPassword = await bcrypt.hash(SUPER_USER_PASSWORD, 12)
@@ -63,7 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: '기존 사용자가 슈퍼유저로 업그레이드되었습니다.',
-        user
+        user,
       })
     } else {
       // 새 슈퍼유저 생성
@@ -81,14 +80,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: '슈퍼유저가 생성되었습니다.',
-        user
+        user,
       })
     }
-
   } catch (error) {
     console.error('Init superuser error:', error)
     return NextResponse.json(
-      { error: '슈퍼유저 초기화 중 오류가 발생했습니다.', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: '슈퍼유저 초기화 중 오류가 발생했습니다.',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }

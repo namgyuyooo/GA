@@ -13,30 +13,36 @@ export async function GET(request: NextRequest) {
     // Service Account 기반 실제 데이터 가져오기
     const fs = require('fs')
     const path = require('path')
-    
+
     let serviceAccount
     try {
-      const serviceAccountPath = path.join(process.cwd(), 'secrets/ga-auto-464002-672370fda082.json')
+      const serviceAccountPath = path.join(
+        process.cwd(),
+        'secrets/ga-auto-464002-672370fda082.json'
+      )
       const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
       serviceAccount = JSON.parse(serviceAccountData)
     } catch (fileError) {
       console.error('Service account file error:', fileError)
-      return NextResponse.json({
-        error: 'Service account file not found',
-        message: 'ga-auto-464002-672370fda082.json 파일을 secrets 폴더에 배치해주세요.'
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'Service account file not found',
+          message: 'ga-auto-464002-672370fda082.json 파일을 secrets 폴더에 배치해주세요.',
+        },
+        { status: 500 }
+      )
     }
 
     // JWT 토큰으로 Google API 인증
     const jwt = require('jsonwebtoken')
-    
+
     const now = Math.floor(Date.now() / 1000)
     const tokenPayload = {
       iss: serviceAccount.client_email,
       scope: 'https://www.googleapis.com/auth/analytics.readonly',
       aud: 'https://oauth2.googleapis.com/token',
       iat: now,
-      exp: now + 3600
+      exp: now + 3600,
     }
 
     const token = jwt.sign(tokenPayload, serviceAccount.private_key, { algorithm: 'RS256' })
@@ -44,7 +50,7 @@ export async function GET(request: NextRequest) {
     const authResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
+      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`,
     })
 
     if (!authResponse.ok) {
@@ -59,8 +65,8 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           dateRanges: [{ startDate: period, endDate: 'today' }],
@@ -68,9 +74,9 @@ export async function GET(request: NextRequest) {
             { name: 'conversions' },
             { name: 'sessions' },
             { name: 'totalRevenue' },
-            { name: 'purchaseRevenue' }
-          ]
-        })
+            { name: 'purchaseRevenue' },
+          ],
+        }),
       }
     )
 
@@ -78,35 +84,35 @@ export async function GET(request: NextRequest) {
       totalConversions: 0,
       conversionRate: 0,
       totalRevenue: 0,
-      averageOrderValue: 0
+      averageOrderValue: 0,
     }
 
     if (conversionMetricsResponse.ok) {
       const metricsData = await conversionMetricsResponse.json()
       const row = metricsData.rows?.[0]?.metricValues || []
-      
+
       const conversions = Number(row[0]?.value || 0)
       const sessions = Number(row[1]?.value || 0)
       const revenue = Number(row[2]?.value || 0)
-      
+
       conversionMetrics = {
         totalConversions: conversions,
         conversionRate: sessions > 0 ? conversions / sessions : 0,
         totalRevenue: revenue,
-        averageOrderValue: conversions > 0 ? revenue / conversions : 0
+        averageOrderValue: conversions > 0 ? revenue / conversions : 0,
       }
     }
 
     // 2. 사용자 정의 Goal 기반 전환 이벤트 분석
     const prismaLocal = new PrismaClient()
-    
+
     // 활성 Goal 목록 조회
     const activeGoals = await prismaLocal.conversionGoal.findMany({
       where: {
         propertyId,
-        isActive: true
+        isActive: true,
       },
-      orderBy: { priority: 'asc' }
+      orderBy: { priority: 'asc' },
     })
 
     let conversionEvents = []
@@ -114,77 +120,79 @@ export async function GET(request: NextRequest) {
 
     if (activeGoals.length > 0) {
       hasCustomGoals = true
-      
+
       // Goal별 전환 데이터 조회
       const allEventsResponse = await fetch(
         `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${tokenData.access_token}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             dateRanges: [{ startDate: period, endDate: 'today' }],
             dimensions: [{ name: 'eventName' }],
-            metrics: [
-              { name: 'eventCount' },
-              { name: 'conversions' },
-              { name: 'totalRevenue' }
-            ],
+            metrics: [{ name: 'eventCount' }, { name: 'conversions' }, { name: 'totalRevenue' }],
             dimensionFilter: {
               filter: {
                 fieldName: 'eventName',
                 stringFilter: {
                   matchType: 'PARTIAL_REGEXP',
-                  value: activeGoals.map(g => g.eventName).filter(Boolean).join('|')
-                }
-              }
+                  value: activeGoals
+                    .map((g) => g.eventName)
+                    .filter(Boolean)
+                    .join('|'),
+                },
+              },
             },
             orderBys: [{ metric: { metricName: 'conversions' }, desc: true }],
-            limit: 50
-          })
+            limit: 50,
+          }),
         }
       )
 
       if (allEventsResponse.ok) {
         const eventsData = await allEventsResponse.json()
-        
+
         // conversions > 0인 이벤트만 필터링
-        const actualConversionEvents = eventsData.rows?.filter((row: any) => 
-          Number(row.metricValues[1].value) > 0
-        ) || []
-        
-        const totalEventConversions = actualConversionEvents.reduce((sum: number, row: any) => 
-          sum + Number(row.metricValues[1].value), 0
-        ) || 1
-        
+        const actualConversionEvents =
+          eventsData.rows?.filter((row: any) => Number(row.metricValues[1].value) > 0) || []
+
+        const totalEventConversions =
+          actualConversionEvents.reduce(
+            (sum: number, row: any) => sum + Number(row.metricValues[1].value),
+            0
+          ) || 1
+
         const eventColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
-        
-        conversionEvents = actualConversionEvents.map((row: any, index: number) => {
-          const eventName = row.dimensionValues[0].value
-          const eventCount = Number(row.metricValues[0].value)
-          const conversions = Number(row.metricValues[1].value)
-          const revenue = Number(row.metricValues[2].value)
-          
-          // 매칭되는 Goal 찾기
-          const matchingGoal = activeGoals.find(goal => 
-            goal.eventName && eventName.includes(goal.eventName)
-          )
-          
-          return {
-            eventName,
-            goalName: matchingGoal?.name || eventName,
-            goalType: matchingGoal?.goalType || 'EVENT',
-            description: matchingGoal?.description || getEventDescription(eventName),
-            priority: matchingGoal?.priority || 3,
-            conversions,
-            conversionRate: eventCount > 0 ? conversions / eventCount : 0,
-            revenue,
-            percentage: ((conversions / totalEventConversions) * 100).toFixed(1),
-            color: eventColors[index % eventColors.length]
-          }
-        }).sort((a, b) => a.priority - b.priority) // 우선순위순 정렬
+
+        conversionEvents = actualConversionEvents
+          .map((row: any, index: number) => {
+            const eventName = row.dimensionValues[0].value
+            const eventCount = Number(row.metricValues[0].value)
+            const conversions = Number(row.metricValues[1].value)
+            const revenue = Number(row.metricValues[2].value)
+
+            // 매칭되는 Goal 찾기
+            const matchingGoal = activeGoals.find(
+              (goal) => goal.eventName && eventName.includes(goal.eventName)
+            )
+
+            return {
+              eventName,
+              goalName: matchingGoal?.name || eventName,
+              goalType: matchingGoal?.goalType || 'EVENT',
+              description: matchingGoal?.description || getEventDescription(eventName),
+              priority: matchingGoal?.priority || 3,
+              conversions,
+              conversionRate: eventCount > 0 ? conversions / eventCount : 0,
+              revenue,
+              percentage: ((conversions / totalEventConversions) * 100).toFixed(1),
+              color: eventColors[index % eventColors.length],
+            }
+          })
+          .sort((a, b) => a.priority - b.priority) // 우선순위순 정렬
       }
     }
 
@@ -195,51 +203,48 @@ export async function GET(request: NextRequest) {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${tokenData.access_token}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             dateRanges: [{ startDate: period, endDate: 'today' }],
             dimensions: [{ name: 'eventName' }],
-            metrics: [
-              { name: 'eventCount' },
-              { name: 'conversions' },
-              { name: 'totalRevenue' }
-            ],
+            metrics: [{ name: 'eventCount' }, { name: 'conversions' }, { name: 'totalRevenue' }],
             dimensionFilter: {
               filter: {
                 fieldName: 'eventName',
                 stringFilter: {
                   matchType: 'PARTIAL_REGEXP',
-                  value: 'purchase|conversion|goal|form|submit|click|download'
-                }
-              }
+                  value: 'purchase|conversion|goal|form|submit|click|download',
+                },
+              },
             },
             orderBys: [{ metric: { metricName: 'conversions' }, desc: true }],
-            limit: 20
-          })
+            limit: 20,
+          }),
         }
       )
 
       if (defaultEventsResponse.ok) {
         const eventsData = await defaultEventsResponse.json()
-        
-        const actualConversionEvents = eventsData.rows?.filter((row: any) => 
-          Number(row.metricValues[1].value) > 0
-        ) || []
-        
-        const totalEventConversions = actualConversionEvents.reduce((sum: number, row: any) => 
-          sum + Number(row.metricValues[1].value), 0
-        ) || 1
-        
+
+        const actualConversionEvents =
+          eventsData.rows?.filter((row: any) => Number(row.metricValues[1].value) > 0) || []
+
+        const totalEventConversions =
+          actualConversionEvents.reduce(
+            (sum: number, row: any) => sum + Number(row.metricValues[1].value),
+            0
+          ) || 1
+
         const eventColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
-        
+
         conversionEvents = actualConversionEvents.map((row: any, index: number) => {
           const eventName = row.dimensionValues[0].value
           const eventCount = Number(row.metricValues[0].value)
           const conversions = Number(row.metricValues[1].value)
           const revenue = Number(row.metricValues[2].value)
-          
+
           return {
             eventName,
             goalName: eventName,
@@ -250,7 +255,7 @@ export async function GET(request: NextRequest) {
             conversionRate: eventCount > 0 ? conversions / eventCount : 0,
             revenue,
             percentage: ((conversions / totalEventConversions) * 100).toFixed(1),
-            color: eventColors[index % eventColors.length]
+            color: eventColors[index % eventColors.length],
           }
         })
       }
@@ -262,52 +267,50 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           dateRanges: [{ startDate: period, endDate: 'today' }],
-          dimensions: [
-            { name: 'source' },
-            { name: 'medium' }
-          ],
-          metrics: [
-            { name: 'conversions' },
-            { name: 'sessions' },
-            { name: 'totalRevenue' }
-          ],
+          dimensions: [{ name: 'source' }, { name: 'medium' }],
+          metrics: [{ name: 'conversions' }, { name: 'sessions' }, { name: 'totalRevenue' }],
           orderBys: [{ metric: { metricName: 'conversions' }, desc: true }],
-          limit: 20
-        })
+          limit: 20,
+        }),
       }
     )
 
     let conversionPaths = []
     if (conversionPathsResponse.ok) {
       const pathsData = await conversionPathsResponse.json()
-      
-      const totalPathConversions = pathsData.rows?.reduce((sum: number, row: any) => 
-        sum + Number(row.metricValues[0].value), 0
-      ) || 1
-      
-      conversionPaths = pathsData.rows?.map((row: any) => {
-        const source = row.dimensionValues[0].value
-        const medium = row.dimensionValues[1].value
-        const conversions = Number(row.metricValues[0].value)
-        const sessions = Number(row.metricValues[1].value)
-        const revenue = Number(row.metricValues[2].value)
-        
-        return {
-          source,
-          medium,
-          channelName: formatChannelName(source, medium),
-          conversions,
-          conversionRate: sessions > 0 ? conversions / sessions : 0,
-          revenue,
-          percentage: ((conversions / totalPathConversions) * 100).toFixed(1),
-          description: generatePathDescription(source, medium)
-        }
-      }).filter(path => path.conversions > 0) || []
+
+      const totalPathConversions =
+        pathsData.rows?.reduce(
+          (sum: number, row: any) => sum + Number(row.metricValues[0].value),
+          0
+        ) || 1
+
+      conversionPaths =
+        pathsData.rows
+          ?.map((row: any) => {
+            const source = row.dimensionValues[0].value
+            const medium = row.dimensionValues[1].value
+            const conversions = Number(row.metricValues[0].value)
+            const sessions = Number(row.metricValues[1].value)
+            const revenue = Number(row.metricValues[2].value)
+
+            return {
+              source,
+              medium,
+              channelName: formatChannelName(source, medium),
+              conversions,
+              conversionRate: sessions > 0 ? conversions / sessions : 0,
+              revenue,
+              percentage: ((conversions / totalPathConversions) * 100).toFixed(1),
+              description: generatePathDescription(source, medium),
+            }
+          })
+          .filter((path) => path.conversions > 0) || []
     }
 
     await prismaLocal.$disconnect()
@@ -321,17 +324,19 @@ export async function GET(request: NextRequest) {
         hasCustomGoals,
         period,
         propertyId,
-        dataTimestamp: new Date().toISOString()
-      }
+        dataTimestamp: new Date().toISOString(),
+      },
     })
-
   } catch (error) {
     console.error('Conversions detail error:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: '전환 분석 데이터를 가져오는 중 오류가 발생했습니다.'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        message: '전환 분석 데이터를 가져오는 중 오류가 발생했습니다.',
+      },
+      { status: 500 }
+    )
   }
 }
 
@@ -340,19 +345,19 @@ function getEventDescription(eventName: string): string {
     '소개서 다운로드 버튼 클릭': '소개서 PDF 다운로드',
     '문의하기 버튼 클릭': '문의 페이지 방문 또는 상담 신청',
     'poc 클릭': 'PoC 데모 요청',
-    'form_start': '폼 작성 시작',
-    'form_submit': '폼 제출 완료',
-    'download': '파일 다운로드',
-    'contact': '문의하기',
-    'purchase': '구매 완료',
-    'sign_up': '회원가입'
+    form_start: '폼 작성 시작',
+    form_submit: '폼 제출 완료',
+    download: '파일 다운로드',
+    contact: '문의하기',
+    purchase: '구매 완료',
+    sign_up: '회원가입',
   }
   return descriptions[eventName] || `${eventName} 이벤트`
 }
 
 function generatePathDescription(source: string, medium: string): string {
   const channelName = formatChannelName(source, medium)
-  
+
   // 채널별로 다른 전환 경로 생성
   if (medium === 'organic') {
     return `${source} 검색 → 홈페이지 → 소개서 다운로드`

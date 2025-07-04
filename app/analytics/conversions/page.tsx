@@ -1,10 +1,20 @@
 'use client'
 
-import { ArrowLeftIcon, CurrencyDollarIcon, TrophyIcon, ChartPieIcon, FunnelIcon, ExclamationTriangleIcon, SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowLeftIcon,
+  CurrencyDollarIcon,
+  TrophyIcon,
+  ChartPieIcon,
+  FunnelIcon,
+  ExclamationTriangleIcon,
+  SparklesIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import ReactMarkdown from 'react-markdown'
+import AIInsightCard from '../../components/AIInsightCard'
 
 export default function ConversionsAnalysis() {
   const [data, setData] = useState<any>(null)
@@ -22,7 +32,7 @@ export default function ConversionsAnalysis() {
       const urlParams = new URLSearchParams(window.location.search)
       const urlPeriod = urlParams.get('period')
       const urlPropertyId = urlParams.get('propertyId')
-      
+
       if (urlPeriod) setPeriod(urlPeriod)
       if (urlPropertyId) setPropertyId(urlPropertyId)
     }
@@ -32,8 +42,8 @@ export default function ConversionsAnalysis() {
     loadConversionsData()
     fetchLatestInsight()
     fetch('/api/ai-insight/models')
-      .then(res => res.json())
-      .then(result => {
+      .then((res) => res.json())
+      .then((result) => {
         if (result.success) {
           setAvailableModels(result.models)
           if (result.models.length > 0) setSelectedModel(result.models[0].id)
@@ -41,12 +51,14 @@ export default function ConversionsAnalysis() {
       })
   }, [period, propertyId])
 
-  const loadConversionsData = async () => {
+  const loadConversionsData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/analytics/conversions-detail?period=${period}&propertyId=${propertyId}`)
+      const response = await fetch(
+        `/api/analytics/conversions-detail?period=${period}&propertyId=${propertyId}`
+      )
       const result = await response.json()
-      
+
       if (response.ok && result.success) {
         setData(result.data)
         toast.success('전환 분석 데이터 로드 완료')
@@ -61,14 +73,14 @@ export default function ConversionsAnalysis() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [period, propertyId])
 
-  const fetchLatestInsight = async () => {
+  const fetchLatestInsight = useCallback(async () => {
     const res = await fetch(`/api/ai-insight?type=conversions&propertyId=${propertyId}`)
     const result = await res.json()
     if (result.success && result.insight) setLatestInsight(result.insight)
     else setLatestInsight(null)
-  }
+  }, [propertyId])
 
   const handleGenerateInsight = async () => {
     setInsightLoading(true)
@@ -77,20 +89,21 @@ export default function ConversionsAnalysis() {
         model: selectedModel,
         type: 'conversions',
         propertyId: propertyId,
-        prompt: `다음은 전환 분석 데이터입니다.\n\n` +
+        prompt:
+          `다음은 전환 분석 데이터입니다.\n\n` +
           `총 전환수: ${data?.totalConversions || 0}\n` +
           `전환율: ${data?.conversionRate ? (data.conversionRate * 100).toFixed(2) : '0.00'}%\n` +
           `전환 가치: ${data?.totalRevenue || 0}\n` +
           `평균 주문 가치: ${data?.averageOrderValue || 0}\n` +
           `전환 이벤트별 성과: ${JSON.stringify(data?.conversionEvents || [])}\n` +
           `트래픽 소스별 전환 성과: ${JSON.stringify(data?.conversionPaths || [])}\n` +
-          `주요 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
+          `주요 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`,
       }
 
       const res = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
       const result = await res.json()
       if (result.success) {
@@ -98,7 +111,7 @@ export default function ConversionsAnalysis() {
       } else {
         toast.error('AI 인사이트 생성 실패: ' + (result.error || ''))
       }
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error('AI 인사이트 생성 중 오류: ' + (e.message || ''))
     } finally {
       setInsightLoading(false)
@@ -108,7 +121,7 @@ export default function ConversionsAnalysis() {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ko-KR', {
       style: 'currency',
-      currency: 'KRW'
+      currency: 'KRW',
     }).format(value)
   }
 
@@ -139,7 +152,7 @@ export default function ConversionsAnalysis() {
               </h1>
             </div>
           </div>
-          
+
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
             <div className="flex">
               <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
@@ -181,8 +194,8 @@ export default function ConversionsAnalysis() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <select 
-              value={period} 
+            <select
+              value={period}
               onChange={(e) => setPeriod(e.target.value)}
               className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
@@ -194,12 +207,14 @@ export default function ConversionsAnalysis() {
             {availableModels.length > 0 && (
               <select
                 value={selectedModel}
-                onChange={e => setSelectedModel(e.target.value)}
+                onChange={(e) => setSelectedModel(e.target.value)}
                 className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
                 title="사용할 Gemini 모델 선택"
               >
-                {availableModels.map(m => (
-                  <option key={m.id} value={m.id}>{m.displayName}</option>
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.displayName}
+                  </option>
                 ))}
               </select>
             )}
@@ -221,7 +236,7 @@ export default function ConversionsAnalysis() {
             <div className="flex">
               <div className="ml-3">
                 <p className="text-sm text-blue-800">
-                  <strong>전환 목표 설정 안내:</strong> 현재 기본 전환 이벤트를 분석하고 있습니다. 
+                  <strong>전환 목표 설정 안내:</strong> 현재 기본 전환 이벤트를 분석하고 있습니다.
                   더 정확한 분석을 위해 GTM 분석 페이지에서 전환 목표를 설정해보세요.
                 </p>
               </div>
@@ -256,9 +271,7 @@ export default function ConversionsAnalysis() {
               <p className="ml-3 text-gray-600">AI가 데이터를 분석하고 있습니다...</p>
             </div>
           ) : latestInsight?.result ? (
-            <div className="prose prose-indigo max-w-none text-gray-800">
-              <ReactMarkdown>{latestInsight.result}</ReactMarkdown>
-            </div>
+            <AIInsightCard result={latestInsight.result} />
           ) : (
             <div className="text-center text-gray-500 py-8">
               <p>아직 생성된 AI 인사이트가 없습니다. '인사이트 다시 생성' 버튼을 눌러주세요.</p>
@@ -349,9 +362,14 @@ export default function ConversionsAnalysis() {
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <div className="w-3 h-3 rounded-full mr-3" style={{backgroundColor: event.color}}></div>
+                          <div
+                            className="w-3 h-3 rounded-full mr-3"
+                            style={{ backgroundColor: event.color }}
+                          ></div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{event.goalName}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {event.goalName}
+                            </div>
                             <div className="text-sm text-gray-500">{event.description}</div>
                           </div>
                         </div>
@@ -360,14 +378,14 @@ export default function ConversionsAnalysis() {
                         {event.conversions?.toLocaleString() || '0'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {event.conversionRate ? `${(event.conversionRate * 100).toFixed(2)}%` : '0.00%'}
+                        {event.conversionRate
+                          ? `${(event.conversionRate * 100).toFixed(2)}%`
+                          : '0.00%'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {event.revenue ? formatCurrency(event.revenue) : '₩0'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {event.percentage}%
-                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{event.percentage}%</td>
                     </tr>
                   ))
                 ) : (
@@ -414,7 +432,9 @@ export default function ConversionsAnalysis() {
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{path.channelName}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {path.channelName}
+                          </div>
                           <div className="text-sm text-gray-500">{path.description}</div>
                         </div>
                       </td>
@@ -422,14 +442,14 @@ export default function ConversionsAnalysis() {
                         {path.conversions?.toLocaleString() || '0'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {path.conversionRate ? `${(path.conversionRate * 100).toFixed(2)}%` : '0.00%'}
+                        {path.conversionRate
+                          ? `${(path.conversionRate * 100).toFixed(2)}%`
+                          : '0.00%'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         {path.revenue ? formatCurrency(path.revenue) : '₩0'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {path.percentage}%
-                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{path.percentage}%</td>
                     </tr>
                   ))
                 ) : (

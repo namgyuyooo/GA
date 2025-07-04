@@ -41,10 +41,12 @@ async function fetchDataFromGA4(propertyId: string, period: string) {
   const response = await analyticsDataClient.properties.runReport({
     property: `properties/${propertyId}`,
     requestBody: {
-      dateRanges: [{
-        startDate: startDate,
-        endDate: endDate,
-      }],
+      dateRanges: [
+        {
+          startDate: startDate,
+          endDate: endDate,
+        },
+      ],
       dimensions: [
         { name: 'pagePath' },
         { name: 'pageTitle' },
@@ -62,9 +64,24 @@ async function fetchDataFromGA4(propertyId: string, period: string) {
       dimensionFilter: {
         orGroup: {
           expressionBuilders: [
-            { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'CONTAINS', value: '/blog/' } } },
-            { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'CONTAINS', value: '/success-stories/' } } },
-            { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'CONTAINS', value: '/news/' } } },
+            {
+              filter: {
+                fieldName: 'pagePath',
+                stringFilter: { matchType: 'CONTAINS', value: '/blog/' },
+              },
+            },
+            {
+              filter: {
+                fieldName: 'pagePath',
+                stringFilter: { matchType: 'CONTAINS', value: '/success-stories/' },
+              },
+            },
+            {
+              filter: {
+                fieldName: 'pagePath',
+                stringFilter: { matchType: 'CONTAINS', value: '/news/' },
+              },
+            },
           ],
         },
       },
@@ -143,7 +160,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate averages for duration and bounce rate
-    const finalBlogPosts = Array.from(blogPerformanceMap.values()).map(post => ({
+    const finalBlogPosts = Array.from(blogPerformanceMap.values()).map((post) => ({
       ...post,
       avgSessionDuration: post.pageViews > 0 ? post.avgSessionDuration / post.pageViews : 0,
       bounceRate: post.pageViews > 0 ? post.bounceRate / post.pageViews : 0,
@@ -153,15 +170,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: finalBlogPosts,
-      message: '블로그 성과 데이터 로드 완료'
+      message: '블로그 성과 데이터 로드 완료',
     })
-
   } catch (error: any) {
     console.error('Blog performance API error:', error)
-    return NextResponse.json({
-      success: false,
-      message: 'Failed to fetch blog performance data',
-      details: error.message
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to fetch blog performance data',
+        details: error.message,
+      },
+      { status: 500 }
+    )
   }
 }

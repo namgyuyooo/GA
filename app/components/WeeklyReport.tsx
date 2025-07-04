@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   CalendarDaysIcon,
   ChartBarIcon,
@@ -10,7 +10,7 @@ import {
   LightBulbIcon,
   SparklesIcon,
   DocumentTextIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline'
 
 interface WeekData {
@@ -76,31 +76,36 @@ export default function WeeklyReport({ propertyId }: WeeklyReportProps) {
     }
   }, [selectedWeek, propertyId])
 
-  const generateWeekOptions = (): WeekData[] => {
+  const generateWeekOptions = useCallback((): WeekData[] => {
     const weeks: WeekData[] = []
     const today = new Date()
-    
+
     for (let i = 0; i < 8; i++) {
       const weekStart = new Date(today)
       weekStart.setDate(today.getDate() - (today.getDay() + 7 * i))
       weekStart.setHours(0, 0, 0, 0)
-      
+
       const weekEnd = new Date(weekStart)
       weekEnd.setDate(weekStart.getDate() + 6)
       weekEnd.setHours(23, 59, 59, 999)
-      
+
       const weekNumber = getWeekNumber(weekStart)
-      
+
       weeks.push({
         weekNumber,
         startDate: weekStart.toISOString().split('T')[0],
         endDate: weekEnd.toISOString().split('T')[0],
-        label: i === 0 ? '이번 주' : i === 1 ? '지난 주' : `${weekNumber}주차 (${weekStart.getMonth() + 1}/${weekStart.getDate()})`
+        label:
+          i === 0
+            ? '이번 주'
+            : i === 1
+              ? '지난 주'
+              : `${weekNumber}주차 (${weekStart.getMonth() + 1}/${weekStart.getDate()})`,
       })
     }
-    
+
     return weeks
-  }
+  }, [])
 
   const getWeekNumber = (date: Date): number => {
     const firstDayOfYear = new Date(date.getFullYear(), 0, 1)
@@ -108,40 +113,45 @@ export default function WeeklyReport({ propertyId }: WeeklyReportProps) {
     return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7)
   }
 
-  const loadWeeklyData = async (week: WeekData) => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/dashboard/overview?startDate=${week.startDate}&endDate=${week.endDate}&propertyId=${propertyId}`)
-      const data = await response.json()
-      
-      if (data.success) {
-        setWeeklyData({
-          totalSessions: data.data.kpis.totalSessions,
-          totalUsers: data.data.kpis.totalUsers,
-          conversions: data.data.kpis.conversions,
-          conversionRate: data.data.kpis.conversionRate,
-          avgSessionDuration: 120, // TODO: 실제 데이터에서 가져오기
-          pageViews: data.data.kpis.pageViews,
-          topChannels: data.data.topCampaigns.slice(0, 5),
-          topPages: data.data.topPages.slice(0, 5)
-        })
+  const loadWeeklyData = useCallback(
+    async (week: WeekData) => {
+      setIsLoading(true)
+      try {
+        const response = await fetch(
+          `/api/dashboard/overview?startDate=${week.startDate}&endDate=${week.endDate}&propertyId=${propertyId}`
+        )
+        const data = await response.json()
+
+        if (data.success) {
+          setWeeklyData({
+            totalSessions: data.data.kpis.totalSessions,
+            totalUsers: data.data.kpis.totalUsers,
+            conversions: data.data.kpis.conversions,
+            conversionRate: data.data.kpis.conversionRate,
+            avgSessionDuration: 120, // TODO: 실제 데이터에서 가져오기
+            pageViews: data.data.kpis.pageViews,
+            topChannels: data.data.topCampaigns.slice(0, 5),
+            topPages: data.data.topPages.slice(0, 5),
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load weekly data:', error)
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error('Failed to load weekly data:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    },
+    [propertyId]
+  )
 
   const generateAIReport = async () => {
     if (!weeklyData || !selectedWeek) return
-    
+
     setIsGeneratingReport(true)
     try {
       const response = await fetch('/api/weekly-report/generate', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           test: false,
@@ -168,14 +178,17 @@ export default function WeeklyReport({ propertyId }: WeeklyReportProps) {
 - 페이지뷰: ${weeklyData.pageViews.toLocaleString()}
 
 **주요 채널:**
-${weeklyData.topChannels.map(channel => 
-  `- ${channel.source}/${channel.medium}: ${channel.sessions}세션, ${channel.conversions}전환`
-).join('\n')}
+${weeklyData.topChannels
+  .map(
+    (channel) =>
+      `- ${channel.source}/${channel.medium}: ${channel.sessions}세션, ${channel.conversions}전환`
+  )
+  .join('\n')}
 
 **주요 페이지:**
-${weeklyData.topPages.map(page => 
-  `- ${page.path}: ${page.pageViews}뷰, ${page.users}사용자`
-).join('\n')}
+${weeklyData.topPages
+  .map((page) => `- ${page.path}: ${page.pageViews}뷰, ${page.users}사용자`)
+  .join('\n')}
 
 **종합 분석 요청사항:**
 
@@ -204,11 +217,11 @@ ${weeklyData.topPages.map(page =>
 - 신규 채널 진입 기회 평가
 - 브랜드 포지셔닝 강화 전략
 
-각 섹션별로 핵심 포인트 2-3개씩 간결하고 실행 가능한 형태로 제시해주세요.`
-          }
-        })
+각 섹션별로 핵심 포인트 2-3개씩 간결하고 실행 가능한 형태로 제시해주세요.`,
+          },
+        }),
       })
-      
+
       const result = await response.json()
       if (result.success && result.report.aiAnalysis) {
         setAIInsights(result.report.aiAnalysis)
@@ -222,7 +235,7 @@ ${weeklyData.topPages.map(page =>
 
   const exportReport = () => {
     if (!weeklyData || !selectedWeek) return
-    
+
     const reportContent = generateReportContent()
     const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -237,7 +250,7 @@ ${weeklyData.topPages.map(page =>
 
   const generateReportContent = (): string => {
     if (!weeklyData || !selectedWeek) return ''
-    
+
     return `
 RTM AI 주간보고서
 ${selectedWeek.label} (${selectedWeek.startDate} ~ ${selectedWeek.endDate})
@@ -250,27 +263,34 @@ ${selectedWeek.label} (${selectedWeek.startDate} ~ ${selectedWeek.endDate})
 페이지뷰: ${weeklyData.pageViews.toLocaleString()}
 
 === 상위 채널 ===
-${weeklyData.topChannels.map(channel => 
-  `${channel.source}/${channel.medium}: ${channel.sessions}세션 (전환 ${channel.conversions}건)`
-).join('\n')}
+${weeklyData.topChannels
+  .map(
+    (channel) =>
+      `${channel.source}/${channel.medium}: ${channel.sessions}세션 (전환 ${channel.conversions}건)`
+  )
+  .join('\n')}
 
 === 상위 페이지 ===
-${weeklyData.topPages.map(page => 
-  `${page.path}: ${page.pageViews}뷰 (${page.users}명)`
-).join('\n')}
+${weeklyData.topPages
+  .map((page) => `${page.path}: ${page.pageViews}뷰 (${page.users}명)`)
+  .join('\n')}
 
-${aiInsights ? `
+${
+  aiInsights
+    ? `
 === AI 분석 결과 ===
 
 주요 인사이트:
-${aiInsights.insights.map(insight => `- ${insight}`).join('\n')}
+${aiInsights.insights.map((insight) => `- ${insight}`).join('\n')}
 
 실행 권장사항:
-${aiInsights.recommendations.map(rec => `- ${rec}`).join('\n')}
+${aiInsights.recommendations.map((rec) => `- ${rec}`).join('\n')}
 
 트렌드 분석:
-${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
-` : ''}
+${aiInsights.trends.map((trend) => `- ${trend}`).join('\n')}
+`
+    : ''
+}
 `
   }
 
@@ -286,13 +306,13 @@ ${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
               <p className="text-sm text-gray-500">제조업 B2B 마케팅 전문가 관점의 종합 분석</p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             {/* 주차 선택 드롭다운 */}
             <select
               value={selectedWeek?.startDate || ''}
               onChange={(e) => {
-                const week = availableWeeks.find(w => w.startDate === e.target.value)
+                const week = availableWeeks.find((w) => w.startDate === e.target.value)
                 if (week) setSelectedWeek(week)
               }}
               className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -345,7 +365,9 @@ ${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">총 세션</dt>
-                      <dd className="text-lg font-medium text-gray-900">{weeklyData.totalSessions.toLocaleString()}</dd>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {weeklyData.totalSessions.toLocaleString()}
+                      </dd>
                     </dl>
                   </div>
                 </div>
@@ -361,7 +383,9 @@ ${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">총 사용자</dt>
-                      <dd className="text-lg font-medium text-gray-900">{weeklyData.totalUsers.toLocaleString()}</dd>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {weeklyData.totalUsers.toLocaleString()}
+                      </dd>
                     </dl>
                   </div>
                 </div>
@@ -377,7 +401,9 @@ ${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">전환</dt>
-                      <dd className="text-lg font-medium text-gray-900">{weeklyData.conversions.toLocaleString()}건</dd>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {weeklyData.conversions.toLocaleString()}건
+                      </dd>
                     </dl>
                   </div>
                 </div>
@@ -393,7 +419,9 @@ ${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">전환율</dt>
-                      <dd className="text-lg font-medium text-gray-900">{(weeklyData.conversionRate * 100).toFixed(2)}%</dd>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {(weeklyData.conversionRate * 100).toFixed(2)}%
+                      </dd>
                     </dl>
                   </div>
                 </div>

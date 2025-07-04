@@ -33,7 +33,5 @@ export default function Home() {
     return null
   }
 
-  return (
-    <MainLayout />
-  )
+  return <MainLayout />
 }

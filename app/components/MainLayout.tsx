@@ -27,7 +27,19 @@ export default function MainLayout() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const tabParam = urlParams.get('tab')
-      if (tabParam && ['dashboard', 'utm-builder', 'utm-list', 'utm-cohort', 'keyword-cohort', 'traffic-analysis', 'gtm-analysis', 'weekly-report'].includes(tabParam)) {
+      if (
+        tabParam &&
+        [
+          'dashboard',
+          'utm-builder',
+          'utm-list',
+          'utm-cohort',
+          'keyword-cohort',
+          'traffic-analysis',
+          'gtm-analysis',
+          'weekly-report',
+        ].includes(tabParam)
+      ) {
         setActiveTab(tabParam)
       }
     }
@@ -55,15 +67,17 @@ export default function MainLayout() {
           propertyId: activeProperty,
           dateRange: {
             startDate: '30daysAgo',
-            endDate: 'today'
-          }
+            endDate: 'today',
+          },
         }),
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
-        alert(`일괄 데이터 로드 완료!\n트래픽: ${result.data.trafficRows}행\n페이지: ${result.data.pageRows}행\n검색어: ${result.data.searchRows}행`)
+        alert(
+          `일괄 데이터 로드 완료!\n트래픽: ${result.data.trafficRows}행\n페이지: ${result.data.pageRows}행\n검색어: ${result.data.searchRows}행`
+        )
       } else {
         alert(`오류: ${result.error}`)
       }
@@ -84,7 +98,7 @@ export default function MainLayout() {
   const renderContent = () => {
     const commonProps = {
       propertyId: activeProperty,
-      dataMode: dataMode
+      dataMode: dataMode,
     }
 
     switch (activeTab) {
@@ -109,9 +123,5 @@ export default function MainLayout() {
     }
   }
 
-  return (
-    <AuthenticatedLayout activeTab={activeTab}>
-      {renderContent()}
-    </AuthenticatedLayout>
-  )
+  return <AuthenticatedLayout activeTab={activeTab}>{renderContent()}</AuthenticatedLayout>
 }

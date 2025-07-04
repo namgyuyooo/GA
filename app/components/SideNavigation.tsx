@@ -27,9 +27,10 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   RocketLaunchIcon, // Added for Marketing Simulator
-  CloudArrowUpIcon // Added for Data Sync
+  CloudArrowUpIcon, // Added for Data Sync
 } from '@heroicons/react/24/outline'
 import { useState } from 'react'
+import Image from 'next/image'
 
 interface NavigationItem {
   name: string
@@ -44,7 +45,7 @@ interface NavigationGroup {
   children: NavigationItem[]
 }
 
-type NavigationEntry = NavigationItem | NavigationGroup;
+type NavigationEntry = NavigationItem | NavigationGroup
 
 interface Property {
   id: string
@@ -84,9 +85,24 @@ const navigation: NavigationEntry[] = [
       { name: '키워드 코호트 분석', href: '#', icon: MagnifyingGlassIcon, id: 'keyword-cohort' },
       { name: '트래픽 소스 분석', href: '#', icon: GlobeAltIcon, id: 'traffic-analysis' },
       { name: 'GTM 분석', href: '#', icon: TagIcon, id: 'gtm-analysis' },
-      { name: '사용자 여정 분석', href: '/analytics/user-journey', icon: UserIcon, id: 'user-journey' },
-      { name: '전환 퍼널 분석', href: '/analytics/conversion-funnel', icon: FunnelIcon, id: 'conversion-funnel' },
-      { name: '블로그 성과 분석', href: '/analytics/blog-performance', icon: BookOpenIcon, id: 'blog-performance' },
+      {
+        name: '사용자 여정 분석',
+        href: '/analytics/user-journey',
+        icon: UserIcon,
+        id: 'user-journey',
+      },
+      {
+        name: '전환 퍼널 분석',
+        href: '/analytics/conversion-funnel',
+        icon: FunnelIcon,
+        id: 'conversion-funnel',
+      },
+      {
+        name: '블로그 성과 분석',
+        href: '/analytics/blog-performance',
+        icon: BookOpenIcon,
+        id: 'blog-performance',
+      },
     ],
   },
   {
@@ -104,7 +120,12 @@ const navigation: NavigationEntry[] = [
       { name: 'UTM 빌더', href: '#', icon: LinkIcon, id: 'utm-builder' },
       { name: 'UTM 관리', href: '#', icon: ChartBarIcon, id: 'utm-list' },
       { name: 'UTM 코호트 분석', href: '#', icon: PresentationChartLineIcon, id: 'utm-cohort' },
-      { name: '경쟁사 분석', href: '/tools/competitor-intelligence', icon: BuildingOfficeIcon, id: 'competitor-intelligence' },
+      {
+        name: '경쟁사 분석',
+        href: '/tools/competitor-intelligence',
+        icon: BuildingOfficeIcon,
+        id: 'competitor-intelligence',
+      },
     ],
   },
   {
@@ -116,13 +137,12 @@ const navigation: NavigationEntry[] = [
       { name: '속성 연결 확인', href: '#', icon: BuildingOfficeIcon, id: 'property-check' },
     ],
   },
-];
+]
 
 const properties: Property[] = [
   { id: '464147982', name: 'Homepage' },
   { id: '482625214', name: 'POC' },
   { id: '483589217', name: 'POC-Landing' },
-
 ]
 
 export default function SideNavigation({
@@ -135,7 +155,7 @@ export default function SideNavigation({
   onBulkDataLoad,
   isDataLoading = false,
   dataMode = 'realtime',
-  onDataModeChange
+  onDataModeChange,
 }: SideNavigationProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set()) // State to manage open/closed groups
@@ -158,7 +178,7 @@ export default function SideNavigation({
   }
 
   const toggleGroup = (groupName: string) => {
-    setOpenGroups(prev => {
+    setOpenGroups((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(groupName)) {
         newSet.delete(groupName)
@@ -206,9 +226,7 @@ export default function SideNavigation({
             <button
               onClick={() => handleDataModeChange('realtime')}
               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                dataMode === 'realtime'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-gray-100 text-gray-600'
+                dataMode === 'realtime' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
               }`}
             >
               <BoltIcon className="mr-2 h-4 w-4" />
@@ -230,14 +248,16 @@ export default function SideNavigation({
 
         <nav className="mt-8 px-2 space-y-1">
           {navigation.map((entry) => {
-            if ('children' in entry) { // It's a group
-              const isOpen = openGroups.has(entry.name);
+            if ('children' in entry) {
+              // It's a group
+              const isOpen = openGroups.has(entry.name)
               return (
                 <div key={entry.name}>
                   <button
                     onClick={() => toggleGroup(entry.name)}
-                    className={`group flex items-center px-2 py-2 ${isMobile ? 'text-base' : 'text-sm'
-                      } font-medium rounded-md w-full text-left text-gray-600 hover:bg-gray-50 hover:text-gray-900`}
+                    className={`group flex items-center px-2 py-2 ${
+                      isMobile ? 'text-base' : 'text-sm'
+                    } font-medium rounded-md w-full text-left text-gray-600 hover:bg-gray-50 hover:text-gray-900`}
                   >
                     <entry.icon className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`} />
                     {entry.name}
@@ -255,13 +275,17 @@ export default function SideNavigation({
                             <a
                               key={item.name}
                               href={item.href}
-                              className={`group flex items-center px-2 py-2 ${isMobile ? 'text-base' : 'text-sm'
-                                } font-medium rounded-md w-full text-left ${activeTab === item.id
+                              className={`group flex items-center px-2 py-2 ${
+                                isMobile ? 'text-base' : 'text-sm'
+                              } font-medium rounded-md w-full text-left ${
+                                activeTab === item.id
                                   ? 'bg-primary-100 text-primary-900'
                                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                }`}
+                              }`}
                             >
-                              <item.icon className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`} />
+                              <item.icon
+                                className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`}
+                              />
                               {item.name}
                             </a>
                           )
@@ -270,13 +294,17 @@ export default function SideNavigation({
                           <button
                             key={item.name}
                             onClick={() => handleTabChange(item.id)}
-                            className={`group flex items-center px-2 py-2 ${isMobile ? 'text-base' : 'text-sm'
-                              } font-medium rounded-md w-full text-left ${activeTab === item.id
+                            className={`group flex items-center px-2 py-2 ${
+                              isMobile ? 'text-base' : 'text-sm'
+                            } font-medium rounded-md w-full text-left ${
+                              activeTab === item.id
                                 ? 'bg-primary-100 text-primary-900'
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                              }`}
+                            }`}
                           >
-                            <item.icon className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`} />
+                            <item.icon
+                              className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`}
+                            />
                             {item.name}
                           </button>
                         )
@@ -285,17 +313,20 @@ export default function SideNavigation({
                   )}
                 </div>
               )
-            } else { // It's a single item
+            } else {
+              // It's a single item
               if (entry.href !== '#') {
                 return (
                   <a
                     key={entry.name}
                     href={entry.href}
-                    className={`group flex items-center px-2 py-2 ${isMobile ? 'text-base' : 'text-sm'
-                      } font-medium rounded-md w-full text-left ${activeTab === entry.id
+                    className={`group flex items-center px-2 py-2 ${
+                      isMobile ? 'text-base' : 'text-sm'
+                    } font-medium rounded-md w-full text-left ${
+                      activeTab === entry.id
                         ? 'bg-primary-100 text-primary-900'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
+                    }`}
                   >
                     <entry.icon className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`} />
                     {entry.name}
@@ -306,11 +337,13 @@ export default function SideNavigation({
                 <button
                   key={entry.name}
                   onClick={() => handleTabChange(entry.id)}
-                  className={`group flex items-center px-2 py-2 ${isMobile ? 'text-base' : 'text-sm'
-                    } font-medium rounded-md w-full text-left ${activeTab === entry.id
+                  className={`group flex items-center px-2 py-2 ${
+                    isMobile ? 'text-base' : 'text-sm'
+                  } font-medium rounded-md w-full text-left ${
+                    activeTab === entry.id
                       ? 'bg-primary-100 text-primary-900'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                  }`}
                 >
                   <entry.icon className={`${isMobile ? 'mr-4 h-6 w-6' : 'mr-3 h-6 w-6'}`} />
                   {entry.name}
@@ -355,10 +388,12 @@ export default function SideNavigation({
           <div>
             <div className="inline-block h-9 w-9 rounded-full bg-gray-300 flex items-center justify-center">
               {user?.image ? (
-                <img
+                <Image
                   className="h-9 w-9 rounded-full"
                   src={user.image}
-                  alt=""
+                  alt="User avatar"
+                  width={36}
+                  height={36}
                 />
               ) : (
                 <UserIcon className="h-5 w-5 text-gray-600" />
@@ -369,9 +404,7 @@ export default function SideNavigation({
             <p className="text-sm font-medium text-gray-700 truncate">
               {user?.name || 'Guest User'}
             </p>
-            <p className="text-xs text-gray-500 truncate">
-              {user?.email || ''}
-            </p>
+            <p className="text-xs text-gray-500 truncate">{user?.email || ''}</p>
             {onLogout && (
               <button
                 onClick={onLogout}
@@ -390,7 +423,10 @@ export default function SideNavigation({
     <>
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 flex z-40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-75"
+          onClick={() => setSidebarOpen(false)}
+        />
 
         <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
           <div className="absolute top-0 right-0 -mr-12 pt-2">

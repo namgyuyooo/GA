@@ -29,7 +29,7 @@ export class GoogleSheetsService {
 
   public async getAccessToken(): Promise<string> {
     const jwt = require('jsonwebtoken')
-    
+
     const now = Math.floor(Date.now() / 1000)
     const token = jwt.sign(
       {
@@ -58,18 +58,18 @@ export class GoogleSheetsService {
   async getCampaigns(): Promise<UTMCampaign[]> {
     try {
       const accessToken = await this.getAccessToken()
-      
+
       const response = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}!A:K`,
         {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
           },
         }
       )
 
       const data = await response.json()
-      
+
       if (!data.values || data.values.length <= 1) {
         return []
       }
@@ -86,7 +86,7 @@ export class GoogleSheetsService {
         url: row[7] || '',
         description: row[8] || null,
         status: row[9] || 'ACTIVE',
-        createdAt: row[10] || new Date().toISOString()
+        createdAt: row[10] || new Date().toISOString(),
       }))
     } catch (error) {
       console.error('Error fetching campaigns from Google Sheets:', error)
@@ -98,37 +98,39 @@ export class GoogleSheetsService {
     try {
       const accessToken = await this.getAccessToken()
       const campaigns = await this.getCampaigns()
-      
+
       const newCampaign: UTMCampaign = {
         id: String(campaigns.length + 1),
         ...campaign,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       }
 
-      const values = [[
-        newCampaign.id,
-        newCampaign.name,
-        newCampaign.source,
-        newCampaign.medium,
-        newCampaign.campaign,
-        newCampaign.term || '',
-        newCampaign.content || '',
-        newCampaign.url,
-        newCampaign.description || '',
-        newCampaign.status || 'ACTIVE',
-        newCampaign.createdAt
-      ]]
+      const values = [
+        [
+          newCampaign.id,
+          newCampaign.name,
+          newCampaign.source,
+          newCampaign.medium,
+          newCampaign.campaign,
+          newCampaign.term || '',
+          newCampaign.content || '',
+          newCampaign.url,
+          newCampaign.description || '',
+          newCampaign.status || 'ACTIVE',
+          newCampaign.createdAt,
+        ],
+      ]
 
       await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}!A:K:append?valueInputOption=RAW`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            values
+            values,
           }),
         }
       )
@@ -144,25 +146,25 @@ export class GoogleSheetsService {
     try {
       const accessToken = await this.getAccessToken()
       const campaigns = await this.getCampaigns()
-      
-      const campaignIndex = campaigns.findIndex(c => c.id === id)
+
+      const campaignIndex = campaigns.findIndex((c) => c.id === id)
       if (campaignIndex === -1) {
         throw new Error('Campaign not found')
       }
 
       // Update the status column (column J, index 9)
       const range = `${SHEET_NAME}!J${campaignIndex + 2}` // +2 because of header row and 0-based index
-      
+
       await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=RAW`,
         {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            values: [[status]]
+            values: [[status]],
           }),
         }
       )
@@ -176,8 +178,8 @@ export class GoogleSheetsService {
     try {
       const accessToken = await this.getAccessToken()
       const campaigns = await this.getCampaigns()
-      
-      const campaignIndex = campaigns.findIndex(c => c.id === id)
+
+      const campaignIndex = campaigns.findIndex((c) => c.id === id)
       if (campaignIndex === -1) {
         throw new Error('Campaign not found')
       }

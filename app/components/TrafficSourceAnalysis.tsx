@@ -8,12 +8,13 @@ import {
   MagnifyingGlassIcon,
   TagIcon,
   XMarkIcon,
-  CodeBracketIcon
+  CodeBracketIcon,
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import SourceMediumTag from './SourceMediumTag'
 import ReactMarkdown from 'react-markdown'
+import AIInsightCard from './AIInsightCard'
 
 interface TrafficSourceAnalysisProps {
   propertyId?: string
@@ -55,7 +56,10 @@ interface KeywordGroup {
   createdAt?: string
 }
 
-export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMode }: TrafficSourceAnalysisProps) {
+export default function TrafficSourceAnalysis({
+  propertyId = '464147982',
+  dataMode,
+}: TrafficSourceAnalysisProps) {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [dateRange, setDateRange] = useState('7daysAgo')
@@ -64,7 +68,9 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
   const [keywordGroups, setKeywordGroups] = useState<KeywordGroup[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const rowsPerPage = 10
-  const [groupStats, setGroupStats] = useState<{ [groupId: string]: { sessions: number, conversions: number } }>({})
+  const [groupStats, setGroupStats] = useState<{
+    [groupId: string]: { sessions: number; conversions: number }
+  }>({})
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [selectedModel, setSelectedModel] = useState<string>('')
   const [latestInsight, setLatestInsight] = useState<any>(null)
@@ -77,28 +83,30 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
     loadKeywordGroups()
     fetchLatestInsight()
     fetch('/api/ai-insight/models')
-      .then(res => res.json())
-      .then(result => {
+      .then((res) => res.json())
+      .then((result) => {
         if (result.success) {
           setAvailableModels(result.models)
           if (result.models.length > 0) setSelectedModel(result.models[0].id)
         }
       })
     fetch('/api/settings/prompt-templates?type=traffic-insight')
-      .then(res => res.json())
-      .then(result => {
+      .then((res) => res.json())
+      .then((result) => {
         if (result.success) {
           setPromptTemplates(result.templates)
           const defaultTemplate = result.templates.find((t: any) => t.isDefault)
           if (defaultTemplate) setSelectedTemplate(defaultTemplate.id)
         }
       })
-  }, [dateRange, propertyId])
+  }, [dateRange, propertyId, loadTrafficData, loadKeywordGroups, fetchLatestInsight])
 
-  const loadTrafficData = async () => {
+  const loadTrafficData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/analytics/traffic-analysis?period=${dateRange}&propertyId=${propertyId}`)
+      const response = await fetch(
+        `/api/analytics/traffic-analysis?period=${dateRange}&propertyId=${propertyId}`
+      )
       const result = await response.json()
       if (response.ok) {
         setData(result)
@@ -113,9 +121,9 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [dateRange, propertyId])
 
-  const loadKeywordGroups = async () => {
+  const loadKeywordGroups = useCallback(async () => {
     try {
       const response = await fetch('/api/analytics/keyword-groups')
       if (response.ok) {
@@ -130,38 +138,44 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
       console.error('Failed to load keyword groups:', error)
       setKeywordGroups([])
     }
-  }
+  }, [])
 
-  const updateKeywordGroupStats = (keywords: any[]) => {
-    const stats: { [groupId: string]: { sessions: number, conversions: number } } = {}
-    keywordGroups.forEach(group => {
-      const groupKeywords = keywords.filter(kw =>
-        group.keywords.some(groupKw =>
-          kw.keyword.toLowerCase().includes(groupKw.toLowerCase())
+  const updateKeywordGroupStats = useCallback(
+    (keywords: any[]) => {
+      const stats: { [groupId: string]: { sessions: number; conversions: number } } = {}
+      keywordGroups.forEach((group) => {
+        const groupKeywords = keywords.filter((kw) =>
+          group.keywords.some((groupKw) => kw.keyword.toLowerCase().includes(groupKw.toLowerCase()))
         )
-      )
-      stats[group.id] = {
-        sessions: groupKeywords.reduce((sum, kw) => sum + (kw.sessions || 0), 0),
-        conversions: groupKeywords.reduce((sum, kw) => sum + (kw.conversions || 0), 0)
-      }
-    })
-    setGroupStats(stats)
-  }
+        stats[group.id] = {
+          sessions: groupKeywords.reduce((sum, kw) => sum + (kw.sessions || 0), 0),
+          conversions: groupKeywords.reduce((sum, kw) => sum + (kw.conversions || 0), 0),
+        }
+      })
+      setGroupStats(stats)
+    },
+    [keywordGroups]
+  )
 
-  const addKeywordGroup = async (group: { name: string, color: string, keywords: string[], description?: string }) => {
+  const addKeywordGroup = async (group: {
+    name: string
+    color: string
+    keywords: string[]
+    description?: string
+  }) => {
     try {
       const response = await fetch('/api/analytics/keyword-groups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create',
-          group
-        })
+          group,
+        }),
       })
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
-          setKeywordGroups(prev => [...prev, result.group])
+          setKeywordGroups((prev) => [...prev, result.group])
           toast.success('그룹이 추가되었습니다')
         } else {
           toast.error(result.message || '그룹 추가 실패')
@@ -176,18 +190,18 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
 
   const removeKeywordGroup = async (groupId: string) => {
     try {
-      const group = keywordGroups.find(g => g.id === groupId)
+      const group = keywordGroups.find((g) => g.id === groupId)
       if (!group) return
       const response = await fetch('/api/analytics/keyword-groups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'delete',
-          group: { id: groupId, ...group }
-        })
+          group: { id: groupId, ...group },
+        }),
       })
       if (response.ok) {
-        setKeywordGroups(groups => groups.filter(g => g.id !== groupId))
+        setKeywordGroups((groups) => groups.filter((g) => g.id !== groupId))
         toast.success('키워드 그룹이 삭제되었습니다')
       } else {
         toast.error('그룹 삭제 실패')
@@ -199,7 +213,7 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
 
   const addKeywordToGroup = async (groupId: string, keyword: string) => {
     try {
-      const group = keywordGroups.find(g => g.id === groupId)
+      const group = keywordGroups.find((g) => g.id === groupId)
       if (!group) return
       const updatedKeywords = Array.from(new Set([...group.keywords, keyword]))
       const response = await fetch('/api/analytics/keyword-groups', {
@@ -207,14 +221,12 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'update',
-          group: { ...group, keywords: updatedKeywords }
-        })
+          group: { ...group, keywords: updatedKeywords },
+        }),
       })
       if (response.ok) {
-        setKeywordGroups(groups =>
-          groups.map(g =>
-            g.id === groupId ? { ...g, keywords: updatedKeywords } : g
-          )
+        setKeywordGroups((groups) =>
+          groups.map((g) => (g.id === groupId ? { ...g, keywords: updatedKeywords } : g))
         )
         toast.success('키워드가 그룹에 추가되었습니다')
       } else {
@@ -227,22 +239,24 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
 
   const categorizeTrafficSources = (sources: TrafficSource[]) => {
     const categories = {
-      utm: sources.filter(s => s.isRegisteredUTM),
-      organic: sources.filter(s => s.medium === 'organic' && !s.isRegisteredUTM),
-      direct: sources.filter(s => s.medium === 'direct' || s.medium === '(none)'),
-      referral: sources.filter(s => s.medium === 'referral'),
-      social: sources.filter(s => s.medium === 'social'),
-      paid: sources.filter(s => s.medium === 'cpc' || s.medium === 'ppc'),
-      not_set: sources.filter(s => s.source === '(not set)' || s.medium === '(not set)')
+      utm: sources.filter((s) => s.isRegisteredUTM),
+      organic: sources.filter((s) => s.medium === 'organic' && !s.isRegisteredUTM),
+      direct: sources.filter((s) => s.medium === 'direct' || s.medium === '(none)'),
+      referral: sources.filter((s) => s.medium === 'referral'),
+      social: sources.filter((s) => s.medium === 'social'),
+      paid: sources.filter((s) => s.medium === 'cpc' || s.medium === 'ppc'),
+      not_set: sources.filter((s) => s.source === '(not set)' || s.medium === '(not set)'),
     }
 
     return categories
   }
 
-  const filteredSources = data?.data?.sources ?
-    sourceFilter === 'all' ? data.data.sources :
-      sourceFilter === 'utm' ? data.data.sources.filter((s: TrafficSource) => s.isRegisteredUTM) :
-        data.data.sources.filter((s: TrafficSource) => !s.isRegisteredUTM)
+  const filteredSources = data?.data?.sources
+    ? sourceFilter === 'all'
+      ? data.data.sources
+      : sourceFilter === 'utm'
+        ? data.data.sources.filter((s: TrafficSource) => s.isRegisteredUTM)
+        : data.data.sources.filter((s: TrafficSource) => !s.isRegisteredUTM)
     : []
 
   if (isLoading && !data) {
@@ -258,12 +272,12 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
   const pages = data?.data?.pages || []
   const categorizedSources = categorizeTrafficSources(sources)
 
-  const fetchLatestInsight = async () => {
+  const fetchLatestInsight = useCallback(async () => {
     const res = await fetch(`/api/ai-insight?type=traffic&propertyId=${propertyId}`)
     const result = await res.json()
     if (result.success && result.insight) setLatestInsight(result.insight)
     else setLatestInsight(null)
-  }
+  }, [propertyId])
 
   const handleGenerateInsight = async () => {
     setInsightLoading(true)
@@ -271,16 +285,17 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
       const requestBody: any = {
         model: selectedModel,
         type: 'traffic',
-        propertyId
+        propertyId,
       }
 
       if (selectedTemplate) {
         requestBody.templateId = selectedTemplate
         requestBody.variables = {
-          dateRange
+          dateRange,
         }
       } else {
-        requestBody.prompt = `다음은 트래픽 소스 분석 주요 데이터입니다.\n\n` +
+        requestBody.prompt =
+          `다음은 트래픽 소스 분석 주요 데이터입니다.\n\n` +
           `기간: ${dateRange}\n` +
           `주요 소스/매체/캠페인별 세션, 전환 등 주요 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
       }
@@ -288,7 +303,7 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
       const res = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
       const result = await res.json()
       if (result.success) {
@@ -296,7 +311,7 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
       } else {
         toast.error('AI 인사이트 생성 실패: ' + (result.error || ''))
       }
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error('AI 인사이트 생성 중 오류: ' + (e.message || ''))
     } finally {
       setInsightLoading(false)
@@ -334,15 +349,16 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
           {[
             { key: 'sources', name: '트래픽 소스', icon: GlobeAltIcon },
             { key: 'keywords', name: '키워드 분석', icon: MagnifyingGlassIcon },
-            { key: 'pages', name: '페이지 경로', icon: EyeIcon }
+            { key: 'pages', name: '페이지 경로', icon: EyeIcon },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`${activeTab === tab.key
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center`}
+              className={`${
+                activeTab === tab.key
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center`}
             >
               <tab.icon className="h-4 w-4 mr-2" />
               {tab.name}
@@ -361,15 +377,16 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
               {[
                 { key: 'all', label: '전체' },
                 { key: 'utm', label: '등록된 UTM' },
-                { key: 'non-utm', label: '자연 유입' }
+                { key: 'non-utm', label: '자연 유입' },
               ].map((filter) => (
                 <button
                   key={filter.key}
                   onClick={() => setSourceFilter(filter.key as any)}
-                  className={`px-3 py-1 rounded-full text-sm ${sourceFilter === filter.key
-                    ? 'bg-primary-100 text-primary-700 border border-primary-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                  className={`px-3 py-1 rounded-full text-sm ${
+                    sourceFilter === filter.key
+                      ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
                 >
                   {filter.label}
                 </button>
@@ -387,47 +404,56 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
                     <TagIcon className="h-5 w-5 text-green-500 mr-2" />
                     등록된 UTM 캠페인
                   </h3>
-                  <span className="text-sm text-gray-500">
-                    {categorizedSources.utm.length}개
-                  </span>
+                  <span className="text-sm text-gray-500">{categorizedSources.utm.length}개</span>
                 </div>
               </div>
               <div className="p-4">
                 {categorizedSources.utm.length > 0 ? (
                   <div className="space-y-3">
-                    {categorizedSources.utm.slice(0, 5).map((source: TrafficSource, index: number) => (
-                      <div key={index} className="border-l-4 border-green-400 pl-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-900 flex items-center">
-                              {source.campaign || source.source}
-                              {source.matchedUTM?.name && (
-                                <span className="ml-2 text-xs text-blue-600">{source.matchedUTM.name}</span>
-                              )}
-                            </h4>
-                            <div className="text-sm text-gray-500">
-                              <SourceMediumTag source={source.source} medium={source.medium} />
-                            </div>
-                            {source.matchedUTM?.description && (
-                              <div className="text-xs text-gray-400 mt-1">{source.matchedUTM.description}</div>
-                            )}
-                            {source.matchedUTM?.url && (
-                              <div className="text-xs text-blue-500 mt-1">
-                                <a href={source.matchedUTM.url} target="_blank" rel="noopener noreferrer" className="underline">UTM URL 바로가기</a>
+                    {categorizedSources.utm
+                      .slice(0, 5)
+                      .map((source: TrafficSource, index: number) => (
+                        <div key={index} className="border-l-4 border-green-400 pl-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-900 flex items-center">
+                                {source.campaign || source.source}
+                                {source.matchedUTM?.name && (
+                                  <span className="ml-2 text-xs text-blue-600">
+                                    {source.matchedUTM.name}
+                                  </span>
+                                )}
+                              </h4>
+                              <div className="text-sm text-gray-500">
+                                <SourceMediumTag source={source.source} medium={source.medium} />
                               </div>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-gray-900">
-                              {source.sessions.toLocaleString()} 세션
+                              {source.matchedUTM?.description && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  {source.matchedUTM.description}
+                                </div>
+                              )}
+                              {source.matchedUTM?.url && (
+                                <div className="text-xs text-blue-500 mt-1">
+                                  <a
+                                    href={source.matchedUTM.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline"
+                                  >
+                                    UTM URL 바로가기
+                                  </a>
+                                </div>
+                              )}
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {source.conversions} 전환
+                            <div className="text-right">
+                              <div className="text-sm font-medium text-gray-900">
+                                {source.sessions.toLocaleString()} 세션
+                              </div>
+                              <div className="text-xs text-gray-500">{source.conversions} 전환</div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 ) : (
                   <div className="text-center py-4">
@@ -452,35 +478,41 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
                     category: 'organic',
                     label: 'Organic Search',
                     color: 'bg-green-500',
-                    sources: categorizedSources.organic
+                    sources: categorizedSources.organic,
                   },
                   {
                     category: 'direct',
                     label: 'Direct Traffic',
                     color: 'bg-blue-500',
-                    sources: categorizedSources.direct
+                    sources: categorizedSources.direct,
                   },
                   {
                     category: 'referral',
                     label: 'Referral',
                     color: 'bg-purple-500',
-                    sources: categorizedSources.referral
+                    sources: categorizedSources.referral,
                   },
                   {
                     category: 'social',
                     label: 'Social Media',
                     color: 'bg-pink-500',
-                    sources: categorizedSources.social
+                    sources: categorizedSources.social,
                   },
                   {
                     category: 'not_set',
                     label: '(not set)',
                     color: 'bg-gray-500',
-                    sources: categorizedSources.not_set
-                  }
+                    sources: categorizedSources.not_set,
+                  },
                 ].map((cat) => {
-                  const totalSessions = cat.sources.reduce((sum: number, s: TrafficSource) => sum + s.sessions, 0)
-                  const totalConversions = cat.sources.reduce((sum: number, s: TrafficSource) => sum + s.conversions, 0)
+                  const totalSessions = cat.sources.reduce(
+                    (sum: number, s: TrafficSource) => sum + s.sessions,
+                    0
+                  )
+                  const totalConversions = cat.sources.reduce(
+                    (sum: number, s: TrafficSource) => sum + s.conversions,
+                    0
+                  )
 
                   return (
                     <div key={cat.category} className="flex items-center justify-between">
@@ -495,9 +527,7 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
                         <div className="text-sm font-medium text-gray-900">
                           {totalSessions.toLocaleString()}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {totalConversions} 전환
-                        </div>
+                        <div className="text-xs text-gray-500">{totalConversions} 전환</div>
                       </div>
                     </div>
                   )
@@ -515,8 +545,8 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
                   <div className="flex items-center justify-between">
                     <span>🔍 디버깅 정보:</span>
                     <span className="text-xs">
-                      총 {data.data.debug.totalSources}개 소스, 
-                      매칭된 UTM: {data.data.debug.matchedUTMs}개
+                      총 {data.data.debug.totalSources}개 소스, 매칭된 UTM:{' '}
+                      {data.data.debug.matchedUTMs}개
                     </span>
                   </div>
                   {data.data.debug.matchedUTMs === 0 && (
@@ -527,58 +557,96 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
                 </div>
               </div>
             )}
-            
+
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">유입 소스</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">세션</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">전환수</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이탈률</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    유입 소스
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    세션
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    사용자
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    전환수
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    이탈률
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSources.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((source: TrafficSource, index: number) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {source.isRegisteredUTM ? (
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 flex items-center">
-                            <TagIcon className="h-4 w-4 text-blue-500 mr-1" />
-                            {source.matchedUTM?.name || source.campaign}
+                {filteredSources
+                  .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+                  .map((source: TrafficSource, index: number) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {source.isRegisteredUTM ? (
+                          <div>
+                            <div className="text-sm font-medium text-gray-900 flex items-center">
+                              <TagIcon className="h-4 w-4 text-blue-500 mr-1" />
+                              {source.matchedUTM?.name || source.campaign}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              <SourceMediumTag source={source.source} medium={source.medium} />
+                            </div>
+                            {source.matchedUTM?.description && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                {source.matchedUTM.description}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-sm text-gray-500">
+                        ) : (
+                          <div className="flex items-center">
+                            <span className="text-sm font-medium text-gray-900 mr-2">
+                              {source.source}
+                            </span>
                             <SourceMediumTag source={source.source} medium={source.medium} />
                           </div>
-                          {source.matchedUTM?.description && (
-                            <div className="text-xs text-gray-400 mt-1">
-                              {source.matchedUTM.description}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center">
-                          <span className="text-sm font-medium text-gray-900 mr-2">{source.source}</span>
-                          <SourceMediumTag source={source.source} medium={source.medium} />
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{source.sessions.toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{source.users.toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{source.conversions.toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {(source.bounceRate * 100).toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {source.sessions.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {source.users.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {source.conversions.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {(source.bounceRate * 100).toFixed(1)}%
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
             {/* Pagination */}
             <div className="flex justify-end items-center mt-4 space-x-2">
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 text-sm border rounded disabled:opacity-50">이전</button>
-              <span className="text-sm">{currentPage} / {Math.ceil(filteredSources.length / rowsPerPage)}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredSources.length / rowsPerPage), p + 1))} disabled={currentPage === Math.ceil(filteredSources.length / rowsPerPage)} className="px-2 py-1 text-sm border rounded disabled:opacity-50">다음</button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+              >
+                이전
+              </button>
+              <span className="text-sm">
+                {currentPage} / {Math.ceil(filteredSources.length / rowsPerPage)}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(Math.ceil(filteredSources.length / rowsPerPage), p + 1)
+                  )
+                }
+                disabled={currentPage === Math.ceil(filteredSources.length / rowsPerPage)}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+              >
+                다음
+              </button>
             </div>
           </div>
         </div>
@@ -614,11 +682,15 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
                     <div className="space-y-2 mb-3">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">세션</span>
-                        <span className="font-medium">{groupStats[group.id]?.sessions?.toLocaleString() ?? 0}</span>
+                        <span className="font-medium">
+                          {groupStats[group.id]?.sessions?.toLocaleString() ?? 0}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">전환</span>
-                        <span className="font-medium">{groupStats[group.id]?.conversions ?? 0}</span>
+                        <span className="font-medium">
+                          {groupStats[group.id]?.conversions ?? 0}
+                        </span>
                       </div>
                     </div>
 
@@ -761,31 +833,37 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
           <CodeBracketIcon className="h-5 w-5 mr-2 text-primary-600" />
           <span className="font-bold text-primary-700 text-lg">AI 자동 인사이트</span>
           {latestInsight?.createdAt && (
-            <span className="ml-3 text-xs text-gray-500">{new Date(latestInsight.createdAt).toLocaleString('ko-KR')}</span>
+            <span className="ml-3 text-xs text-gray-500">
+              {new Date(latestInsight.createdAt).toLocaleString('ko-KR')}
+            </span>
           )}
           <div className="ml-auto flex items-center space-x-2">
             {availableModels.length > 0 && (
               <select
                 value={selectedModel}
-                onChange={e => setSelectedModel(e.target.value)}
+                onChange={(e) => setSelectedModel(e.target.value)}
                 className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
                 title="사용할 Gemini 모델 선택"
               >
-                {availableModels.map(m => (
-                  <option key={m.id} value={m.id}>{m.displayName}</option>
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.displayName}
+                  </option>
                 ))}
               </select>
             )}
             {promptTemplates.length > 0 && (
               <select
                 value={selectedTemplate}
-                onChange={e => setSelectedTemplate(e.target.value)}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
                 className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
                 title="사용할 프롬프트 템플릿 선택"
               >
                 <option value="">기본 프롬프트</option>
-                {promptTemplates.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                {promptTemplates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
                 ))}
               </select>
             )}
@@ -798,8 +876,12 @@ export default function TrafficSourceAnalysis({ propertyId = '464147982', dataMo
             </button>
           </div>
         </div>
-        <div className="whitespace-pre-line text-gray-800 text-sm min-h-[60px]">
-          {latestInsight?.result ? <ReactMarkdown>{latestInsight.result}</ReactMarkdown> : '아직 생성된 인사이트가 없습니다.'}
+        <div className="min-h-[60px]">
+          {latestInsight?.result ? (
+            <AIInsightCard result={latestInsight.result} />
+          ) : (
+            '아직 생성된 인사이트가 없습니다.'
+          )}
         </div>
         {latestInsight?.model && (
           <div className="mt-2 text-xs text-gray-500">모델: {latestInsight.model}</div>

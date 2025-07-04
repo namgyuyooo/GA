@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
   ChartBarIcon,
-  TrophyIcon
+  TrophyIcon,
 } from '@heroicons/react/24/outline'
 
 interface Goal {
@@ -42,19 +42,19 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
     pagePath: '',
     revenueThreshold: '',
     durationSeconds: '',
-    priority: 1
+    priority: 1,
   })
 
   useEffect(() => {
     loadGoals()
   }, [propertyId])
 
-  const loadGoals = async () => {
+  const loadGoals = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await fetch(`/api/analytics/conversion-goals?propertyId=${propertyId}`)
       const result = await response.json()
-      
+
       if (response.ok) {
         setGoals(result.goals || [])
       } else {
@@ -66,7 +66,7 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [propertyId])
 
   const handleCreateGoal = async () => {
     if (!formData.name.trim()) {
@@ -92,12 +92,12 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
           ...formData,
           revenueThreshold: formData.revenueThreshold ? Number(formData.revenueThreshold) : null,
           durationSeconds: formData.durationSeconds ? Number(formData.durationSeconds) : null,
-          propertyId
-        })
+          propertyId,
+        }),
       })
 
       const result = await response.json()
-      
+
       if (response.ok) {
         toast.success(result.message)
         setShowCreateModal(false)
@@ -123,12 +123,12 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
           id: editingGoal.id,
           ...formData,
           revenueThreshold: formData.revenueThreshold ? Number(formData.revenueThreshold) : null,
-          durationSeconds: formData.durationSeconds ? Number(formData.durationSeconds) : null
-        })
+          durationSeconds: formData.durationSeconds ? Number(formData.durationSeconds) : null,
+        }),
       })
 
       const result = await response.json()
-      
+
       if (response.ok) {
         toast.success(result.message)
         setEditingGoal(null)
@@ -148,11 +148,11 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
 
     try {
       const response = await fetch(`/api/analytics/conversion-goals?id=${goalId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
 
       const result = await response.json()
-      
+
       if (response.ok) {
         toast.success(result.message)
         loadGoals()
@@ -175,7 +175,7 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
       pagePath: goal.pagePath || '',
       revenueThreshold: goal.revenueThreshold?.toString() || '',
       durationSeconds: goal.durationSeconds?.toString() || '',
-      priority: goal.priority
+      priority: goal.priority,
     })
     setShowCreateModal(true)
   }
@@ -189,26 +189,35 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
       pagePath: '',
       revenueThreshold: '',
       durationSeconds: '',
-      priority: 1
+      priority: 1,
     })
   }
 
   const getPriorityLabel = (priority: number) => {
     switch (priority) {
-      case 1: return { label: '높음', color: 'bg-red-100 text-red-800' }
-      case 2: return { label: '중간', color: 'bg-yellow-100 text-yellow-800' }
-      case 3: return { label: '낮음', color: 'bg-green-100 text-green-800' }
-      default: return { label: '중간', color: 'bg-gray-100 text-gray-800' }
+      case 1:
+        return { label: '높음', color: 'bg-red-100 text-red-800' }
+      case 2:
+        return { label: '중간', color: 'bg-yellow-100 text-yellow-800' }
+      case 3:
+        return { label: '낮음', color: 'bg-green-100 text-green-800' }
+      default:
+        return { label: '중간', color: 'bg-gray-100 text-gray-800' }
     }
   }
 
   const getGoalTypeLabel = (type: string) => {
     switch (type) {
-      case 'EVENT': return '이벤트'
-      case 'PAGE_VIEW': return '페이지 조회'
-      case 'DURATION': return '체류 시간'
-      case 'REVENUE': return '수익'
-      default: return type
+      case 'EVENT':
+        return '이벤트'
+      case 'PAGE_VIEW':
+        return '페이지 조회'
+      case 'DURATION':
+        return '체류 시간'
+      case 'REVENUE':
+        return '수익'
+      default:
+        return type
     }
   }
 
@@ -227,8 +236,7 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
           onClick={() => setShowCreateModal(true)}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
         >
-          <PlusIcon className="h-4 w-4 mr-2" />
-          새 목표 추가
+          <PlusIcon className="h-4 w-4 mr-2" />새 목표 추가
         </button>
       </div>
 
@@ -299,10 +307,13 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
                         {goal.goalType === 'EVENT' && goal.eventName}
                         {goal.goalType === 'PAGE_VIEW' && goal.pagePath}
                         {goal.goalType === 'DURATION' && `${goal.durationSeconds}초`}
-                        {goal.goalType === 'REVENUE' && `₩${goal.revenueThreshold?.toLocaleString()}`}
+                        {goal.goalType === 'REVENUE' &&
+                          `₩${goal.revenueThreshold?.toLocaleString()}`}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priority.color}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priority.color}`}
+                        >
                           {priority.label}
                         </span>
                       </td>
@@ -347,28 +358,24 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 {editingGoal ? '전환 목표 수정' : '새 전환 목표 추가'}
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    목표명 *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">목표명 *</label>
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     placeholder="예: 소개서 다운로드"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    설명
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     rows={2}
                     placeholder="목표에 대한 설명을 입력하세요"
@@ -381,7 +388,7 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
                   </label>
                   <select
                     value={formData.goalType}
-                    onChange={(e) => setFormData({...formData, goalType: e.target.value as any})}
+                    onChange={(e) => setFormData({ ...formData, goalType: e.target.value as any })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   >
                     <option value="EVENT">이벤트</option>
@@ -399,7 +406,7 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
                     <input
                       type="text"
                       value={formData.eventName}
-                      onChange={(e) => setFormData({...formData, eventName: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="예: 소개서 다운로드 버튼 클릭"
                     />
@@ -414,7 +421,7 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
                     <input
                       type="text"
                       value={formData.pagePath}
-                      onChange={(e) => setFormData({...formData, pagePath: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, pagePath: e.target.value })}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="예: /download-complete"
                     />
@@ -429,7 +436,9 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
                     <input
                       type="number"
                       value={formData.revenueThreshold}
-                      onChange={(e) => setFormData({...formData, revenueThreshold: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, revenueThreshold: e.target.value })
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="100000"
                     />
@@ -444,7 +453,9 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
                     <input
                       type="number"
                       value={formData.durationSeconds}
-                      onChange={(e) => setFormData({...formData, durationSeconds: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, durationSeconds: e.target.value })
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       placeholder="300"
                     />
@@ -452,12 +463,10 @@ export default function GoalManagement({ propertyId = '464147982' }: GoalManagem
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    우선순위
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">우선순위</label>
                   <select
                     value={formData.priority}
-                    onChange={(e) => setFormData({...formData, priority: Number(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, priority: Number(e.target.value) })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   >
                     <option value={1}>높음</option>

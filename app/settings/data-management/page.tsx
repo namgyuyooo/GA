@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { CloudArrowUpIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
+import {
+  CloudArrowUpIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline'
 
 interface DataSourceStatus {
   name: string
@@ -45,17 +50,21 @@ export default function DataManagementPage() {
   ])
 
   const handleManualSync = async (sourceName: string) => {
-    const sourceIndex = dataSources.findIndex(s => s.name === sourceName)
+    const sourceIndex = dataSources.findIndex((s) => s.name === sourceName)
     if (sourceIndex === -1) return
 
     const updatedSources = [...dataSources]
-    updatedSources[sourceIndex] = { ...updatedSources[sourceIndex], status: 'syncing', message: '동기화 요청 중...' }
+    updatedSources[sourceIndex] = {
+      ...updatedSources[sourceIndex],
+      status: 'syncing',
+      message: '동기화 요청 중...',
+    }
     setDataSources(updatedSources)
 
     toast.loading(`${sourceName} 동기화 요청 중...`)
 
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 2000))
 
     try {
       // In a real application, this would be an actual API call to trigger sync
@@ -91,23 +100,35 @@ export default function DataManagementPage() {
           <CloudArrowUpIcon className="h-10 w-10 text-blue-600" />
           <h1 className="text-3xl font-bold text-gray-900">데이터 동기화 현황판</h1>
         </div>
-        <p className="text-gray-600 mb-8">각 데이터 소스의 동기화 상태를 확인하고, 필요한 경우 수동으로 동기화를 시작합니다.</p>
+        <p className="text-gray-600 mb-8">
+          각 데이터 소스의 동기화 상태를 확인하고, 필요한 경우 수동으로 동기화를 시작합니다.
+        </p>
 
         <div className="space-y-6">
           {dataSources.map((source, index) => (
-            <div key={index} className="bg-gray-50 p-6 rounded-lg shadow-sm flex items-center justify-between">
+            <div
+              key={index}
+              className="bg-gray-50 p-6 rounded-lg shadow-sm flex items-center justify-between"
+            >
               <div className="flex items-center space-x-4">
-                {source.status === 'success' && <CheckCircleIcon className="h-8 w-8 text-green-500" />}
+                {source.status === 'success' && (
+                  <CheckCircleIcon className="h-8 w-8 text-green-500" />
+                )}
                 {source.status === 'failed' && <XCircleIcon className="h-8 w-8 text-red-500" />}
-                {source.status === 'syncing' && <ArrowPathIcon className="h-8 w-8 text-blue-500 animate-spin" />}
+                {source.status === 'syncing' && (
+                  <ArrowPathIcon className="h-8 w-8 text-blue-500 animate-spin" />
+                )}
                 {source.status === 'idle' && <CloudArrowUpIcon className="h-8 w-8 text-gray-400" />}
-                
+
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{source.name}</h3>
                   <p className="text-sm text-gray-600">마지막 동기화: {source.lastSync}</p>
                   <p className="text-sm text-gray-600">다음 동기화 예정: {source.nextSync}</p>
-                  <p className="text-sm text-gray-700 font-medium">상태: 
-                    <span className={`ml-1 ${source.status === 'success' ? 'text-green-600' : source.status === 'failed' ? 'text-red-600' : source.status === 'syncing' ? 'text-blue-600' : 'text-gray-600'}`}>
+                  <p className="text-sm text-gray-700 font-medium">
+                    상태:
+                    <span
+                      className={`ml-1 ${source.status === 'success' ? 'text-green-600' : source.status === 'failed' ? 'text-red-600' : source.status === 'syncing' ? 'text-blue-600' : 'text-gray-600'}`}
+                    >
                       {source.message}
                     </span>
                   </p>

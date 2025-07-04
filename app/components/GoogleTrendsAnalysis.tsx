@@ -8,9 +8,9 @@ import {
   SparklesIcon,
   ClockIcon,
   MapPinIcon,
-  HashtagIcon
+  HashtagIcon,
 } from '@heroicons/react/24/outline'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 
 interface TrendsData {
@@ -51,9 +51,9 @@ interface GoogleTrendsAnalysisProps {
   onKeywordChange?: (keyword: string) => void
 }
 
-export default function GoogleTrendsAnalysis({ 
-  keyword = 'AI 제조업', 
-  onKeywordChange 
+export default function GoogleTrendsAnalysis({
+  keyword = 'AI 제조업',
+  onKeywordChange,
 }: GoogleTrendsAnalysisProps) {
   const [trendsData, setTrendsData] = useState<TrendsData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -67,35 +67,38 @@ export default function GoogleTrendsAnalysis({
     }
   }, [selectedKeyword, timeframe])
 
-  const fetchTrendsData = async (searchKeyword: string) => {
-    setIsLoading(true)
-    try {
-      const response = await fetch('/api/analytics/google-trends', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          keyword: searchKeyword,
-          timeframe,
-          geo: 'KR'
+  const fetchTrendsData = useCallback(
+    async (searchKeyword: string) => {
+      setIsLoading(true)
+      try {
+        const response = await fetch('/api/analytics/google-trends', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            keyword: searchKeyword,
+            timeframe,
+            geo: 'KR',
+          }),
         })
-      })
 
-      const result = await response.json()
-      if (result.success) {
-        setTrendsData(result.data)
-        toast.success(`${searchKeyword} 트렌드 데이터 로드 완료`)
-      } else {
-        toast.error('트렌드 데이터 로드 실패')
+        const result = await response.json()
+        if (result.success) {
+          setTrendsData(result.data)
+          toast.success(`${searchKeyword} 트렌드 데이터 로드 완료`)
+        } else {
+          toast.error('트렌드 데이터 로드 실패')
+        }
+      } catch (error) {
+        console.error('Failed to fetch trends data:', error)
+        toast.error('트렌드 데이터 로드 중 오류 발생')
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error('Failed to fetch trends data:', error)
-      toast.error('트렌드 데이터 로드 중 오류 발생')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    },
+    [timeframe]
+  )
 
   const handleKeywordSearch = () => {
     if (searchInput.trim()) {
@@ -131,8 +134,10 @@ export default function GoogleTrendsAnalysis({
     return 'text-gray-600 bg-gray-50'
   }
 
-  const currentTrend = trendsData?.interestOverTime?.[trendsData.interestOverTime.length - 1]?.value || 0
-  const previousTrend = trendsData?.interestOverTime?.[trendsData.interestOverTime.length - 7]?.value || 0
+  const currentTrend =
+    trendsData?.interestOverTime?.[trendsData.interestOverTime.length - 1]?.value || 0
+  const previousTrend =
+    trendsData?.interestOverTime?.[trendsData.interestOverTime.length - 7]?.value || 0
   const trendChange = currentTrend - previousTrend
 
   return (
@@ -147,7 +152,7 @@ export default function GoogleTrendsAnalysis({
               <p className="text-sm text-gray-500">검색 트렌드와 관련 키워드를 분석합니다</p>
             </div>
           </div>
-          
+
           <select
             value={timeframe}
             onChange={(e) => setTimeframe(e.target.value)}
@@ -218,7 +223,9 @@ export default function GoogleTrendsAnalysis({
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">현재 인기도</dt>
-                      <dd className={`text-lg font-medium px-2 py-1 rounded-full text-center ${getTrendColor(currentTrend)}`}>
+                      <dd
+                        className={`text-lg font-medium px-2 py-1 rounded-full text-center ${getTrendColor(currentTrend)}`}
+                      >
                         {formatTrendValue(currentTrend)} ({currentTrend})
                       </dd>
                     </dl>
@@ -240,8 +247,11 @@ export default function GoogleTrendsAnalysis({
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">주간 변화</dt>
-                      <dd className={`text-lg font-medium ${trendChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {trendChange > 0 ? '+' : ''}{trendChange}
+                      <dd
+                        className={`text-lg font-medium ${trendChange > 0 ? 'text-green-600' : 'text-red-600'}`}
+                      >
+                        {trendChange > 0 ? '+' : ''}
+                        {trendChange}
                       </dd>
                     </dl>
                   </div>
@@ -259,14 +269,12 @@ export default function GoogleTrendsAnalysis({
               <div className="grid grid-cols-6 gap-2">
                 {trendsData.interestOverTime.slice(-30).map((point, index) => (
                   <div key={index} className="text-center">
-                    <div 
+                    <div
                       className={`h-16 rounded mb-1 ${getTrendColor(point.value).split(' ')[1]}`}
                       style={{ height: `${Math.max(8, point.value * 0.6)}px` }}
                       title={`${point.time}: ${point.value}`}
                     ></div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(point.time).getDate()}일
-                    </div>
+                    <div className="text-xs text-gray-500">{new Date(point.time).getDate()}일</div>
                   </div>
                 ))}
               </div>
@@ -285,8 +293,8 @@ export default function GoogleTrendsAnalysis({
               <div className="p-6">
                 <div className="space-y-3">
                   {trendsData.relatedQueries.rising.map((query, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
                       onClick={() => handleKeywordClick(query.query)}
                     >
@@ -311,8 +319,8 @@ export default function GoogleTrendsAnalysis({
               <div className="p-6">
                 <div className="space-y-3">
                   {trendsData.relatedQueries.top.map((query, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
                       onClick={() => handleKeywordClick(query.query)}
                     >
@@ -336,8 +344,11 @@ export default function GoogleTrendsAnalysis({
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-3">
-                  {[...trendsData.relatedTopics.top, ...trendsData.relatedTopics.rising.slice(0, 5)].map((topic, index) => (
-                    <div 
+                  {[
+                    ...trendsData.relatedTopics.top,
+                    ...trendsData.relatedTopics.rising.slice(0, 5),
+                  ].map((topic, index) => (
+                    <div
                       key={index}
                       className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
                       onClick={() => handleKeywordClick(topic.topic)}
@@ -364,7 +375,7 @@ export default function GoogleTrendsAnalysis({
                       <span className="text-sm text-gray-900">{geo.geoName}</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-red-500 h-2 rounded-full"
                             style={{ width: `${geo.value}%` }}
                           ></div>
@@ -383,22 +394,29 @@ export default function GoogleTrendsAnalysis({
             <div className="flex items-start space-x-3">
               <SparklesIcon className="h-6 w-6 text-blue-600 mt-1" />
               <div>
-                <h3 className="text-lg font-semibold text-blue-900 mb-3">제조업 B2B 마케팅 인사이트</h3>
+                <h3 className="text-lg font-semibold text-blue-900 mb-3">
+                  제조업 B2B 마케팅 인사이트
+                </h3>
                 <div className="space-y-2 text-sm text-blue-800">
                   <p>
-                    <strong>현재 트렌드 분석:</strong> '{trendsData.keyword}' 키워드는 
-                    {currentTrend >= 70 ? ' 높은 관심도를 보이고 있어 마케팅 기회가 큽니다.' : 
-                     currentTrend >= 40 ? ' 보통 수준의 관심도를 보이고 있습니다.' : 
-                     ' 상대적으로 낮은 관심도를 보이고 있어 니치 시장으로 접근할 수 있습니다.'}
+                    <strong>현재 트렌드 분석:</strong> '{trendsData.keyword}' 키워드는
+                    {currentTrend >= 70
+                      ? ' 높은 관심도를 보이고 있어 마케팅 기회가 큽니다.'
+                      : currentTrend >= 40
+                        ? ' 보통 수준의 관심도를 보이고 있습니다.'
+                        : ' 상대적으로 낮은 관심도를 보이고 있어 니치 시장으로 접근할 수 있습니다.'}
                   </p>
                   <p>
-                    <strong>급상승 키워드 활용:</strong> 
-                    {trendsData.relatedQueries.rising.slice(0, 3).map(q => q.query).join(', ')} 등의 
-                    급상승 키워드를 콘텐츠 전략에 포함하세요.
+                    <strong>급상승 키워드 활용:</strong>
+                    {trendsData.relatedQueries.rising
+                      .slice(0, 3)
+                      .map((q) => q.query)
+                      .join(', ')}{' '}
+                    등의 급상승 키워드를 콘텐츠 전략에 포함하세요.
                   </p>
                   <p>
-                    <strong>지역별 전략:</strong> {trendsData.geoMap[0]?.geoName}에서 가장 높은 관심도를 보이므로 
-                    해당 지역 타겟팅을 강화하는 것이 좋습니다.
+                    <strong>지역별 전략:</strong> {trendsData.geoMap[0]?.geoName}에서 가장 높은
+                    관심도를 보이므로 해당 지역 타겟팅을 강화하는 것이 좋습니다.
                   </p>
                 </div>
               </div>
@@ -410,7 +428,9 @@ export default function GoogleTrendsAnalysis({
           <div className="text-center">
             <GlobeAltIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">트렌드 데이터 없음</h3>
-            <p className="mt-1 text-sm text-gray-500">키워드를 검색하여 Google Trends 데이터를 확인하세요.</p>
+            <p className="mt-1 text-sm text-gray-500">
+              키워드를 검색하여 Google Trends 데이터를 확인하세요.
+            </p>
           </div>
         </div>
       )}

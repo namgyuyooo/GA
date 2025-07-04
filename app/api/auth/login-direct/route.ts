@@ -7,10 +7,7 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json()
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: '이메일과 비밀번호를 입력해주세요.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: '이메일과 비밀번호를 입력해주세요.' }, { status: 400 })
     }
 
     // PostgreSQL 클라이언트로 직접 연결
@@ -32,37 +29,28 @@ export async function POST(request: NextRequest) {
     await client.end()
 
     if (userResult.rows.length === 0) {
-      return NextResponse.json(
-        { error: '이메일 또는 비밀번호가 잘못되었습니다.' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: '이메일 또는 비밀번호가 잘못되었습니다.' }, { status: 401 })
     }
 
     const user = userResult.rows[0]
 
     if (!user.password) {
-      return NextResponse.json(
-        { error: '이메일 또는 비밀번호가 잘못되었습니다.' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: '이메일 또는 비밀번호가 잘못되었습니다.' }, { status: 401 })
     }
 
     // 비밀번호 확인
     const isValidPassword = await bcrypt.compare(password, user.password)
 
     if (!isValidPassword) {
-      return NextResponse.json(
-        { error: '이메일 또는 비밀번호가 잘못되었습니다.' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: '이메일 또는 비밀번호가 잘못되었습니다.' }, { status: 401 })
     }
 
     // JWT 토큰 생성
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email, 
-        role: user.role 
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
       },
       process.env.JWT_SECRET || 'default-secret',
       { expiresIn: '7d' }
@@ -75,23 +63,25 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
-      }
+        role: user.role,
+      },
     })
 
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     })
 
     return response
-
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
-      { error: '로그인 중 오류가 발생했습니다.', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: '로그인 중 오류가 발생했습니다.',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }
