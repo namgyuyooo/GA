@@ -1,9 +1,9 @@
 'use client'
 
-import { 
-  CheckCircleIcon, 
-  Cog6ToothIcon, 
-  InformationCircleIcon, 
+import {
+  CheckCircleIcon,
+  Cog6ToothIcon,
+  InformationCircleIcon,
   ClockIcon,
   DocumentTextIcon,
   CalendarIcon,
@@ -979,6 +979,23 @@ export default function Settings() {
                     </div>
 
                     <div>
+                        <label className="label">기본 프롬프트 템플릿 선택</label>
+                        <select
+                            value={selectedDefaultPromptTemplateId}
+                            onChange={(e) => setSelectedDefaultPromptTemplateId(e.target.value)}
+                            className="input-field"
+                        >
+                            <option value="">기본 프롬프트 사용</option>
+                            {promptTemplates.filter(t => t.isActive).map(template => (
+                                <option key={template.id} value={template.id}>{template.name} ({template.type})</option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                            AI 분석 시 기본으로 사용할 프롬프트 템플릿을 선택합니다. 특정 유형의 템플릿만 표시됩니다.
+                        </p>
+                    </div>
+
+                    <div>
                         <label className="label">Gemini 모델 우선순위 (쉼표로 구분)</label>
                         <textarea
                             value={geminiModelPriority}
@@ -1010,7 +1027,59 @@ export default function Settings() {
                 </div>
             )}
 
-            {/* 백업 탭 제거됨 */}
+            {/* 백업 탭 */}
+            {activeTab === 'backup' && (
+                <div className="space-y-6 bg-white p-6 rounded-lg shadow">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <EnvelopeIcon className="h-5 w-5 mr-2" />
+                        데이터 백업
+                    </h2>
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                        <div className="flex">
+                            <InformationCircleIcon className="h-5 w-5 text-yellow-400" />
+                            <div className="ml-3">
+                                <p className="text-sm text-yellow-800">
+                                    <strong>백업 기능:</strong> 현재 데이터베이스의 모든 데이터를 Google Sheets로 백업할 수 있습니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-md font-medium text-gray-900 mb-2">백업할 데이터</h3>
+                            <ul className="text-sm text-gray-600 space-y-1">
+                                <li>• UTM 캠페인 데이터</li>
+                                <li>• 키워드 코호트 그룹</li>
+                                <li>• 전환 목표 설정</li>
+                                <li>• GTM 목표 설정</li>
+                                <li>• 주간 보고서 스케줄</li>
+                                <li>• 시스템 설정</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h3 className="text-md font-medium text-gray-900 mb-2">주의사항</h3>
+                            <ul className="text-sm text-gray-600 space-y-1">
+                                <li>• Google Sheets API 권한이 필요합니다</li>
+                                <li>• 대용량 데이터의 경우 시간이 오래 걸릴 수 있습니다</li>
+                                <li>• 기존 백업 파일이 있다면 덮어쓰기됩니다</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleBackup}
+                            disabled={isBackingUp}
+                            className="btn-primary flex items-center gap-2 disabled:opacity-50 bg-green-600 hover:bg-green-700"
+                        >
+                            {isBackingUp ? '백업 중...' : 'Google Sheets로 백업하기'}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
                 .label {
@@ -1028,4 +1097,4 @@ export default function Settings() {
             `}</style>
         </div>
     )
-}  
+}
