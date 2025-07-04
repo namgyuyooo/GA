@@ -201,28 +201,29 @@ export default function UserJourneyPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">사용자 여정 분석</h1>
-        <div className="flex gap-4">
-          <select 
-            value={selectedPeriod} 
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="7d">7일</option>
-            <option value="30d">30일</option>
-            <option value="90d">90일</option>
-          </select>
-          <button 
-            onClick={generateInsight}
-            disabled={generatingInsight}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {generatingInsight ? '분석 중...' : 'AI 인사이트 생성'}
-          </button>
+    <AuthenticatedLayout activeTab="user-journey">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">사용자 여정 분석</h1>
+          <div className="flex gap-4">
+            <select 
+              value={selectedPeriod} 
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="7d">7일</option>
+              <option value="30d">30일</option>
+              <option value="90d">90일</option>
+            </select>
+            <button 
+              onClick={generateInsight}
+              disabled={generatingInsight}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {generatingInsight ? '분석 중...' : 'AI 인사이트 생성'}
+            </button>
+          </div>
         </div>
-      </div>
 
       {/* AI 인사이트 섹션 */}
       {insight && (
@@ -984,7 +985,8 @@ export default function UserJourneyPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AuthenticatedLayout>
   );
 }
 

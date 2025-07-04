@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import {
   CalendarDaysIcon,
   ChartBarIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   ExclamationTriangleIcon,
   LightBulbIcon,
   SparklesIcon,
@@ -372,7 +372,7 @@ ${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <TrendingUpIcon className="h-6 w-6 text-green-400" />
+                    <ArrowTrendingUpIcon className="h-6 w-6 text-green-400" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
@@ -388,7 +388,7 @@ ${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <TrendingUpIcon className="h-6 w-6 text-blue-400" />
+                    <ArrowTrendingUpIcon className="h-6 w-6 text-blue-400" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
@@ -515,7 +515,7 @@ ${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
                 <div className="bg-white shadow rounded-lg">
                   <div className="px-6 py-4 border-b border-gray-200">
                     <div className="flex items-center space-x-2">
-                      <TrendingUpIcon className="h-5 w-5 text-green-500" />
+                      <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
                       <h3 className="text-lg font-medium text-gray-900">트렌드 분석</h3>
                     </div>
                   </div>
@@ -523,7 +523,7 @@ ${aiInsights.trends.map(trend => `- ${trend}`).join('\n')}
                     <ul className="space-y-3">
                       {aiInsights.trends.map((trend, index) => (
                         <li key={index} className="flex items-start space-x-3">
-                          <TrendingUpIcon className="flex-shrink-0 h-4 w-4 text-green-500 mt-0.5" />
+                          <ArrowTrendingUpIcon className="flex-shrink-0 h-4 w-4 text-green-500 mt-0.5" />
                           <span className="text-sm text-gray-700">{trend}</span>
                         </li>
                       ))}

@@ -17,7 +17,7 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String    @default("USER") // "ADMIN" or "USER"
+  role          String    @default("USER") // "SUPER_ADMIN", "ADMIN" or "USER"
   accounts      Account[]
   sessions      Session[]
   createdAt     DateTime  @default(now())

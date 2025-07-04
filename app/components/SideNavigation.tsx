@@ -17,7 +17,9 @@ import {
   ServerIcon,
   BoltIcon,
   DocumentTextIcon,
-  CalendarDaysIcon
+  CalendarDaysIcon,
+  CodeBracketIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 
@@ -39,9 +41,11 @@ interface SideNavigationProps {
   activeProperty: string
   onPropertyChange: (propertyId: string) => void
   user?: {
+    id?: string
     name?: string | null
     email?: string | null
     image?: string | null
+    role?: string
   }
   onLogout?: () => void
   onBulkDataLoad?: () => void
@@ -60,7 +64,8 @@ const navigation: NavigationItem[] = [
   { name: 'GTM 분석', href: '#', icon: TagIcon, id: 'gtm-analysis' },
   { name: '사용자 여정 분석', href: '#', icon: UserIcon, id: 'user-journey' },
   { name: '주간보고서', href: '#', icon: CalendarDaysIcon, id: 'weekly-report' },
-  { name: '보고서 관리', href: '/reports', icon: DocumentTextIcon, id: 'reports' }
+  { name: '보고서 관리', href: '/reports', icon: DocumentTextIcon, id: 'reports' },
+  { name: 'API 문서', href: '/api-docs', icon: CodeBracketIcon, id: 'api-docs' }
 ]
 
 const properties: Property[] = [
@@ -163,7 +168,7 @@ export default function SideNavigation({
 
         <nav className="mt-8 px-2 space-y-1">
           {navigation.map((item) => {
-            if (item.id === 'reports') {
+            if (item.id === 'reports' || item.id === 'api-docs') {
               return (
                 <a
                   key={item.name}

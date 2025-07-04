@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import SideNavigation from './SideNavigation'
+import { useAuth } from '../contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import AuthenticatedLayout from './AuthenticatedLayout'
 import DashboardContent from './DashboardContent'
 import UTMBuilder from './UTMBuilder'
 import UTMList from './UTMList'
@@ -12,16 +14,9 @@ import GTMAnalysis from './GTMAnalysis'
 import WeeklyReport from './WeeklyReport'
 import Settings from './Settings'
 
-interface MainLayoutProps {
-  user?: {
-    name?: string | null
-    email?: string | null
-    image?: string | null
-  }
-  onLogout?: () => void
-}
-
-export default function MainLayout({ user, onLogout }: MainLayoutProps) {
+export default function MainLayout() {
+  const { user } = useAuth()
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [activeProperty, setActiveProperty] = useState('464147982')
   const [dataMode, setDataMode] = useState<'realtime' | 'database'>('database')
@@ -177,30 +172,8 @@ export default function MainLayout({ user, onLogout }: MainLayoutProps) {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100">
-      <SideNavigation
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        activeProperty={activeProperty}
-        onPropertyChange={setActiveProperty}
-        user={user}
-        onLogout={onLogout}
-        onBulkDataLoad={handleBulkDataLoad}
-        isDataLoading={isDataLoading}
-        dataMode={dataMode}
-        onDataModeChange={handleDataModeChange}
-      />
-
-      {/* Main content */}
-      <div className="flex flex-col w-0 flex-1 overflow-hidden">
-        <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              {renderContent()}
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
+    <AuthenticatedLayout activeTab={activeTab}>
+      {renderContent()}
+    </AuthenticatedLayout>
   )
 }

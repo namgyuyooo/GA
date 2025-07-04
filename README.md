@@ -1,37 +1,51 @@
-# UTM Analytics Dashboard
+# RTM Analytics Dashboard
 
-마케팅 캠페인을 위한 종합 UTM 관리 및 분석 플랫폼입니다.
+제조업 B2B 마케팅 분석을 위한 종합 대시보드입니다. Google Analytics 4와 Google Search Console 데이터를 활용하여 UTM 캠페인, 검색어 코호트, 사용자 여정을 분석하고 AI 인사이트를 제공합니다.
 
 ## 🚀 주요 기능
 
-### 🎯 UTM 관리
-- **UTM 빌더**: 실시간 링크 생성 및 미리보기
-- **캠페인 관리**: 저장, 수정, 삭제, 상태 관리
-- **중복 방지**: 동일한 UTM 조합 자동 검증
+### 📊 **마케팅 분석**
+- **UTM 캠페인 관리**: UTM 빌더, 캠페인 성과 분석, 코호트 분석
+- **검색어 분석**: 키워드 코호트 분석, Google Trends 연동
+- **트래픽 소스 분석**: 유입 경로별 성과 측정
+- **사용자 여정 분석**: 페이지 전환, 체류시간, 스크롤 깊이 분석
 
-### 📊 성과 분석
-- **GA4 연동**: 실시간 캠페인 성과 데이터
-- **Search Console**: 오가닉 검색 성과
-- **자동 분석**: 트렌드, 이상치, 인사이트 생성
+### 🤖 **AI 인사이트**
+- **Gemini AI 연동**: 10년차 제조 B2B 전문가 관점의 분석
+- **주간 보고서**: 자동화된 주간 성과 리포트
+- **트렌드 심리학**: 사용자 행동 패턴 분석
 
-### 📈 자동화 보고서
-- **주간 보고서**: Excel 형식 자동 생성
-- **실시간 알림**: Slack 웹훅 연동
-- **스케줄링**: Vercel Cron으로 자동 실행
+### 🔐 **내부 인증 시스템**
+- **JWT 기반 인증**: 쿠키를 통한 안전한 세션 관리
+- **권한 관리**: SUPER_ADMIN, ADMIN, USER 3단계 권한
+- **슈퍼유저 관리**: 환경변수 기반 관리자 계정
 
-### 🔐 보안 & 인증
-- **Google OAuth**: 간편 로그인
-- **권한 관리**: 사용자별 데이터 분리
-- **세션 보안**: NextAuth.js 기반
+### 📈 **데이터 관리**
+- **실시간/DB 모드**: 실시간 API 호출 또는 저장된 데이터 활용
+- **일괄 데이터 로드**: 대량 데이터 배치 처리
+- **PostgreSQL 저장소**: Supabase를 통한 확장 가능한 데이터베이스
 
-## 🛠 기술 스택
+## 🛠️ 기술 스택
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Prisma ORM
-- **Database**: PostgreSQL (Vercel Postgres)
-- **Authentication**: NextAuth.js with Google OAuth
-- **Deployment**: Vercel
-- **Integrations**: Google Analytics 4, Search Console, Slack
+### **Frontend**
+- **Next.js 14**: App Router, Server Components
+- **TypeScript**: 타입 안전성
+- **TailwindCSS**: 유틸리티 기반 스타일링
+- **Chart.js**: 데이터 시각화
+- **Heroicons**: 아이콘 시스템
+
+### **Backend**
+- **Next.js API Routes**: RESTful API
+- **Prisma ORM**: 데이터베이스 ORM
+- **PostgreSQL**: 메인 데이터베이스 (Supabase)
+- **JWT**: 인증 토큰
+- **bcryptjs**: 비밀번호 암호화
+
+### **External APIs**
+- **Google Analytics 4**: 웹사이트 분석 데이터
+- **Google Search Console**: 검색 성과 데이터
+- **Google Trends**: 키워드 트렌드 분석
+- **Gemini AI**: 마케팅 인사이트 생성
 
 ## 📦 설치 및 실행
 
