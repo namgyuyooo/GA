@@ -7,9 +7,12 @@ export async function GET() {
     const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
 
     if (!serviceAccountKey) {
-      return NextResponse.json({
-        error: 'Google Service Account Key not found in environment variables'
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'Google Service Account Key not found in environment variables',
+        },
+        { status: 500 }
+      )
     }
 
     // JSON 파싱
@@ -20,8 +23,8 @@ export async function GET() {
       credentials,
       scopes: [
         'https://www.googleapis.com/auth/analytics.readonly',
-        'https://www.googleapis.com/auth/webmasters.readonly'
-      ]
+        'https://www.googleapis.com/auth/webmasters.readonly',
+      ],
     })
 
     // 인증 토큰 가져오기
@@ -29,6 +32,16 @@ export async function GET() {
     const accessToken = await authClient.getAccessToken()
 
     // GA4 Property ID
+    const propertyId = process.env.GA4_PROPERTY_ID
+
+    if (!propertyId) {
+      return NextResponse.json(
+        {
+          error: 'GA4 Property ID not found in environment variables',
+        },
+        { status: 500 }
+      )
+    }
 
     // 간단한 GA4 API 테스트 (지난 7일간 페이지뷰)
     const ga4Response = await fetch(
@@ -36,33 +49,32 @@ export async function GET() {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken.token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${accessToken.token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
-          metrics: [
-            { name: 'activeUsers' },
-            { name: 'sessions' },
-            { name: 'screenPageViews' }
-          ],
+          metrics: [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' }],
           dimensions: [
             { name: 'sessionSource' },
             { name: 'sessionMedium' },
-            { name: 'sessionCampaignName' }
+            { name: 'sessionCampaignName' },
           ],
-          limit: 10
-        })
+          limit: 10,
+        }),
       }
     )
 
     if (!ga4Response.ok) {
       const errorText = await ga4Response.text()
-      return NextResponse.json({
-        error: 'GA4 API Error',
-        details: errorText,
-        status: ga4Response.status
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'GA4 API Error',
+          details: errorText,
+          status: ga4Response.status,
+        },
+        { status: 500 }
+      )
     }
 
     const ga4Data = await ga4Response.json()
@@ -75,15 +87,15 @@ export async function GET() {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken.token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${accessToken.token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           startDate: '2024-06-18', // 7일 전
-          endDate: '2024-06-25',   // 오늘
+          endDate: '2024-06-25', // 오늘
           dimensions: ['query'],
-          rowLimit: 10
-        })
+          rowLimit: 10,
+        }),
       }
     )
 
@@ -103,16 +115,18 @@ export async function GET() {
         searchConsole: gscData,
         credentials: {
           projectId: credentials.project_id,
-          clientEmail: credentials.client_email
-        }
-      }
+          clientEmail: credentials.client_email,
+        },
+      },
     })
-
   } catch (error: any) {
     console.error('Analytics API test error:', error)
-    return NextResponse.json({
-      error: 'Failed to test analytics APIs',
-      details: error.message
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Failed to test analytics APIs',
+        details: error.message,
+      },
+      { status: 500 }
+    )
   }
 }

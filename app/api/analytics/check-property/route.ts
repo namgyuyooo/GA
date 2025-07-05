@@ -6,16 +6,19 @@ export async function GET() {
     const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
 
     if (!serviceAccountKey) {
-      return NextResponse.json({
-        error: 'Google Service Account Key not found'
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'Google Service Account Key not found',
+        },
+        { status: 500 }
+      )
     }
 
     const credentials = JSON.parse(serviceAccountKey)
 
     const auth = new GoogleAuth({
       credentials,
-      scopes: ['https://www.googleapis.com/auth/analytics.readonly']
+      scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
     })
 
     const authClient = await auth.getClient()
@@ -27,9 +30,9 @@ export async function GET() {
       {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${accessToken.token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${accessToken.token}`,
+          'Content-Type': 'application/json',
+        },
       }
     )
 
@@ -49,14 +52,14 @@ export async function GET() {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken.token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${accessToken.token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
           metrics: [{ name: 'activeUsers' }],
-          limit: 1
-        })
+          limit: 1,
+        }),
       }
     )
 
@@ -71,24 +74,26 @@ export async function GET() {
     return NextResponse.json({
       serviceAccount: {
         email: credentials.client_email,
-        projectId: credentials.project_id
+        projectId: credentials.project_id,
       },
       currentPropertyId,
       availableProperties: propertiesData,
       testResult,
       instructions: {
-        step1: "Google Analytics > 관리 > 속성 액세스 관리",
+        step1: 'Google Analytics > 관리 > 속성 액세스 관리',
         step2: `서비스 계정 이메일 추가: ${credentials.client_email}`,
-        step3: "역할: 뷰어 선택",
-        step4: "권한 추가 후 5-10분 대기"
-      }
+        step3: '역할: 뷰어 선택',
+        step4: '권한 추가 후 5-10분 대기',
+      },
     })
-
   } catch (error: any) {
     console.error('Property check error:', error)
-    return NextResponse.json({
-      error: 'Failed to check properties',
-      details: error.message
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Failed to check properties',
+        details: error.message,
+      },
+      { status: 500 }
+    )
   }
 }

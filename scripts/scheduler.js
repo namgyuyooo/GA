@@ -7,10 +7,10 @@ const prisma = new PrismaClient()
 async function generateWeeklyReport() {
   try {
     console.log('주간 보고서 생성 시작...')
-    
+
     // 활성 스케줄 조회
     const schedule = await prisma.weeklyReportSchedule.findFirst({
-      where: { isActive: true }
+      where: { isActive: true },
     })
 
     if (!schedule) {
@@ -31,7 +31,8 @@ async function generateWeeklyReport() {
 
     // 시간 확인 (5분 여유)
     const timeDiff = Math.abs(now - scheduleTime)
-    if (timeDiff > 5 * 60 * 1000) { // 5분
+    if (timeDiff > 5 * 60 * 1000) {
+      // 5분
       console.log('스케줄 시간이 아닙니다.')
       return
     }
@@ -40,7 +41,7 @@ async function generateWeeklyReport() {
     const response = await fetch('http://localhost:3001/api/weekly-report/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         test: false,
         schedule: {
           name: schedule.name,
@@ -54,15 +55,15 @@ async function generateWeeklyReport() {
           includeIssues: schedule.includeIssues,
           includeAI: schedule.includeAI,
           aiPrompt: schedule.aiPrompt,
-          propertyIds: schedule.propertyIds ? JSON.parse(schedule.propertyIds) : []
-        }
-      })
+          propertyIds: schedule.propertyIds ? JSON.parse(schedule.propertyIds) : [],
+        },
+      }),
     })
 
     if (response.ok) {
       const result = await response.json()
       console.log('주간 보고서 생성 완료:', result.message)
-      
+
       // 이메일 발송 (수신자가 있는 경우)
       const recipients = schedule.recipients ? JSON.parse(schedule.recipients) : []
       if (recipients.length > 0) {
@@ -71,7 +72,6 @@ async function generateWeeklyReport() {
     } else {
       console.error('주간 보고서 생성 실패')
     }
-
   } catch (error) {
     console.error('주간 보고서 생성 중 오류:', error)
   }
@@ -81,10 +81,10 @@ async function generateWeeklyReport() {
 async function sendEmailReport(recipients, report) {
   try {
     console.log(`${recipients.join(', ')}에게 주간 보고서를 발송합니다.`)
-    
+
     // 실제 이메일 발송 로직 (예: SendGrid, AWS SES 등)
     // 여기에 이메일 발송 코드를 추가
-    
+
     console.log('이메일 발송 완료')
   } catch (error) {
     console.error('이메일 발송 중 오류:', error)
@@ -94,12 +94,12 @@ async function sendEmailReport(recipients, report) {
 // 스케줄러 시작
 function startScheduler() {
   console.log('스케줄러를 시작합니다...')
-  
+
   // 매분마다 체크 (실제 운영에서는 더 정밀한 스케줄링 필요)
   cron.schedule('* * * * *', async () => {
     await generateWeeklyReport()
   })
-  
+
   console.log('스케줄러가 시작되었습니다. 매분마다 스케줄을 확인합니다.')
 }
 
@@ -114,4 +114,4 @@ process.on('SIGINT', stopScheduler)
 process.on('SIGTERM', stopScheduler)
 
 // 스케줄러 시작
-startScheduler() 
+startScheduler()

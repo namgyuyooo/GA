@@ -1,6 +1,11 @@
 'use client'
 
-import { CheckIcon, ClipboardIcon, DocumentArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline'
+import {
+  CheckIcon,
+  ClipboardIcon,
+  DocumentArrowUpIcon,
+  LinkIcon,
+} from '@heroicons/react/24/outline'
 import Papa from 'papaparse'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -25,7 +30,13 @@ export default function UTMBuilder() {
   const [csvData, setCsvData] = useState<any[]>([])
   const [csvErrors, setCsvErrors] = useState<string[]>([])
 
-  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<UTMFormData>()
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<UTMFormData>()
 
   const watchedValues = watch()
 
@@ -59,8 +70,8 @@ export default function UTMBuilder() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...data,
-          url: generateUrl(data)
-        })
+          url: generateUrl(data),
+        }),
       })
 
       if (response.ok) {
@@ -88,18 +99,18 @@ export default function UTMBuilder() {
       skipEmptyLines: true,
       complete: (results) => {
         setCsvData(results.data)
-        const validationErrors = validateCsvData(results.data);
+        const validationErrors = validateCsvData(results.data)
         if (validationErrors.length > 0) {
-          setCsvErrors(validationErrors);
-          toast.error("CSV 파일에 오류가 있습니다.")
+          setCsvErrors(validationErrors)
+          toast.error('CSV 파일에 오류가 있습니다.')
         } else {
-          setCsvErrors([]);
-          toast.success("CSV 파일이 유효합니다. 업로드할 수 있습니다.")
+          setCsvErrors([])
+          toast.success('CSV 파일이 유효합니다. 업로드할 수 있습니다.')
         }
       },
       error: (error: any) => {
         toast.error(`CSV 파싱 오류: ${error.message}`)
-      }
+      },
     })
   }
 
@@ -112,8 +123,8 @@ export default function UTMBuilder() {
           errors.push(`행 ${index + 2}: '${field}' 필드가 비어있습니다.`)
         }
       }
-    });
-    return errors;
+    })
+    return errors
   }
 
   const handleBulkSubmit = async () => {
@@ -131,8 +142,8 @@ export default function UTMBuilder() {
       const response = await fetch('/api/utm/campaigns/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(csvData)
-      });
+        body: JSON.stringify(csvData),
+      })
 
       if (response.ok) {
         const result = await response.json()
@@ -161,8 +172,26 @@ export default function UTMBuilder() {
     }
   }
 
-  const commonSources = ['google', 'facebook', 'instagram', 'youtube', 'linkedin', 'twitter', 'newsletter', 'blog']
-  const commonMediums = ['cpc', 'social', 'email', 'organic', 'referral', 'banner', 'video', 'affiliate']
+  const commonSources = [
+    'google',
+    'facebook',
+    'instagram',
+    'youtube',
+    'linkedin',
+    'twitter',
+    'newsletter',
+    'blog',
+  ]
+  const commonMediums = [
+    'cpc',
+    'social',
+    'email',
+    'organic',
+    'referral',
+    'banner',
+    'video',
+    'affiliate',
+  ]
 
   return (
     <div className="card max-w-4xl mx-auto">
@@ -204,7 +233,7 @@ export default function UTMBuilder() {
             </div>
 
             {/* 기본 URL */}
-            <div >
+            <div>
               <label className="label">기본 URL *</label>
               <input
                 type="url"
@@ -212,13 +241,15 @@ export default function UTMBuilder() {
                   required: '기본 URL을 입력해주세요',
                   pattern: {
                     value: /^https?:\/\/.+/,
-                    message: '올바른 URL 형식을 입력해주세요 (http:// 또는 https://)'
-                  }
+                    message: '올바른 URL 형식을 입력해주세요 (http:// 또는 https://)',
+                  },
                 })}
                 className="input-field"
                 placeholder="https://www.example.com"
               />
-              {errors.baseUrl && <p className="text-red-500 text-sm mt-1">{errors.baseUrl.message}</p>}
+              {errors.baseUrl && (
+                <p className="text-red-500 text-sm mt-1">{errors.baseUrl.message}</p>
+              )}
             </div>
 
             {/* UTM Source */}
@@ -231,11 +262,13 @@ export default function UTMBuilder() {
                 list="sources"
               />
               <datalist id="sources">
-                {commonSources.map(source => (
+                {commonSources.map((source) => (
                   <option key={source} value={source} />
                 ))}
               </datalist>
-              {errors.source && <p className="text-red-500 text-sm mt-1">{errors.source.message}</p>}
+              {errors.source && (
+                <p className="text-red-500 text-sm mt-1">{errors.source.message}</p>
+              )}
             </div>
 
             {/* UTM Medium */}
@@ -248,11 +281,13 @@ export default function UTMBuilder() {
                 list="mediums"
               />
               <datalist id="mediums">
-                {commonMediums.map(medium => (
+                {commonMediums.map((medium) => (
                   <option key={medium} value={medium} />
                 ))}
               </datalist>
-              {errors.medium && <p className="text-red-500 text-sm mt-1">{errors.medium.message}</p>}
+              {errors.medium && (
+                <p className="text-red-500 text-sm mt-1">{errors.medium.message}</p>
+              )}
             </div>
 
             {/* UTM Campaign */}
@@ -263,7 +298,9 @@ export default function UTMBuilder() {
                 className="input-field"
                 placeholder="summer_sale, brand_awareness"
               />
-              {errors.campaign && <p className="text-red-500 text-sm mt-1">{errors.campaign.message}</p>}
+              {errors.campaign && (
+                <p className="text-red-500 text-sm mt-1">{errors.campaign.message}</p>
+              )}
             </div>
 
             {/* UTM Term */}
@@ -302,12 +339,7 @@ export default function UTMBuilder() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <label className="label">생성된 URL 미리보기</label>
               <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={previewUrl}
-                  readOnly
-                  className="input-field bg-white"
-                />
+                <input type="text" value={previewUrl} readOnly className="input-field bg-white" />
                 <button
                   type="button"
                   onClick={() => copyToClipboard(previewUrl)}
@@ -331,11 +363,7 @@ export default function UTMBuilder() {
 
           {/* 저장 버튼 */}
           <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => reset()}
-              className="btn-secondary"
-            >
+            <button type="button" onClick={() => reset()} className="btn-secondary">
               초기화
             </button>
             <button
@@ -371,31 +399,45 @@ export default function UTMBuilder() {
             <div className="p-4 bg-red-50 rounded-lg">
               <h4 className="font-semibold text-red-800 mb-2">CSV 파일 오류</h4>
               <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
-                {csvErrors.map((error, index) => <li key={index}>{error}</li>)}
+                {csvErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
               </ul>
             </div>
           )}
 
           {csvData.length > 0 && csvErrors.length === 0 && (
             <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-2">미리보기 ({csvData.length}개 행)</h4>
+              <h4 className="text-md font-semibold text-gray-800 mb-2">
+                미리보기 ({csvData.length}개 행)
+              </h4>
               <div className="overflow-x-auto max-h-60 border rounded-lg">
                 <table className="min-w-full text-sm">
                   <thead className="bg-gray-100">
                     <tr>
-                      {Object.keys(csvData[0]).map(key => <th key={key} className="p-2 text-left font-medium">{key}</th>)}
+                      {Object.keys(csvData[0]).map((key) => (
+                        <th key={key} className="p-2 text-left font-medium">
+                          {key}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="bg-white">
                     {csvData.slice(0, 5).map((row, i) => (
                       <tr key={i} className="border-t">
-                        {Object.values(row).map((val: any, j) => <td key={j} className="p-2 whitespace-nowrap">{val}</td>)}
+                        {Object.values(row).map((val: any, j) => (
+                          <td key={j} className="p-2 whitespace-nowrap">
+                            {val}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              {csvData.length > 5 && <p className="text-xs text-gray-500 mt-1">... 외 {csvData.length - 5}개 행</p>}
+              {csvData.length > 5 && (
+                <p className="text-xs text-gray-500 mt-1">... 외 {csvData.length - 5}개 행</p>
+              )}
             </div>
           )}
 
@@ -416,11 +458,21 @@ export default function UTMBuilder() {
       <div className="mt-8 p-4 bg-blue-50 rounded-lg">
         <h3 className="font-semibold text-blue-900 mb-2">UTM 파라미터 설명</h3>
         <div className="text-sm text-blue-800 space-y-1">
-          <p><strong>utm_source:</strong> 트래픽 소스 (예: google, facebook, newsletter)</p>
-          <p><strong>utm_medium:</strong> 마케팅 매체 (예: cpc, social, email)</p>
-          <p><strong>utm_campaign:</strong> 캠페인 이름 (예: summer_sale, product_launch)</p>
-          <p><strong>utm_term:</strong> 키워드 (주로 유료 검색에서 사용)</p>
-          <p><strong>utm_content:</strong> 광고 콘텐츠 구분 (A/B 테스트에 유용)</p>
+          <p>
+            <strong>utm_source:</strong> 트래픽 소스 (예: google, facebook, newsletter)
+          </p>
+          <p>
+            <strong>utm_medium:</strong> 마케팅 매체 (예: cpc, social, email)
+          </p>
+          <p>
+            <strong>utm_campaign:</strong> 캠페인 이름 (예: summer_sale, product_launch)
+          </p>
+          <p>
+            <strong>utm_term:</strong> 키워드 (주로 유료 검색에서 사용)
+          </p>
+          <p>
+            <strong>utm_content:</strong> 광고 콘텐츠 구분 (A/B 테스트에 유용)
+          </p>
         </div>
       </div>
     </div>

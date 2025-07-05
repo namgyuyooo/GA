@@ -10,9 +10,9 @@ import {
   MinusIcon,
   StarIcon,
   TagIcon,
-  XCircleIcon
+  XCircleIcon,
 } from '@heroicons/react/24/outline'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 
 interface GTMAnalysisProps {
@@ -71,7 +71,11 @@ interface GTMData {
   }
 }
 
-export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = '6243694530', dataMode = 'database' }: GTMAnalysisProps) {
+export default function GTMAnalysis({
+  containerId = 'GTM-N99ZMP6T',
+  accountId = '6243694530',
+  dataMode = 'database',
+}: GTMAnalysisProps) {
   const [data, setData] = useState<GTMData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'tags' | 'goals' | 'triggers'>('overview')
@@ -86,20 +90,26 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
     loadGTMData()
   }, [containerId, accountId])
 
-  const loadGTMData = async () => {
+  const loadGTMData = useCallback(async () => {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`/api/analytics/gtm-analysis?containerId=${containerId}&accountId=${accountId}&dataMode=${dataMode}`)
+      const response = await fetch(
+        `/api/analytics/gtm-analysis?containerId=${containerId}&accountId=${accountId}&dataMode=${dataMode}`
+      )
       const result = await response.json()
 
       if (response.ok) {
         const gtmData = result.data as GTMData
         setData(gtmData)
         // 기존 Goal 설정 로드
-        const existingGoals = new Set(gtmData.tags.filter((tag: GTMTag) => tag.isGoal).map((tag: GTMTag) => tag.id))
+        const existingGoals = new Set(
+          gtmData.tags.filter((tag: GTMTag) => tag.isGoal).map((tag: GTMTag) => tag.id)
+        )
         setSelectedGoals(existingGoals)
-        toast.success(`GTM 분석 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`)
+        toast.success(
+          `GTM 분석 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`
+        )
       } else {
         if (result.needsSetup) {
           toast.error('GTM 설정이 필요합니다. 설정 페이지에서 GTM 정보를 입력해주세요.')
@@ -113,7 +123,7 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [containerId, accountId, dataMode])
 
   const toggleGoal = (tagId: string) => {
     const newSelectedGoals = new Set(selectedGoals)
@@ -126,10 +136,12 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
 
     // 태그 데이터 업데이트
     if (data) {
-      const updatedTags = data.tags.map(tag => ({
+      const updatedTags = data.tags.map((tag) => ({
         ...tag,
         isGoal: newSelectedGoals.has(tag.id),
-        goalPriority: newSelectedGoals.has(tag.id) ? Array.from(newSelectedGoals).indexOf(tag.id) + 1 : 0
+        goalPriority: newSelectedGoals.has(tag.id)
+          ? Array.from(newSelectedGoals).indexOf(tag.id) + 1
+          : 0,
       }))
 
       setData({
@@ -137,11 +149,13 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
         tags: updatedTags,
         summary: {
           ...data.summary,
-          goalTags: newSelectedGoals.size
-        }
+          goalTags: newSelectedGoals.size,
+        },
       })
 
-      toast.success(newSelectedGoals.has(tagId) ? 'Goal로 추가되었습니다' : 'Goal에서 제거되었습니다')
+      toast.success(
+        newSelectedGoals.has(tagId) ? 'Goal로 추가되었습니다' : 'Goal에서 제거되었습니다'
+      )
     }
   }
 
@@ -153,17 +167,19 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
       const goalData = {
         accountId: accountId,
         containerId: containerId,
-        goals: data.tags.filter(tag => selectedGoals.has(tag.id)).map(tag => ({
-          tagId: tag.id,
-          name: tag.name,
-          type: tag.type
-        }))
+        goals: data.tags
+          .filter((tag) => selectedGoals.has(tag.id))
+          .map((tag) => ({
+            tagId: tag.id,
+            name: tag.name,
+            type: tag.type,
+          })),
       }
 
       const response = await fetch('/api/analytics/gtm-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(goalData)
+        body: JSON.stringify(goalData),
       })
 
       if (response.ok) {
@@ -184,38 +200,41 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
 
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
-      'analytics': 'bg-blue-100 text-blue-800',
-      'advertising': 'bg-green-100 text-green-800',
-      'conversion': 'bg-purple-100 text-purple-800',
-      'interaction': 'bg-yellow-100 text-yellow-800',
-      'custom': 'bg-gray-100 text-gray-800',
-      'tracking': 'bg-red-100 text-red-800',
-      'other': 'bg-indigo-100 text-indigo-800'
+      analytics: 'bg-blue-100 text-blue-800',
+      advertising: 'bg-green-100 text-green-800',
+      conversion: 'bg-purple-100 text-purple-800',
+      interaction: 'bg-yellow-100 text-yellow-800',
+      custom: 'bg-gray-100 text-gray-800',
+      tracking: 'bg-red-100 text-red-800',
+      other: 'bg-indigo-100 text-indigo-800',
     }
     return colors[category] || colors.other
   }
 
   const getStatusIcon = (status: string) => {
-    return status === 'active' ?
-      <CheckCircleIcon className="h-4 w-4 text-green-500" /> :
+    return status === 'active' ? (
+      <CheckCircleIcon className="h-4 w-4 text-green-500" />
+    ) : (
       <XCircleIcon className="h-4 w-4 text-red-500" />
+    )
   }
 
-  const filteredTags = data?.tags.filter(tag =>
-    filterCategory === 'all' || tag.category === filterCategory
-  ).sort((a, b) => {
-    let comparison = 0
-    if (sortBy === 'name') {
-      comparison = a.name.localeCompare(b.name)
-    } else if (sortBy === 'type') {
-      comparison = a.type.localeCompare(b.type)
-    } else if (sortBy === 'priority') {
-      comparison = (b.goalPriority || 0) - (a.goalPriority || 0)
-    }
-    return sortOrder === 'asc' ? comparison : -comparison
-  }) || []
+  const filteredTags =
+    data?.tags
+      .filter((tag) => filterCategory === 'all' || tag.category === filterCategory)
+      .sort((a, b) => {
+        let comparison = 0
+        if (sortBy === 'name') {
+          comparison = a.name.localeCompare(b.name)
+        } else if (sortBy === 'type') {
+          comparison = a.type.localeCompare(b.type)
+        } else if (sortBy === 'priority') {
+          comparison = (b.goalPriority || 0) - (a.goalPriority || 0)
+        }
+        return sortOrder === 'asc' ? comparison : -comparison
+      }) || []
 
-  const goalTags = filteredTags.filter(tag => selectedGoals.has(tag.id))
+  const goalTags = filteredTags.filter((tag) => selectedGoals.has(tag.id))
 
   if (isLoading && !data) {
     return (
@@ -231,7 +250,8 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
         <TagIcon className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">GTM 설정이 필요합니다</h3>
         <p className="mt-1 text-sm text-gray-500">
-          설정 페이지에서 GTM_ACCOUNT_ID, GTM_PUBLIC_ID를 입력해주세요.<br />
+          설정 페이지에서 GTM_ACCOUNT_ID, GTM_PUBLIC_ID를 입력해주세요.
+          <br />
           서비스 계정 파일은 secrets/ga-auto-464002-672370fda082.json에서 자동으로 로드됩니다.
         </p>
         <div className="mt-4">
@@ -253,7 +273,8 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Google Tag Manager 분석</h1>
           <p className="text-sm text-gray-600 mt-1">
-            컨테이너: {data.container.publicId} | {data.container.name} | {dataMode === 'realtime' ? '실시간' : 'DB'} 데이터 모드
+            컨테이너: {data.container.publicId} | {data.container.name} |{' '}
+            {dataMode === 'realtime' ? '실시간' : 'DB'} 데이터 모드
           </p>
         </div>
 
@@ -304,15 +325,16 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
             { key: 'overview', name: '태그 목록', icon: TagIcon },
             { key: 'triggers', name: '트리거 목록', icon: FunnelIcon },
             { key: 'tags', name: '상세 분석', icon: AdjustmentsHorizontalIcon },
-            { key: 'goals', name: 'Goal 관리', icon: StarIcon }
+            { key: 'goals', name: 'Goal 관리', icon: StarIcon },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`${activeTab === tab.key
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center`}
+              className={`${
+                activeTab === tab.key
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center`}
             >
               <tab.icon className="h-4 w-4 mr-2" />
               {tab.name}
@@ -367,10 +389,11 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
                 }}
                 className="p-1 hover:bg-gray-100 rounded"
               >
-                {sortOrder === 'asc' ?
-                  <ArrowUpIcon className="h-4 w-4 text-gray-400" /> :
+                {sortOrder === 'asc' ? (
+                  <ArrowUpIcon className="h-4 w-4 text-gray-400" />
+                ) : (
                   <ArrowDownIcon className="h-4 w-4 text-gray-400" />
-                }
+                )}
               </button>
             </div>
           </div>
@@ -401,54 +424,79 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTags.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((tag) => (
-                  <tr key={tag.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => toggleGoal(tag.id)}
-                        className={`p-1 rounded-full ${selectedGoals.has(tag.id)
-                          ? 'text-yellow-500 hover:text-yellow-600'
-                          : 'text-gray-300 hover:text-yellow-400'
+                {filteredTags
+                  .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+                  .map((tag) => (
+                    <tr key={tag.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => toggleGoal(tag.id)}
+                          className={`p-1 rounded-full ${
+                            selectedGoals.has(tag.id)
+                              ? 'text-yellow-500 hover:text-yellow-600'
+                              : 'text-gray-300 hover:text-yellow-400'
                           }`}
-                      >
-                        <StarIcon className={`h-5 w-5 ${selectedGoals.has(tag.id) ? 'fill-current' : ''}`} />
-                      </button>
-                      {selectedGoals.has(tag.id) && (
-                        <span className="ml-1 text-xs text-yellow-600 font-medium">
-                          #{tag.goalPriority}
+                        >
+                          <StarIcon
+                            className={`h-5 w-5 ${selectedGoals.has(tag.id) ? 'fill-current' : ''}`}
+                          />
+                        </button>
+                        {selectedGoals.has(tag.id) && (
+                          <span className="ml-1 text-xs text-yellow-600 font-medium">
+                            #{tag.goalPriority}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{tag.name}</div>
+                        <div className="text-xs text-gray-500">ID: {tag.id}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <code className="bg-gray-100 px-2 py-1 rounded text-xs">{tag.type}</code>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(tag.category)}`}
+                        >
+                          {tag.category}
                         </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{tag.name}</div>
-                      <div className="text-xs text-gray-500">ID: {tag.id}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <code className="bg-gray-100 px-2 py-1 rounded text-xs">{tag.type}</code>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(tag.category)}`}>
-                        {tag.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {getStatusIcon(tag.status)}
-                        <span className="ml-2 text-sm text-gray-900 capitalize">{tag.status}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {tag.description}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {getStatusIcon(tag.status)}
+                          <span className="ml-2 text-sm text-gray-900 capitalize">
+                            {tag.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{tag.description}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
             {/* Pagination */}
             <div className="flex justify-end items-center mt-4 space-x-2">
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 text-sm border rounded disabled:opacity-50">이전</button>
-              <span className="text-sm">{currentPage} / {Math.ceil(filteredTags.length / rowsPerPage)}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredTags.length / rowsPerPage), p + 1))} disabled={currentPage === Math.ceil(filteredTags.length / rowsPerPage)} className="px-2 py-1 text-sm border rounded disabled:opacity-50">다음</button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+              >
+                이전
+              </button>
+              <span className="text-sm">
+                {currentPage} / {Math.ceil(filteredTags.length / rowsPerPage)}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(Math.ceil(filteredTags.length / rowsPerPage), p + 1)
+                  )
+                }
+                disabled={currentPage === Math.ceil(filteredTags.length / rowsPerPage)}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+              >
+                다음
+              </button>
             </div>
           </div>
         </div>
@@ -483,7 +531,9 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
                       <code className="bg-gray-100 px-2 py-1 rounded text-xs">{trigger.type}</code>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(trigger.category)}`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(trigger.category)}`}
+                      >
                         {trigger.category}
                       </span>
                     </td>
@@ -510,7 +560,9 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
                   }, {})
                 ).map(([category, count]) => (
                   <div key={category} className="flex items-center justify-between">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(category)}`}>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(category)}`}
+                    >
                       {category}
                     </span>
                     <span className="text-sm font-medium text-gray-900">{count as number}개</span>
@@ -564,7 +616,9 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(tag.category)}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(tag.category)}`}
+                        >
                           {tag.category}
                         </span>
                         <button
@@ -577,9 +631,9 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
                     </div>
 
                     <div className="mt-3 text-xs text-gray-600">
-                      <strong>Type:</strong> {tag.type} |
-                      <strong className="ml-2">Status:</strong> {tag.status} |
-                      <strong className="ml-2">Triggers:</strong> {Array.isArray(tag.firingTriggerId) ? tag.firingTriggerId.length : 0}개
+                      <strong>Type:</strong> {tag.type} |<strong className="ml-2">Status:</strong>{' '}
+                      {tag.status} |<strong className="ml-2">Triggers:</strong>{' '}
+                      {Array.isArray(tag.firingTriggerId) ? tag.firingTriggerId.length : 0}개
                     </div>
                   </div>
                 ))}
@@ -588,7 +642,9 @@ export default function GTMAnalysis({ containerId = 'GTM-N99ZMP6T', accountId = 
               <div className="text-center py-8">
                 <StarIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">선택된 Goal이 없습니다</h3>
-                <p className="mt-1 text-sm text-gray-500">태그 목록에서 별표를 클릭하여 Goal로 설정하세요.</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  태그 목록에서 별표를 클릭하여 Goal로 설정하세요.
+                </p>
               </div>
             )}
           </div>

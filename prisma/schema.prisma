@@ -6,8 +6,57 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("USER") // "SUPER_ADMIN", "ADMIN" or "USER"
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 
@@ -41,7 +90,7 @@ model WeeklyReport {
   totalImpressions Int
   avgCtr           Float
   avgPosition      Float
-  reportData       String   // JSON as string for SQLite
+  reportData       Json     // JSON for PostgreSQL
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -54,7 +103,7 @@ model ScheduledJob {
   isActive    Boolean  @default(true)
   lastRun     DateTime?
   nextRun     DateTime?
-  config      String?  // JSON as string for SQLite
+  config      Json?    // JSON for PostgreSQL
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -67,12 +116,12 @@ model WeeklyReportSchedule {
   hour            Int      @default(10)
   minute          Int      @default(30)
   timezone        String   @default("Asia/Seoul")
-  recipients      String?  // JSON array of email addresses
+  recipients      Json?    // JSON array of email addresses
   includeSummary  Boolean  @default(true)
   includeIssues   Boolean  @default(true)
   includeAI       Boolean  @default(true)
   aiPrompt        String?  // Custom prompt for Gemini
-  propertyIds     String?  // JSON array of property IDs
+  propertyIds     Json?    // JSON array of property IDs
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -87,7 +136,7 @@ model KeywordCohortGroup {
   name        String
   description String?
   color       String   @default("#3B82F6")
-  keywords    String   // JSON array as string for SQLite
+  keywords    Json     // JSON array for PostgreSQL
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -100,7 +149,7 @@ model UtmCohortGroup {
   name        String
   description String?
   color       String   @default("#10B981")
-  campaigns   String   // JSON array as string for SQLite
+  campaigns   Json     // JSON array for PostgreSQL
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -164,7 +213,8 @@ model ConversionGoal {
   updatedAt         DateTime @updatedAt
   
   // 관련 전환 경로 데이터
-  conversionPaths   ConversionPath[]
+  conversionPaths     ConversionPath[]
+  userJourneyAnalyses UserJourneyAnalysis[]
   
   @@unique([name, propertyId])
   @@index([propertyId, isActive])
@@ -202,8 +252,8 @@ model ConversionPath {
   entryPage        String?  // 첫 방문 페이지
   
   // 경유 경로 (JSON 배열로 저장)
-  pageSequence     String   // JSON: [{"page": "/", "timestamp": "...", "events": [...]}]
-  eventSequence    String   // JSON: [{"event": "page_view", "timestamp": "...", "page": "/"}]
+  pageSequence     Json     // JSON: [{"page": "/", "timestamp": "...", "events": [...]}]
+  eventSequence    Json     // JSON: [{"event": "page_view", "timestamp": "...", "page": "/"}]
   
   // 전환 메트릭
   sessionDuration  Int      @default(0) // 초 단위
@@ -247,12 +297,12 @@ model UserInterestProfile {
   riskOfChurn           Float    @default(0) // 이탈 위험도 (0-1)
   
   // 방문 패턴 (JSON)
-  pageSequence          String   // 방문한 페이지 순서
-  eventSequence         String   // 발생한 이벤트 순서
-  visitPattern          String   // 방문 패턴 분석 결과
+  pageSequence          Json     // 방문한 페이지 순서
+  eventSequence         Json     // 발생한 이벤트 순서
+  visitPattern          Json     // 방문 패턴 분석 결과
   
   // 관심 카테고리 (Goal 기반)
-  interestedGoals       String   // JSON: Goal ID 배열과 관심도 점수
+  interestedGoals       Json     // JSON: Goal ID 배열과 관심도 점수
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -264,15 +314,87 @@ model UserInterestProfile {
 }
 
 model Insight {
-  id          String   @id @default(cuid())
-  type        String   // dashboard, traffic, utm-cohort, keyword-cohort 등
-  propertyId  String
-  model       String
-  prompt      String
-  result      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  // 추후: userId, status 등 추가 가능
+  id              String   @id @default(cuid())
+  type            String   // dashboard, traffic, utm-cohort, keyword-cohort, comprehensive 등
+  propertyId      String
+  model           String
+  prompt          String
+  result          String
+  dataSourceTypes Json?    // JSON: 사용된 데이터 소스 타입들 ["ga4", "gsc", "gtm"]
+  analysisStartDate DateTime? // 분석 대상 데이터의 시작일
+  analysisEndDate   DateTime? // 분석 대상 데이터의 종료일
+  sourceInsightIds  Json?    // JSON: 종합 인사이트인 경우 참조한 개별 인사이트 ID들
+  isComprehensive   Boolean  @default(false) // 종합 인사이트 여부
+  weeklyTrend       Json?    // JSON: 4주간 주간 변화율 데이터
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([type, propertyId, createdAt])
+  @@index([isComprehensive, createdAt])
+}
+
+// 캐시된 GA4 데이터
+model CachedAnalyticsData {
+  id               String   @id @default(cuid())
+  propertyId       String
+  dataType         String   // 'overview', 'users', 'sessions', 'pageviews', 'conversions', 'traffic'
+  period           String   // '7daysAgo', '30daysAgo' 등
+  data             Json     // 실제 GA4 API 응답 데이터
+  lastUpdated      DateTime @default(now())
+  expiresAt        DateTime // 캐시 만료 시간
+  updateFrequency  Int      @default(3600) // 업데이트 주기 (초)
+  
+  @@unique([propertyId, dataType, period])
+  @@index([expiresAt])
+  @@index([propertyId, dataType])
+}
+
+// 캐시된 GSC 데이터
+model CachedSearchData {
+  id               String   @id @default(cuid())
+  siteUrl          String   // GSC 사이트 URL
+  dataType         String   // 'query', 'page', 'country', 'device'
+  period           String   // 시작일-종료일 형태
+  data             Json     // 실제 GSC API 응답 데이터
+  lastUpdated      DateTime @default(now())
+  expiresAt        DateTime
+  updateFrequency  Int      @default(86400) // 1일 기본값
+  
+  @@unique([siteUrl, dataType, period])
+  @@index([expiresAt])
+  @@index([siteUrl, dataType])
+}
+
+// 캐시된 GTM 데이터
+model CachedGTMData {
+  id               String   @id @default(cuid())
+  accountId        String
+  containerId      String
+  dataType         String   // 'tags', 'triggers', 'variables', 'versions'
+  data             Json     // GTM API 응답 데이터
+  lastUpdated      DateTime @default(now())
+  expiresAt        DateTime
+  updateFrequency  Int      @default(43200) // 12시간 기본값
+  
+  @@unique([accountId, containerId, dataType])
+  @@index([expiresAt])
+  @@index([accountId, containerId])
+}
+
+// 주간 변화율 데이터
+model WeeklyTrendData {
+  id               String   @id @default(cuid())
+  propertyId       String
+  dataType         String   // 'users', 'sessions', 'pageviews', 'conversions'
+  week1            Json     // 가장 최근 주 데이터
+  week2            Json     // 1주 전 데이터
+  week3            Json     // 2주 전 데이터
+  week4            Json     // 3주 전 데이터
+  changeRates      Json     // 주차별 변화율 계산 결과
+  calculatedAt     DateTime @default(now())
+  
+  @@unique([propertyId, dataType])
+  @@index([propertyId, calculatedAt])
 }
 
 model PromptTemplate {
@@ -281,7 +403,7 @@ model PromptTemplate {
   type        String   // 프롬프트 유형 (weekly-report, monthly-report, traffic-insight, utm-cohort-insight, keyword-cohort-insight 등)
   description String?  // 프롬프트 설명
   prompt      String   // 실제 프롬프트 템플릿
-  variables   String?  // 사용 가능한 변수 목록 (JSON)
+  variables   Json?    // 사용 가능한 변수 목록 (JSON)
   isActive    Boolean  @default(true)
   isDefault   Boolean  @default(false) // 기본 프롬프트 여부
   sortOrder   Int      @default(0)     // 정렬 순서
@@ -309,7 +431,7 @@ model UserJourneyAnalysis {
   entryPage         String?  // 첫 방문 페이지
   
   // 페이지 전환 여정
-  pageSequence      String   // JSON: [{"page": "/", "timestamp": "...", "duration": 120, "scrollDepth": 0.8}]
+  pageSequence      Json     // JSON: [{"page": "/", "timestamp": "...", "duration": 120, "scrollDepth": 0.8}]
   totalPages        Int      @default(0)
   uniquePages       Int      @default(0)
   
@@ -339,8 +461,8 @@ model UserJourneyAnalysis {
   
   // 분석 결과
   journeyType       String   @default("EXPLORATORY") // CONVERSION, EXPLORATORY, BOUNCE
-  bottleneckPages   String?  // JSON: 이탈이 많은 페이지들
-  opportunityPages  String?  // JSON: 전환 기회가 높은 페이지들
+  bottleneckPages   Json?    // JSON: 이탈이 많은 페이지들
+  opportunityPages  Json?    // JSON: 전환 기회가 높은 페이지들
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -362,17 +484,17 @@ model UserBehaviorPattern {
   segmentName       String   // 패턴 세그먼트명
   
   // 진입 패턴
-  entryPatterns     String   // JSON: 진입 소스/키워드 패턴
-  entryPagePatterns String   // JSON: 진입 페이지 패턴
+  entryPatterns     Json     // JSON: 진입 소스/키워드 패턴
+  entryPagePatterns Json     // JSON: 진입 페이지 패턴
   
   // 여정 패턴
-  journeyPatterns   String   // JSON: 페이지 전환 패턴
-  durationPatterns  String   // JSON: 체류시간 패턴
-  scrollPatterns    String   // JSON: 스크롤 패턴
+  journeyPatterns   Json     // JSON: 페이지 전환 패턴
+  durationPatterns  Json     // JSON: 체류시간 패턴
+  scrollPatterns    Json     // JSON: 스크롤 패턴
   
   // 전환 패턴
-  conversionPatterns String  // JSON: 전환 경로 패턴
-  dropoffPatterns   String   // JSON: 이탈 지점 패턴
+  conversionPatterns Json    // JSON: 전환 경로 패턴
+  dropoffPatterns   Json     // JSON: 이탈 지점 패턴
   
   // 통계
   sessionCount      Int      @default(0) // 해당 패턴의 세션 수
@@ -381,8 +503,8 @@ model UserBehaviorPattern {
   avgDuration       Int      @default(0) // 평균 체류시간
   
   // 인사이트
-  insights          String?  // JSON: 패턴별 인사이트
-  recommendations   String?  // JSON: 개선 권장사항
+  insights          Json?    // JSON: 패턴별 인사이트
+  recommendations   Json?    // JSON: 개선 권장사항
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

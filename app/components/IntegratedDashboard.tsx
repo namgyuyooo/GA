@@ -13,7 +13,7 @@ import {
   FireIcon,
   InformationCircleIcon,
   TagIcon,
-  UsersIcon
+  UsersIcon,
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -23,7 +23,9 @@ interface IntegratedDashboardProps {
   propertyId?: string
 }
 
-export default function IntegratedDashboard({ propertyId = '464147982' }: IntegratedDashboardProps) {
+export default function IntegratedDashboard({
+  propertyId = '464147982',
+}: IntegratedDashboardProps) {
   const [data, setData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [period, setPeriod] = useState('30daysAgo')
@@ -39,7 +41,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
     setIsLoading(true)
 
     try {
-      const response = await fetch(`/api/dashboard/overview?period=${period}&propertyId=${propertyId}`)
+      const response = await fetch(
+        `/api/dashboard/overview?period=${period}&propertyId=${propertyId}`
+      )
       const result = await response.json()
 
       setData(result.data)
@@ -141,7 +145,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-blue-600">총 세션</p>
-                  <p className="text-2xl font-bold text-blue-900">{formatNumber(data.kpis.totalSessions)}</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {formatNumber(data.kpis.totalSessions)}
+                  </p>
                   <div className="flex items-center mt-1">
                     {getChangeIcon(data.changes.sessions)}
                     <span className={`text-sm ml-1 ${getChangeColor(data.changes.sessions)}`}>
@@ -157,7 +163,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-green-600">총 사용자</p>
-                  <p className="text-2xl font-bold text-green-900">{formatNumber(data.kpis.totalUsers)}</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    {formatNumber(data.kpis.totalUsers)}
+                  </p>
                   <div className="flex items-center mt-1">
                     {getChangeIcon(data.changes.users)}
                     <span className={`text-sm ml-1 ${getChangeColor(data.changes.users)}`}>
@@ -173,7 +181,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-purple-600">페이지뷰</p>
-                  <p className="text-2xl font-bold text-purple-900">{formatNumber(data.kpis.pageViews)}</p>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {formatNumber(data.kpis.pageViews)}
+                  </p>
                   <div className="flex items-center mt-1">
                     {getChangeIcon(data.changes.pageViews)}
                     <span className={`text-sm ml-1 ${getChangeColor(data.changes.pageViews)}`}>
@@ -189,7 +199,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-orange-600">전환율</p>
-                  <p className="text-2xl font-bold text-orange-900">{formatPercentage(data.kpis.conversionRate)}</p>
+                  <p className="text-2xl font-bold text-orange-900">
+                    {formatPercentage(data.kpis.conversionRate)}
+                  </p>
                   <div className="flex items-center mt-1">
                     {getChangeIcon(data.changes.conversionRate)}
                     <span className={`text-sm ml-1 ${getChangeColor(data.changes.conversionRate)}`}>
@@ -218,7 +230,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <p className="text-3xl font-bold text-green-600 mb-2">{data.realTimeData.activeUsers}</p>
+                    <p className="text-3xl font-bold text-green-600 mb-2">
+                      {data.realTimeData.activeUsers}
+                    </p>
                     <p className="text-sm text-gray-600">현재 활성 사용자</p>
                   </div>
                   <div>
@@ -239,7 +253,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
             {/* 상위 캠페인 성과 */}
             {data?.topCampaigns && (
               <div className="card">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">🎯 상위 UTM 캠페인 성과</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  🎯 상위 UTM 캠페인 성과
+                </h3>
                 <div className="overflow-x-auto">
                   <table className="min-w-full">
                     <thead>
@@ -253,35 +269,63 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {data.topCampaigns.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((campaign: any, index: number) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="py-3">
-                            <div>
-                              <p className="font-medium text-gray-900">{campaign.campaign}</p>
-                              <p className="text-sm text-gray-500">{campaign.source} / {campaign.medium}</p>
-                            </div>
-                          </td>
-                          <td className="py-3 text-sm text-gray-900">{formatNumber(campaign.sessions)}</td>
-                          <td className="py-3 text-sm text-gray-900">{campaign.conversions}</td>
-                          <td className="py-3 text-sm text-gray-900">{formatPercentage(campaign.conversionRate)}</td>
-                          <td className="py-3 text-sm font-medium text-green-600">{campaign.roi.toFixed(2)}x</td>
-                          <td className="py-3">
-                            <div className="flex items-center">
-                              {getChangeIcon(campaign.change)}
-                              <span className={`text-sm ml-1 ${getChangeColor(campaign.change)}`}>
-                                {Math.abs(campaign.change)}%
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {data.topCampaigns
+                        .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+                        .map((campaign: any, index: number) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="py-3">
+                              <div>
+                                <p className="font-medium text-gray-900">{campaign.campaign}</p>
+                                <p className="text-sm text-gray-500">
+                                  {campaign.source} / {campaign.medium}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="py-3 text-sm text-gray-900">
+                              {formatNumber(campaign.sessions)}
+                            </td>
+                            <td className="py-3 text-sm text-gray-900">{campaign.conversions}</td>
+                            <td className="py-3 text-sm text-gray-900">
+                              {formatPercentage(campaign.conversionRate)}
+                            </td>
+                            <td className="py-3 text-sm font-medium text-green-600">
+                              {campaign.roi.toFixed(2)}x
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center">
+                                {getChangeIcon(campaign.change)}
+                                <span className={`text-sm ml-1 ${getChangeColor(campaign.change)}`}>
+                                  {Math.abs(campaign.change)}%
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                   {/* Pagination */}
                   <div className="flex justify-end items-center mt-4 space-x-2">
-                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 text-sm border rounded disabled:opacity-50">이전</button>
-                    <span className="text-sm">{currentPage} / {Math.ceil(data.topCampaigns.length / rowsPerPage)}</span>
-                    <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(data.topCampaigns.length / rowsPerPage), p + 1))} disabled={currentPage === Math.ceil(data.topCampaigns.length / rowsPerPage)} className="px-2 py-1 text-sm border rounded disabled:opacity-50">다음</button>
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+                    >
+                      이전
+                    </button>
+                    <span className="text-sm">
+                      {currentPage} / {Math.ceil(data.topCampaigns.length / rowsPerPage)}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) =>
+                          Math.min(Math.ceil(data.topCampaigns.length / rowsPerPage), p + 1)
+                        )
+                      }
+                      disabled={currentPage === Math.ceil(data.topCampaigns.length / rowsPerPage)}
+                      className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+                    >
+                      다음
+                    </button>
                   </div>
                 </div>
               </div>
@@ -296,7 +340,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium text-gray-900">{page.title}</h4>
-                        <span className="text-sm text-gray-500">{formatNumber(page.pageViews)} 조회</span>
+                        <span className="text-sm text-gray-500">
+                          {formatNumber(page.pageViews)} 조회
+                        </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">{page.page}</p>
                       <div className="grid grid-cols-4 gap-4 text-sm">
@@ -306,7 +352,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
                         </div>
                         <div>
                           <span className="text-gray-500">바운스율:</span>
-                          <span className="ml-1 font-medium">{formatPercentage(page.bounceRate)}</span>
+                          <span className="ml-1 font-medium">
+                            {formatPercentage(page.bounceRate)}
+                          </span>
                         </div>
                         <div>
                           <span className="text-gray-500">전환:</span>
@@ -314,7 +362,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
                         </div>
                         <div>
                           <span className="text-gray-500">전환율:</span>
-                          <span className="ml-1 font-medium text-green-600">{formatPercentage(page.conversionRate)}</span>
+                          <span className="ml-1 font-medium text-green-600">
+                            {formatPercentage(page.conversionRate)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -330,19 +380,31 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
             <div className="card">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">⚡ 빠른 액세스</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Link href="/utm-builder" className="p-3 text-center bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                <Link
+                  href="/utm-builder"
+                  className="p-3 text-center bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                >
                   <TagIcon className="w-6 h-6 text-blue-600 mx-auto mb-1" />
                   <p className="text-sm font-medium text-blue-900">UTM 빌더</p>
                 </Link>
-                <Link href="/advanced-analytics" className="p-3 text-center bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
+                <Link
+                  href="/advanced-analytics"
+                  className="p-3 text-center bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                >
                   <ChartBarIcon className="w-6 h-6 text-purple-600 mx-auto mb-1" />
                   <p className="text-sm font-medium text-purple-900">고급 분석</p>
                 </Link>
-                <Link href="/reports" className="p-3 text-center bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
+                <Link
+                  href="/reports"
+                  className="p-3 text-center bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                >
                   <CalendarDaysIcon className="w-6 h-6 text-green-600 mx-auto mb-1" />
                   <p className="text-sm font-medium text-green-900">보고서</p>
                 </Link>
-                <Link href="/campaign-manager" className="p-3 text-center bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors">
+                <Link
+                  href="/campaign-manager"
+                  className="p-3 text-center bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                >
                   <FireIcon className="w-6 h-6 text-orange-600 mx-auto mb-1" />
                   <p className="text-sm font-medium text-orange-900">캠페인 관리</p>
                 </Link>
@@ -383,7 +445,9 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-600">전체 헬스 점수</span>
-                    <span className="text-2xl font-bold text-green-600">{data.gtmHealth.healthScore}/100</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      {data.gtmHealth.healthScore}/100
+                    </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
@@ -395,11 +459,15 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">활성 태그:</span>
-                    <span className="ml-1 font-medium">{data.gtmHealth.activeTags}/{data.gtmHealth.totalTags}</span>
+                    <span className="ml-1 font-medium">
+                      {data.gtmHealth.activeTags}/{data.gtmHealth.totalTags}
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-500">활성 트리거:</span>
-                    <span className="ml-1 font-medium">{data.gtmHealth.activeTriggers}/{data.gtmHealth.totalTriggers}</span>
+                    <span className="ml-1 font-medium">
+                      {data.gtmHealth.activeTriggers}/{data.gtmHealth.totalTriggers}
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-500">총 변수:</span>
@@ -419,14 +487,26 @@ export default function IntegratedDashboard({ propertyId = '464147982' }: Integr
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">🔔 알림 및 인사이트</h3>
                 <div className="space-y-3">
                   {data.alerts.map((alert: any, index: number) => (
-                    <div key={index} className={`p-3 rounded-lg border-l-4 ${alert.type === 'success' ? 'bg-green-50 border-green-400' :
-                        alert.type === 'warning' ? 'bg-yellow-50 border-yellow-400' :
-                          'bg-blue-50 border-blue-400'
-                      }`}>
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg border-l-4 ${
+                        alert.type === 'success'
+                          ? 'bg-green-50 border-green-400'
+                          : alert.type === 'warning'
+                            ? 'bg-yellow-50 border-yellow-400'
+                            : 'bg-blue-50 border-blue-400'
+                      }`}
+                    >
                       <div className="flex items-start">
-                        {alert.type === 'success' && <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 mr-3" />}
-                        {alert.type === 'warning' && <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 mt-0.5 mr-3" />}
-                        {alert.type === 'info' && <InformationCircleIcon className="w-5 h-5 text-blue-500 mt-0.5 mr-3" />}
+                        {alert.type === 'success' && (
+                          <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 mr-3" />
+                        )}
+                        {alert.type === 'warning' && (
+                          <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 mt-0.5 mr-3" />
+                        )}
+                        {alert.type === 'info' && (
+                          <InformationCircleIcon className="w-5 h-5 text-blue-500 mt-0.5 mr-3" />
+                        )}
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{alert.title}</h4>
                           <p className="text-sm text-gray-600 mt-1">{alert.message}</p>

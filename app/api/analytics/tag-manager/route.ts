@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
       credentials,
       scopes: [
         'https://www.googleapis.com/auth/tagmanager.readonly',
-        'https://www.googleapis.com/auth/analytics.readonly'
-      ]
+        'https://www.googleapis.com/auth/analytics.readonly',
+      ],
     })
 
     const authClient = await auth.getClient()
@@ -52,18 +52,17 @@ export async function GET(request: NextRequest) {
       success: true,
       containerId,
       analysisType,
-      data: analysisData
+      data: analysisData,
     })
-
   } catch (error: any) {
     console.error('Tag Manager analysis error:', error)
-    
+
     // Mock 데이터 반환 (개발/테스트용)
     const { searchParams } = new URL(request.url)
     return NextResponse.json(
       generateMockTagManagerData({
         containerId: searchParams.get('containerId'),
-        analysisType: searchParams.get('type') || 'overview'
+        analysisType: searchParams.get('type') || 'overview',
       })
     )
   }
@@ -73,7 +72,7 @@ async function analyzeTriggers(containerId: string, accessToken: string) {
   const response = await fetch(
     `https://tagmanager.googleapis.com/tagmanager/v2/accounts/-/containers/${containerId}/workspaces/-/triggers`,
     {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${accessToken}` },
     }
   )
 
@@ -90,7 +89,7 @@ async function analyzeTriggers(containerId: string, accessToken: string) {
     byStatus: { enabled: 0, paused: 0 },
     firingFrequency: [],
     utmRelated: [],
-    performanceImpact: []
+    performanceImpact: [],
   }
 
   triggers.forEach((trigger: any) => {
@@ -110,7 +109,7 @@ async function analyzeTriggers(containerId: string, accessToken: string) {
       triggerAnalysis.utmRelated.push({
         name: trigger.name,
         type: trigger.type,
-        conditions: trigger.filter || []
+        conditions: trigger.filter || [],
       })
     }
 
@@ -119,7 +118,7 @@ async function analyzeTriggers(containerId: string, accessToken: string) {
       name: trigger.name,
       type: trigger.type,
       estimatedFiringRate: Math.floor(Math.random() * 1000),
-      performanceScore: Math.floor(Math.random() * 100)
+      performanceScore: Math.floor(Math.random() * 100),
     })
   })
 
@@ -130,7 +129,7 @@ async function analyzeTags(containerId: string, accessToken: string) {
   const response = await fetch(
     `https://tagmanager.googleapis.com/tagmanager/v2/accounts/-/containers/${containerId}/workspaces/-/tags`,
     {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${accessToken}` },
     }
   )
 
@@ -148,7 +147,7 @@ async function analyzeTags(containerId: string, accessToken: string) {
     trackingTags: [],
     conversionTags: [],
     utmTracking: [],
-    healthCheck: []
+    healthCheck: [],
   }
 
   tags.forEach((tag: any) => {
@@ -166,7 +165,7 @@ async function analyzeTags(containerId: string, accessToken: string) {
       tagAnalysis.trackingTags.push({
         name: tag.name,
         type: tag.type,
-        trackingId: extractTrackingId(tag)
+        trackingId: extractTrackingId(tag),
       })
     }
 
@@ -175,7 +174,7 @@ async function analyzeTags(containerId: string, accessToken: string) {
       tagAnalysis.conversionTags.push({
         name: tag.name,
         type: tag.type,
-        conversionValue: extractConversionValue(tag)
+        conversionValue: extractConversionValue(tag),
       })
     }
 
@@ -184,7 +183,7 @@ async function analyzeTags(containerId: string, accessToken: string) {
       tagAnalysis.utmTracking.push({
         name: tag.name,
         type: tag.type,
-        utmParameters: extractUtmParameters(tag)
+        utmParameters: extractUtmParameters(tag),
       })
     }
 
@@ -194,7 +193,7 @@ async function analyzeTags(containerId: string, accessToken: string) {
       type: tag.type,
       status: tag.paused ? 'paused' : 'active',
       hasErrors: Math.random() > 0.9, // Mock error detection
-      lastFired: generateMockTimestamp()
+      lastFired: generateMockTimestamp(),
     })
   })
 
@@ -205,7 +204,7 @@ async function analyzeVariables(containerId: string, accessToken: string) {
   const response = await fetch(
     `https://tagmanager.googleapis.com/tagmanager/v2/accounts/-/containers/${containerId}/workspaces/-/variables`,
     {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${accessToken}` },
     }
   )
 
@@ -223,7 +222,7 @@ async function analyzeVariables(containerId: string, accessToken: string) {
     custom: variables.filter((v: any) => v.type !== 'v').length,
     utmVariables: [],
     dataLayerVariables: [],
-    unusedVariables: []
+    unusedVariables: [],
   }
 
   variables.forEach((variable: any) => {
@@ -235,7 +234,7 @@ async function analyzeVariables(containerId: string, accessToken: string) {
       variableAnalysis.utmVariables.push({
         name: variable.name,
         type: variable.type,
-        parameter: variable.parameter || []
+        parameter: variable.parameter || [],
       })
     }
 
@@ -243,7 +242,7 @@ async function analyzeVariables(containerId: string, accessToken: string) {
     if (isDataLayerVariable(variable)) {
       variableAnalysis.dataLayerVariables.push({
         name: variable.name,
-        dataLayerName: variable.parameter?.find((p: any) => p.key === 'dataLayerVariable')?.value
+        dataLayerName: variable.parameter?.find((p: any) => p.key === 'dataLayerVariable')?.value,
       })
     }
 
@@ -252,7 +251,7 @@ async function analyzeVariables(containerId: string, accessToken: string) {
       variableAnalysis.unusedVariables.push({
         name: variable.name,
         type: variable.type,
-        lastUsed: generateMockTimestamp()
+        lastUsed: generateMockTimestamp(),
       })
     }
   })
@@ -260,14 +259,19 @@ async function analyzeVariables(containerId: string, accessToken: string) {
   return variableAnalysis
 }
 
-async function analyzePerformance(containerId: string, accessToken: string, startDate: string, endDate: string) {
+async function analyzePerformance(
+  containerId: string,
+  accessToken: string,
+  startDate: string,
+  endDate: string
+) {
   // GTM 성능 데이터 분석 (실제로는 GA4나 다른 성능 모니터링 도구와 연동)
   return {
     overview: {
       containerSize: Math.floor(Math.random() * 500) + 200, // KB
       loadTime: Math.floor(Math.random() * 1000) + 500, // ms
       tagCount: Math.floor(Math.random() * 50) + 10,
-      triggerCount: Math.floor(Math.random() * 30) + 5
+      triggerCount: Math.floor(Math.random() * 30) + 5,
     },
     tagPerformance: [
       {
@@ -275,15 +279,15 @@ async function analyzePerformance(containerId: string, accessToken: string, star
         type: 'gtag',
         loadTime: Math.floor(Math.random() * 200) + 50,
         errorRate: Math.random() * 0.05,
-        firingRate: Math.floor(Math.random() * 10000) + 1000
+        firingRate: Math.floor(Math.random() * 10000) + 1000,
       },
       {
         tagName: 'UTM Tracker',
         type: 'html',
         loadTime: Math.floor(Math.random() * 100) + 20,
         errorRate: Math.random() * 0.02,
-        firingRate: Math.floor(Math.random() * 5000) + 500
-      }
+        firingRate: Math.floor(Math.random() * 5000) + 500,
+      },
     ],
     recommendations: [
       {
@@ -291,16 +295,16 @@ async function analyzePerformance(containerId: string, accessToken: string, star
         type: 'performance',
         title: '태그 로딩 순서 최적화',
         description: '중요하지 않은 태그들을 비동기로 로딩하여 성능 개선',
-        impact: '페이지 로딩 시간 15% 단축 예상'
+        impact: '페이지 로딩 시간 15% 단축 예상',
       },
       {
         priority: 'medium',
         type: 'cleanup',
         title: '사용하지 않는 태그 정리',
         description: '비활성화된 태그와 변수 제거',
-        impact: '컨테이너 크기 20% 감소 예상'
-      }
-    ]
+        impact: '컨테이너 크기 20% 감소 예상',
+      },
+    ],
   }
 }
 
@@ -308,7 +312,7 @@ async function getOverview(containerId: string, accessToken: string) {
   const [triggers, tags, variables] = await Promise.all([
     analyzeTriggers(containerId, accessToken),
     analyzeTags(containerId, accessToken),
-    analyzeVariables(containerId, accessToken)
+    analyzeVariables(containerId, accessToken),
   ])
 
   return {
@@ -316,27 +320,28 @@ async function getOverview(containerId: string, accessToken: string) {
       totalTags: tags.total,
       totalTriggers: triggers.total,
       totalVariables: variables.total,
-      utmRelatedItems: triggers.utmRelated.length + tags.utmTracking.length + variables.utmVariables.length
+      utmRelatedItems:
+        triggers.utmRelated.length + tags.utmTracking.length + variables.utmVariables.length,
     },
     healthStatus: {
       activeTags: tags.byStatus.enabled,
       pausedTags: tags.byStatus.paused,
       activeTriggers: triggers.byStatus.enabled,
       pausedTriggers: triggers.byStatus.paused,
-      overallHealth: calculateHealthScore(tags, triggers, variables)
+      overallHealth: calculateHealthScore(tags, triggers, variables),
     },
     insights: [
       {
         type: 'info',
         title: 'GTM 설정 현황',
-        description: `총 ${tags.total}개 태그, ${triggers.total}개 트리거, ${variables.total}개 변수가 설정되어 있습니다`
+        description: `총 ${tags.total}개 태그, ${triggers.total}개 트리거, ${variables.total}개 변수가 설정되어 있습니다`,
       },
       {
         type: 'success',
         title: 'UTM 추적 설정',
-        description: `${triggers.utmRelated.length}개의 UTM 관련 추적이 활성화되어 있습니다`
-      }
-    ]
+        description: `${triggers.utmRelated.length}개의 UTM 관련 추적이 활성화되어 있습니다`,
+      },
+    ],
   }
 }
 
@@ -345,82 +350,87 @@ function generateMockTagManagerData({ containerId, analysisType }: any) {
     triggers: {
       total: 15,
       byType: {
-        'pageview': 3,
-        'click': 5,
-        'form_submit': 2,
-        'timer': 1,
-        'custom_event': 4
+        pageview: 3,
+        click: 5,
+        form_submit: 2,
+        timer: 1,
+        custom_event: 4,
       },
       byStatus: { enabled: 12, paused: 3 },
       utmRelated: [
         {
           name: 'UTM Campaign Tracker',
           type: 'pageview',
-          conditions: ['utm_campaign', 'utm_source', 'utm_medium']
+          conditions: ['utm_campaign', 'utm_source', 'utm_medium'],
         },
         {
           name: 'UTM Link Click',
           type: 'click',
-          conditions: ['utm_content', 'utm_term']
-        }
+          conditions: ['utm_content', 'utm_term'],
+        },
       ],
       performanceImpact: [
         { name: 'Page View', type: 'pageview', estimatedFiringRate: 2500, performanceScore: 95 },
-        { name: 'UTM Tracker', type: 'custom_event', estimatedFiringRate: 800, performanceScore: 88 }
-      ]
+        {
+          name: 'UTM Tracker',
+          type: 'custom_event',
+          estimatedFiringRate: 800,
+          performanceScore: 88,
+        },
+      ],
     },
     tags: {
       total: 12,
       byType: {
-        'gtag': 4,
-        'html': 3,
-        'img': 2,
-        'conversion_linker': 1,
-        'facebook_pixel': 2
+        gtag: 4,
+        html: 3,
+        img: 2,
+        conversion_linker: 1,
+        facebook_pixel: 2,
       },
       byStatus: { enabled: 10, paused: 2 },
       trackingTags: [
         { name: 'GA4 Config', type: 'gtag', trackingId: 'G-XXXXXXXXXX' },
-        { name: 'Facebook Pixel', type: 'facebook_pixel', trackingId: 'XXXXXXXXXXXX' }
+        { name: 'Facebook Pixel', type: 'facebook_pixel', trackingId: 'XXXXXXXXXXXX' },
       ],
       conversionTags: [
         { name: 'Purchase Conversion', type: 'gtag', conversionValue: 'dynamic' },
-        { name: 'Lead Form', type: 'html', conversionValue: 'fixed' }
+        { name: 'Lead Form', type: 'html', conversionValue: 'fixed' },
       ],
       utmTracking: [
         {
           name: 'UTM Event Tracker',
           type: 'gtag',
-          utmParameters: ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']
-        }
-      ]
+          utmParameters: ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'],
+        },
+      ],
     },
     variables: {
       total: 25,
       byType: {
-        'v': 18, // Built-in variables
-        'jsm': 4, // JavaScript variables
-        'dlv': 2, // Data Layer variables
-        'c': 1 // Constant
+        v: 18, // Built-in variables
+        jsm: 4, // JavaScript variables
+        dlv: 2, // Data Layer variables
+        c: 1, // Constant
       },
       builtIn: 18,
       custom: 7,
       utmVariables: [
         { name: 'UTM Source', type: 'v', parameter: [] },
         { name: 'UTM Campaign', type: 'v', parameter: [] },
-        { name: 'UTM Medium', type: 'v', parameter: [] }
+        { name: 'UTM Medium', type: 'v', parameter: [] },
       ],
       dataLayerVariables: [
         { name: 'User ID', dataLayerName: 'user_id' },
-        { name: 'Transaction Value', dataLayerName: 'transaction_value' }
-      ]
+        { name: 'Transaction Value', dataLayerName: 'transaction_value' },
+      ],
     },
     performance: {
       overview: {
         containerSize: 320,
         loadTime: 680,
         tagCount: 12,
-        triggerCount: 15
+        triggerCount: 15,
       },
       recommendations: [
         {
@@ -428,17 +438,17 @@ function generateMockTagManagerData({ containerId, analysisType }: any) {
           type: 'performance',
           title: 'UTM 파라미터 캐싱 최적화',
           description: 'UTM 파라미터를 세션 스토리지에 캐싱하여 중복 처리 방지',
-          impact: 'UTM 추적 성능 30% 향상 예상'
+          impact: 'UTM 추적 성능 30% 향상 예상',
         },
         {
           priority: 'medium',
           type: 'setup',
           title: 'Enhanced Ecommerce 태그 통합',
           description: '개별 전환 태그들을 Enhanced Ecommerce로 통합',
-          impact: '태그 수 50% 감소, 데이터 일관성 향상'
-        }
-      ]
-    }
+          impact: '태그 수 50% 감소, 데이터 일관성 향상',
+        },
+      ],
+    },
   }
 
   return {
@@ -446,33 +456,39 @@ function generateMockTagManagerData({ containerId, analysisType }: any) {
     isMockData: true,
     containerId: containerId || 'GTM-XXXXXXX',
     analysisType,
-    data: analysisType === 'overview' ? {
-      summary: {
-        totalTags: mockData.tags.total,
-        totalTriggers: mockData.triggers.total,
-        totalVariables: mockData.variables.total,
-        utmRelatedItems: mockData.triggers.utmRelated.length + mockData.tags.utmTracking.length + mockData.variables.utmVariables.length
-      },
-      healthStatus: {
-        activeTags: mockData.tags.byStatus.enabled,
-        pausedTags: mockData.tags.byStatus.paused,
-        activeTriggers: mockData.triggers.byStatus.enabled,
-        pausedTriggers: mockData.triggers.byStatus.paused,
-        overallHealth: 87
-      },
-      insights: [
-        {
-          type: 'info',
-          title: 'GTM 설정 현황',
-          description: `총 ${mockData.tags.total}개 태그, ${mockData.triggers.total}개 트리거, ${mockData.variables.total}개 변수가 설정되어 있습니다`
-        },
-        {
-          type: 'success',
-          title: 'UTM 추적 설정',
-          description: `${mockData.triggers.utmRelated.length}개의 UTM 관련 추적이 활성화되어 있습니다`
-        }
-      ]
-    } : mockData[analysisType as keyof typeof mockData] || mockData.triggers
+    data:
+      analysisType === 'overview'
+        ? {
+            summary: {
+              totalTags: mockData.tags.total,
+              totalTriggers: mockData.triggers.total,
+              totalVariables: mockData.variables.total,
+              utmRelatedItems:
+                mockData.triggers.utmRelated.length +
+                mockData.tags.utmTracking.length +
+                mockData.variables.utmVariables.length,
+            },
+            healthStatus: {
+              activeTags: mockData.tags.byStatus.enabled,
+              pausedTags: mockData.tags.byStatus.paused,
+              activeTriggers: mockData.triggers.byStatus.enabled,
+              pausedTriggers: mockData.triggers.byStatus.paused,
+              overallHealth: 87,
+            },
+            insights: [
+              {
+                type: 'info',
+                title: 'GTM 설정 현황',
+                description: `총 ${mockData.tags.total}개 태그, ${mockData.triggers.total}개 트리거, ${mockData.variables.total}개 변수가 설정되어 있습니다`,
+              },
+              {
+                type: 'success',
+                title: 'UTM 추적 설정',
+                description: `${mockData.triggers.utmRelated.length}개의 UTM 관련 추적이 활성화되어 있습니다`,
+              },
+            ],
+          }
+        : mockData[analysisType as keyof typeof mockData] || mockData.triggers,
   }
 }
 
@@ -499,24 +515,22 @@ function hasUtmTracking(tag: any): boolean {
 }
 
 function extractTrackingId(tag: any): string {
-  const trackingIdParam = tag.parameter?.find((p: any) => 
-    p.key === 'measurementId' || p.key === 'trackingId' || p.key === 'pixelId'
+  const trackingIdParam = tag.parameter?.find(
+    (p: any) => p.key === 'measurementId' || p.key === 'trackingId' || p.key === 'pixelId'
   )
   return trackingIdParam?.value || 'Not configured'
 }
 
 function extractConversionValue(tag: any): string {
-  const valueParam = tag.parameter?.find((p: any) => 
-    p.key === 'value' || p.key === 'conversionValue'
+  const valueParam = tag.parameter?.find(
+    (p: any) => p.key === 'value' || p.key === 'conversionValue'
   )
   return valueParam?.value || 'Not set'
 }
 
 function extractUtmParameters(tag: any): string[] {
   const params = tag.parameter || []
-  return params
-    .filter((p: any) => p.key?.toLowerCase().includes('utm'))
-    .map((p: any) => p.key)
+  return params.filter((p: any) => p.key?.toLowerCase().includes('utm')).map((p: any) => p.key)
 }
 
 function isUtmVariable(variable: any): boolean {
@@ -531,7 +545,7 @@ function isDataLayerVariable(variable: any): boolean {
 function generateMockTimestamp(): string {
   const now = new Date()
   const daysAgo = Math.floor(Math.random() * 30)
-  const timestamp = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000))
+  const timestamp = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000)
   return timestamp.toISOString()
 }
 

@@ -1,15 +1,16 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
-import { 
-  HomeIcon, 
-  LinkIcon, 
-  ChartBarIcon, 
-  CogIcon, 
+import {
+  HomeIcon,
+  LinkIcon,
+  ChartBarIcon,
+  CogIcon,
   UserIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import UTMBuilder from './UTMBuilder'
 import UTMList from './UTMList'
@@ -33,9 +34,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div className="card">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">대시보드</h2>
-              <p className="text-gray-600">
-                UTM 캠페인 성과 및 주요 지표를 확인하세요.
-              </p>
+              <p className="text-gray-600">UTM 캠페인 성과 및 주요 지표를 확인하세요.</p>
             </div>
           </div>
         )
@@ -48,9 +47,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div className="card">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">설정</h2>
-              <p className="text-gray-600">
-                애플리케이션 설정을 관리하세요.
-              </p>
+              <p className="text-gray-600">애플리케이션 설정을 관리하세요.</p>
             </div>
           </div>
         )
@@ -63,8 +60,11 @@ export default function Dashboard() {
     <div className="h-screen flex overflow-hidden bg-gray-100">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 flex z-40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-75"
+          onClick={() => setSidebarOpen(false)}
+        />
+
         <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
@@ -75,7 +75,7 @@ export default function Dashboard() {
               <XMarkIcon className="h-6 w-6 text-white" />
             </button>
           </div>
-          
+
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-4">
               <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
@@ -103,16 +103,18 @@ export default function Dashboard() {
               ))}
             </nav>
           </div>
-          
+
           <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
             <div className="flex items-center">
               <div>
                 <div className="inline-block h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                   {session?.user?.image ? (
-                    <img
+                    <Image
                       className="h-10 w-10 rounded-full"
                       src={session.user.image}
-                      alt=""
+                      alt="User avatar"
+                      width={40}
+                      height={40}
                     />
                   ) : (
                     <UserIcon className="h-6 w-6 text-gray-600" />
@@ -161,16 +163,18 @@ export default function Dashboard() {
                 ))}
               </nav>
             </div>
-            
+
             <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
               <div className="flex items-center w-full">
                 <div>
                   <div className="inline-block h-9 w-9 rounded-full bg-gray-300 flex items-center justify-center">
                     {session?.user?.image ? (
-                      <img
+                      <Image
                         className="h-9 w-9 rounded-full"
                         src={session.user.image}
-                        alt=""
+                        alt="User avatar"
+                        width={36}
+                        height={36}
                       />
                     ) : (
                       <UserIcon className="h-5 w-5 text-gray-600" />
@@ -178,7 +182,9 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="ml-3 flex-1">
-                  <p className="text-sm font-medium text-gray-700 truncate">{session?.user?.name}</p>
+                  <p className="text-sm font-medium text-gray-700 truncate">
+                    {session?.user?.name}
+                  </p>
                   <button
                     onClick={() => signOut()}
                     className="text-xs font-medium text-gray-500 hover:text-gray-700"
@@ -203,12 +209,10 @@ export default function Dashboard() {
             <Bars3Icon className="h-6 w-6" />
           </button>
         </div>
-        
+
         <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
           <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              {renderContent()}
-            </div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">{renderContent()}</div>
           </div>
         </main>
       </div>

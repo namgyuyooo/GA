@@ -24,93 +24,93 @@ interface TagConfigResult {
 const getTagConfig = (source: string, medium: string): TagConfigResult => {
   // 소스별 태그 설정
   const sourceConfigs: Record<string, TagConfig> = {
-    'google': {
+    google: {
       label: 'Google',
       color: 'text-blue-700',
       bgColor: 'bg-blue-100',
-      highlight: 'google'
+      highlight: 'google',
     },
-    'naver': {
+    naver: {
       label: 'Naver',
       color: 'text-green-700',
       bgColor: 'bg-green-100',
-      highlight: 'naver'
+      highlight: 'naver',
     },
-    'daum': {
+    daum: {
       label: 'Daum',
       color: 'text-yellow-700',
       bgColor: 'bg-yellow-100',
-      highlight: 'daum'
+      highlight: 'daum',
     },
-    'bing': {
+    bing: {
       label: 'Bing',
       color: 'text-purple-700',
       bgColor: 'bg-purple-100',
-      highlight: 'bing'
+      highlight: 'bing',
     },
-    'facebook': {
+    facebook: {
       label: 'Facebook',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
-      highlight: 'facebook'
+      highlight: 'facebook',
     },
-    'instagram': {
+    instagram: {
       label: 'Instagram',
       color: 'text-pink-600',
       bgColor: 'bg-pink-50',
-      highlight: 'instagram'
+      highlight: 'instagram',
     },
-    'twitter': {
+    twitter: {
       label: 'Twitter',
       color: 'text-blue-400',
       bgColor: 'bg-blue-50',
-      highlight: 'twitter'
+      highlight: 'twitter',
     },
-    'linkedin': {
+    linkedin: {
       label: 'LinkedIn',
       color: 'text-blue-700',
       bgColor: 'bg-blue-50',
-      highlight: 'linkedin'
-    }
+      highlight: 'linkedin',
+    },
   }
 
   // 미디엄별 태그 설정
   const mediumConfigs: Record<string, TagConfig> = {
-    'organic': {
+    organic: {
       label: 'Organic',
       color: 'text-green-700',
-      bgColor: 'bg-green-100'
+      bgColor: 'bg-green-100',
     },
-    'cpc': {
+    cpc: {
       label: 'Paid Search',
       color: 'text-blue-700',
-      bgColor: 'bg-blue-100'
+      bgColor: 'bg-blue-100',
     },
-    'referral': {
+    referral: {
       label: 'Referral',
       color: 'text-purple-700',
-      bgColor: 'bg-purple-100'
+      bgColor: 'bg-purple-100',
     },
-    'social': {
+    social: {
       label: 'Social',
       color: 'text-pink-700',
-      bgColor: 'bg-pink-100'
+      bgColor: 'bg-pink-100',
     },
-    'email': {
+    email: {
       label: 'Email',
       color: 'text-orange-700',
-      bgColor: 'bg-orange-100'
+      bgColor: 'bg-orange-100',
     },
-    'direct': {
+    direct: {
       label: 'Direct',
       color: 'text-gray-700',
-      bgColor: 'bg-gray-100'
+      bgColor: 'bg-gray-100',
     },
-    'none': {
+    none: {
       label: 'Direct',
       color: 'text-gray-700',
-      bgColor: 'bg-gray-100'
-    }
+      bgColor: 'bg-gray-100',
+    },
   }
 
   // 소스에서 도메인 추출
@@ -118,12 +118,12 @@ const getTagConfig = (source: string, medium: string): TagConfigResult => {
     if (!source || source === '(not set)' || source === '(direct)') {
       return 'direct'
     }
-    
+
     // URL에서 도메인 추출
     const domainMatch = source.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i)
     if (domainMatch) {
       const domain = domainMatch[1].toLowerCase()
-      
+
       // 주요 도메인 매칭
       if (domain.includes('google')) return 'google'
       if (domain.includes('naver')) return 'naver'
@@ -133,10 +133,10 @@ const getTagConfig = (source: string, medium: string): TagConfigResult => {
       if (domain.includes('instagram')) return 'instagram'
       if (domain.includes('twitter')) return 'twitter'
       if (domain.includes('linkedin')) return 'linkedin'
-      
+
       return domain
     }
-    
+
     return source.toLowerCase()
   }
 
@@ -144,26 +144,26 @@ const getTagConfig = (source: string, medium: string): TagConfigResult => {
   const sourceConfig = sourceConfigs[domain] || {
     label: source === '(not set)' ? 'Unknown' : source,
     color: 'text-gray-700',
-    bgColor: 'bg-gray-100'
+    bgColor: 'bg-gray-100',
   }
 
   const mediumConfig = mediumConfigs[medium] || {
     label: medium === '(not set)' ? 'Unknown' : medium,
     color: 'text-gray-700',
-    bgColor: 'bg-gray-100'
+    bgColor: 'bg-gray-100',
   }
 
   return {
     source: sourceConfig,
-    medium: mediumConfig
+    medium: mediumConfig,
   }
 }
 
-export default function SourceMediumTag({ 
-  source, 
-  medium, 
+export default function SourceMediumTag({
+  source,
+  medium,
   className = '',
-  showDetails = false 
+  showDetails = false,
 }: SourceMediumTagProps) {
   const [isHovered, setIsHovered] = useState(false)
   const config = getTagConfig(source, medium)
@@ -183,7 +183,9 @@ export default function SourceMediumTag({
   )
 
   const renderMediumTag = () => (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.medium.color} ${config.medium.bgColor} ml-1`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.medium.color} ${config.medium.bgColor} ml-1`}
+    >
       {config.medium.label}
     </span>
   )
@@ -210,4 +212,4 @@ export default function SourceMediumTag({
       {renderMediumTag()}
     </div>
   )
-} 
+}

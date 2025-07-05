@@ -47,12 +47,8 @@ export default function PropertyCheckPage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            🔍 GA4 속성 및 권한 확인
-          </h1>
-          <p className="text-gray-600">
-            서비스 계정의 GA4 접근 권한을 확인하고 설정하세요
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">🔍 GA4 속성 및 권한 확인</h1>
+          <p className="text-gray-600">서비스 계정의 GA4 접근 권한을 확인하고 설정하세요</p>
         </div>
 
         {/* 서비스 계정 정보 */}
@@ -110,8 +106,8 @@ export default function PropertyCheckPage() {
             {data.availableProperties.error ? (
               <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
                 <p className="text-yellow-700 text-sm">
-                  Admin API 접근 권한이 없어 속성 목록을 가져올 수 없습니다.
-                  직접 GA4에서 Property ID를 확인해주세요.
+                  Admin API 접근 권한이 없어 속성 목록을 가져올 수 없습니다. 직접 GA4에서 Property
+                  ID를 확인해주세요.
                 </p>
               </div>
             ) : data.availableProperties.properties?.length > 0 ? (
@@ -138,26 +134,74 @@ export default function PropertyCheckPage() {
               <div className="bg-white p-4 rounded border">
                 <h4 className="font-medium text-gray-900 mb-2">1. Google Analytics 4 권한 추가</h4>
                 <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1">
-                  <li><a href="https://analytics.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Analytics</a> 접속</li>
-                  <li><strong>관리</strong> (톱니바퀴 아이콘) 클릭</li>
-                  <li><strong>속성 액세스 관리</strong> 클릭</li>
-                  <li><strong>+ 사용자 추가</strong> 클릭</li>
-                  <li>이메일: <code className="bg-gray-100 px-1 rounded text-xs">{data.serviceAccount?.email}</code></li>
-                  <li>역할: <strong>뷰어</strong> 선택</li>
-                  <li><strong>추가</strong> 클릭</li>
+                  <li>
+                    <a
+                      href="https://analytics.google.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Google Analytics
+                    </a>{' '}
+                    접속
+                  </li>
+                  <li>
+                    <strong>관리</strong> (톱니바퀴 아이콘) 클릭
+                  </li>
+                  <li>
+                    <strong>속성 액세스 관리</strong> 클릭
+                  </li>
+                  <li>
+                    <strong>+ 사용자 추가</strong> 클릭
+                  </li>
+                  <li>
+                    이메일:{' '}
+                    <code className="bg-gray-100 px-1 rounded text-xs">
+                      {data.serviceAccount?.email}
+                    </code>
+                  </li>
+                  <li>
+                    역할: <strong>뷰어</strong> 선택
+                  </li>
+                  <li>
+                    <strong>추가</strong> 클릭
+                  </li>
                 </ol>
               </div>
 
               <div className="bg-white p-4 rounded border">
                 <h4 className="font-medium text-gray-900 mb-2">2. Search Console 권한 추가</h4>
                 <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1">
-                  <li><a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Search Console</a> 접속</li>
+                  <li>
+                    <a
+                      href="https://search.google.com/search-console"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Search Console
+                    </a>{' '}
+                    접속
+                  </li>
                   <li>속성 선택 (rtm.ai)</li>
-                  <li><strong>설정</strong> > <strong>사용자 및 권한</strong></li>
-                  <li><strong>사용자 추가</strong> 클릭</li>
-                  <li>이메일: <code className="bg-gray-100 px-1 rounded text-xs">{data.serviceAccount?.email}</code></li>
-                  <li>권한: <strong>모든 권한</strong> 선택</li>
-                  <li><strong>추가</strong> 클릭</li>
+                  <li>
+                    <strong>설정</strong> &gt; <strong>사용자 및 권한</strong>
+                  </li>
+                  <li>
+                    <strong>사용자 추가</strong> 클릭
+                  </li>
+                  <li>
+                    이메일:{' '}
+                    <code className="bg-gray-100 px-1 rounded text-xs">
+                      {data.serviceAccount?.email}
+                    </code>
+                  </li>
+                  <li>
+                    권한: <strong>모든 권한</strong> 선택
+                  </li>
+                  <li>
+                    <strong>추가</strong> 클릭
+                  </li>
                 </ol>
               </div>
 
@@ -173,18 +217,11 @@ export default function PropertyCheckPage() {
 
         {/* 재테스트 버튼 */}
         <div className="text-center mt-8">
-          <button
-            onClick={checkProperties}
-            disabled={isLoading}
-            className="btn-primary mr-4"
-          >
+          <button onClick={checkProperties} disabled={isLoading} className="btn-primary mr-4">
             {isLoading ? '확인 중...' : '🔄 다시 확인'}
           </button>
 
-          <a
-            href="/mock-test"
-            className="btn-secondary"
-          >
+          <a href="/mock-test" className="btn-secondary">
             📊 Mock 데이터로 테스트
           </a>
         </div>

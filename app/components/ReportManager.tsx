@@ -8,9 +8,9 @@ import {
   CalendarIcon,
   ChartBarIcon,
   SparklesIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 
 interface Report {
@@ -47,14 +47,14 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
     loadReports()
   }, [currentPage, propertyId])
 
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await fetch(
         `/api/weekly-report/list?page=${currentPage}&limit=10&propertyId=${propertyId}`
       )
       const result = await response.json()
-      
+
       if (result.success) {
         setReports(result.data.reports)
         setTotalPages(result.data.pagination.totalPages)
@@ -67,18 +67,18 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [currentPage, propertyId])
 
   const downloadReport = async (reportId: string, format: 'json' | 'csv' | 'pdf') => {
     try {
       const response = await fetch(`/api/weekly-report/download/${reportId}?format=${format}`)
-      
+
       if (response.ok) {
         if (format === 'json') {
           const data = await response.json()
           // JSON 파일로 다운로드
           const blob = new Blob([JSON.stringify(data.report, null, 2)], {
-            type: 'application/json'
+            type: 'application/json',
           })
           const url = URL.createObjectURL(blob)
           const a = document.createElement('a')
@@ -100,7 +100,7 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
           document.body.removeChild(a)
           URL.revokeObjectURL(url)
         }
-        
+
         toast.success(`${format.toUpperCase()} 형식으로 다운로드되었습니다.`)
       } else {
         toast.error('다운로드에 실패했습니다.')
@@ -129,12 +129,12 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
     if (!confirm('정말로 이 보고서를 삭제하시겠습니까?')) {
       return
     }
-    
+
     try {
       const response = await fetch(`/api/weekly-report/delete/${reportId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
-      
+
       if (response.ok) {
         toast.success('보고서가 삭제되었습니다.')
         loadReports() // 목록 새로고침
@@ -151,7 +151,7 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     })
   }
 
@@ -172,9 +172,7 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
             생성된 주간 분석 보고서를 확인하고 다운로드할 수 있습니다.
           </p>
         </div>
-        <div className="text-sm text-gray-500">
-          총 {totalCount}개의 보고서
-        </div>
+        <div className="text-sm text-gray-500">총 {totalCount}개의 보고서</div>
       </div>
 
       {/* Reports List */}
@@ -187,9 +185,7 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
           <div className="text-center py-12">
             <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">보고서가 없습니다</h3>
-            <p className="text-gray-500">
-              아직 생성된 주간 분석 보고서가 없습니다.
-            </p>
+            <p className="text-gray-500">아직 생성된 주간 분석 보고서가 없습니다.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -230,7 +226,10 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
                               </span>
                             )}
                             {report.hasAI && (
-                              <SparklesIcon className="ml-2 h-4 w-4 text-purple-500" title="AI 분석 포함" />
+                              <SparklesIcon
+                                className="ml-2 h-4 w-4 text-purple-500"
+                                title="AI 분석 포함"
+                              />
                             )}
                           </div>
                           <div className="text-sm text-gray-500">
@@ -257,7 +256,8 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
                           {report.totalSessions.toLocaleString()} 세션
                         </div>
                         <div className="text-xs text-gray-500">
-                          {report.totalUsers.toLocaleString()} 사용자, {report.totalConversions} 전환
+                          {report.totalUsers.toLocaleString()} 사용자, {report.totalConversions}{' '}
+                          전환
                         </div>
                       </div>
                     </td>
@@ -274,10 +274,7 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
                           <EyeIcon className="h-4 w-4" />
                         </button>
                         <div className="relative group">
-                          <button
-                            className="text-green-600 hover:text-green-900"
-                            title="다운로드"
-                          >
+                          <button className="text-green-600 hover:text-green-900" title="다운로드">
                             <ArrowDownTrayIcon className="h-4 w-4" />
                           </button>
                           <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
@@ -327,14 +324,14 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
             </div>
             <div className="flex space-x-2">
               <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="px-3 py-1 text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
                 이전
               </button>
               <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
                 className="px-3 py-1 text-sm border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
               >
@@ -357,22 +354,36 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
               >
                 <span className="sr-only">닫기</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <div className="space-y-4 max-h-96 overflow-y-auto">
               <div>
                 <h4 className="font-medium text-gray-900">기본 정보</h4>
                 <div className="mt-2 text-sm text-gray-600">
-                  <p><strong>제목:</strong> {selectedReport.title}</p>
-                  <p><strong>기간:</strong> {formatDate(selectedReport.startDate)} ~ {formatDate(selectedReport.endDate)}</p>
-                  <p><strong>생성일:</strong> {formatDateTime(selectedReport.createdAt)}</p>
-                  <p><strong>AI 모델:</strong> {selectedReport.selectedModel || 'N/A'}</p>
+                  <p>
+                    <strong>제목:</strong> {selectedReport.title}
+                  </p>
+                  <p>
+                    <strong>기간:</strong> {formatDate(selectedReport.startDate)} ~{' '}
+                    {formatDate(selectedReport.endDate)}
+                  </p>
+                  <p>
+                    <strong>생성일:</strong> {formatDateTime(selectedReport.createdAt)}
+                  </p>
+                  <p>
+                    <strong>AI 모델:</strong> {selectedReport.selectedModel || 'N/A'}
+                  </p>
                 </div>
               </div>
-              
+
               {selectedReport.detail && (
                 <div>
                   <h4 className="font-medium text-gray-900">AI 분석 결과</h4>
@@ -382,17 +393,21 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
                         <div>
                           <strong>주요 인사이트:</strong>
                           <ul className="list-disc list-inside ml-2">
-                            {selectedReport.detail.data.aiAnalysis.insights?.map((insight: string, index: number) => (
-                              <li key={index}>{insight}</li>
-                            ))}
+                            {selectedReport.detail.data.aiAnalysis.insights?.map(
+                              (insight: string, index: number) => (
+                                <li key={index}>{insight}</li>
+                              )
+                            )}
                           </ul>
                         </div>
                         <div>
                           <strong>개선 권장사항:</strong>
                           <ul className="list-disc list-inside ml-2">
-                            {selectedReport.detail.data.aiAnalysis.recommendations?.map((rec: string, index: number) => (
-                              <li key={index}>{rec}</li>
-                            ))}
+                            {selectedReport.detail.data.aiAnalysis.recommendations?.map(
+                              (rec: string, index: number) => (
+                                <li key={index}>{rec}</li>
+                              )
+                            )}
                           </ul>
                         </div>
                       </div>
@@ -403,7 +418,7 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
                 </div>
               )}
             </div>
-            
+
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 onClick={() => setShowDetail(false)}
@@ -417,4 +432,4 @@ export default function ReportManager({ propertyId = '464147982' }: ReportManage
       )}
     </div>
   )
-} 
+}

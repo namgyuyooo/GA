@@ -20,12 +20,12 @@ export async function GET(request: NextRequest) {
     let goals
     if (goalId) {
       goals = await prisma.conversionGoal.findMany({
-        where: { id: goalId, propertyId, isActive: true }
+        where: { id: goalId, propertyId, isActive: true },
       })
     } else {
       goals = await prisma.conversionGoal.findMany({
         where: { propertyId, isActive: true },
-        orderBy: { priority: 'asc' }
+        orderBy: { priority: 'asc' },
       })
     }
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         goals: [],
         pathAnalysis: {},
         keywordAnalysis: {},
-        pageJourneyAnalysis: {}
+        pageJourneyAnalysis: {},
       })
     }
 
@@ -51,15 +51,15 @@ export async function GET(request: NextRequest) {
         where: {
           goalId: goal.id,
           conversionDate: {
-            gte: startDate
-          }
+            gte: startDate,
+          },
         },
-        orderBy: { conversionDate: 'desc' }
+        orderBy: { conversionDate: 'desc' },
       })
 
       // 1. 키워드별 전환 분석
       const keywordStats = new Map()
-      conversionPaths.forEach(path => {
+      conversionPaths.forEach((path) => {
         if (path.entryKeyword) {
           const key = path.entryKeyword
           if (!keywordStats.has(key)) {
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
               totalRevenue: 0,
               avgSessionDuration: 0,
               avgPageViews: 0,
-              conversionPaths: []
+              conversionPaths: [],
             })
           }
           const stats = keywordStats.get(key)
@@ -79,17 +79,17 @@ export async function GET(request: NextRequest) {
           stats.avgPageViews += path.pageViews
           stats.conversionPaths.push({
             entryPage: path.entryPage,
-            pageSequence: JSON.parse(path.pageSequence || '[]'),
-            conversionDate: path.conversionDate
+            pageSequence: JSON.parse(String(path.pageSequence || '[]')),
+            conversionDate: path.conversionDate,
           })
         }
       })
 
       // 평균 계산
-      keywordStats.forEach(stats => {
+      keywordStats.forEach((stats) => {
         if (stats.conversions > 0) {
           stats.avgSessionDuration = Math.round(stats.avgSessionDuration / stats.conversions)
-          stats.avgPageViews = Math.round(stats.avgPageViews / stats.conversions * 10) / 10
+          stats.avgPageViews = Math.round((stats.avgPageViews / stats.conversions) * 10) / 10
         }
       })
 
@@ -97,14 +97,14 @@ export async function GET(request: NextRequest) {
         goalName: goal.name,
         keywords: Array.from(keywordStats.values())
           .sort((a, b) => b.conversions - a.conversions)
-          .slice(0, 20)
+          .slice(0, 20),
       }
 
       // 2. 페이지 여정 분석
       const pageJourneys = new Map()
       const entryPages = new Map()
-      
-      conversionPaths.forEach(path => {
+
+      conversionPaths.forEach((path) => {
         // 진입 페이지 통계
         if (path.entryPage) {
           if (!entryPages.has(path.entryPage)) {
@@ -117,16 +117,16 @@ export async function GET(request: NextRequest) {
 
         // 페이지 시퀀스 분석
         try {
-          const sequence = JSON.parse(path.pageSequence || '[]')
+          const sequence = JSON.parse(String(path.pageSequence || '[]'))
           if (sequence.length > 0) {
-            const journeyKey = sequence.map(s => s.page).join(' → ')
+            const journeyKey = sequence.map((s) => s.page).join(' → ')
             if (!pageJourneys.has(journeyKey)) {
               pageJourneys.set(journeyKey, {
                 journey: journeyKey,
                 steps: sequence.length,
                 conversions: 0,
                 avgDuration: 0,
-                totalDuration: 0
+                totalDuration: 0,
               })
             }
             const journey = pageJourneys.get(journeyKey)
@@ -147,19 +147,19 @@ export async function GET(request: NextRequest) {
         commonJourneys: Array.from(pageJourneys.values())
           .sort((a, b) => b.conversions - a.conversions)
           .slice(0, 15),
-        totalConversions: conversionPaths.length
+        totalConversions: conversionPaths.length,
       }
 
       // 3. 전환 경로 요약
       const sourceStats = new Map()
-      conversionPaths.forEach(path => {
+      conversionPaths.forEach((path) => {
         const sourceKey = `${path.entrySource || 'direct'}/${path.entryMedium || 'none'}`
         if (!sourceStats.has(sourceKey)) {
           sourceStats.set(sourceKey, {
             source: path.entrySource || 'direct',
             medium: path.entryMedium || 'none',
             conversions: 0,
-            revenue: 0
+            revenue: 0,
           })
         }
         const stats = sourceStats.get(sourceKey)
@@ -172,38 +172,45 @@ export async function GET(request: NextRequest) {
         goalType: goal.goalType,
         totalConversions: conversionPaths.length,
         totalRevenue: conversionPaths.reduce((sum, path) => sum + path.revenue, 0),
-        avgSessionDuration: conversionPaths.length > 0 
-          ? Math.round(conversionPaths.reduce((sum, path) => sum + path.sessionDuration, 0) / conversionPaths.length)
-          : 0,
-        sourceBreakdown: Array.from(sourceStats.values())
-          .sort((a, b) => b.conversions - a.conversions),
-        recentConversions: conversionPaths.slice(0, 10).map(path => ({
+        avgSessionDuration:
+          conversionPaths.length > 0
+            ? Math.round(
+                conversionPaths.reduce((sum, path) => sum + path.sessionDuration, 0) /
+                  conversionPaths.length
+              )
+            : 0,
+        sourceBreakdown: Array.from(sourceStats.values()).sort(
+          (a, b) => b.conversions - a.conversions
+        ),
+        recentConversions: conversionPaths.slice(0, 10).map((path) => ({
           conversionDate: path.conversionDate,
           entryKeyword: path.entryKeyword,
           entryPage: path.entryPage,
           pageViews: path.pageViews,
           sessionDuration: path.sessionDuration,
-          revenue: path.revenue
-        }))
+          revenue: path.revenue,
+        })),
       }
     }
 
     return NextResponse.json({
       success: true,
-      goals: goals.map(g => ({ id: g.id, name: g.name, goalType: g.goalType })),
+      goals: goals.map((g) => ({ id: g.id, name: g.name, goalType: g.goalType })),
       pathAnalysis,
       keywordAnalysis,
       pageJourneyAnalysis,
       period,
-      message: `${goals.length}개 목표에 대한 전환 경로 분석을 완료했습니다.`
+      message: `${goals.length}개 목표에 대한 전환 경로 분석을 완료했습니다.`,
     })
-
   } catch (error: any) {
     console.error('Conversion paths analysis error:', error)
-    return NextResponse.json({
-      error: 'Failed to analyze conversion paths',
-      details: error.message
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Failed to analyze conversion paths',
+        details: error.message,
+      },
+      { status: 500 }
+    )
   } finally {
     await prisma.$disconnect()
   }
@@ -216,13 +223,13 @@ export async function POST(request: NextRequest) {
 
     // GA4에서 전환 데이터 수집
     const conversionData = await fetchConversionDataFromGA4(propertyId, goalIds)
-    
+
     // DB에 저장
     let savedCount = 0
     for (const pathData of conversionData) {
       try {
         await prisma.conversionPath.create({
-          data: pathData
+          data: pathData,
         })
         savedCount++
       } catch (error) {
@@ -233,15 +240,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `${savedCount}개의 전환 경로 데이터가 저장되었습니다.`,
-      recordsSaved: savedCount
+      recordsSaved: savedCount,
     })
-
   } catch (error: any) {
     console.error('Conversion path collection error:', error)
-    return NextResponse.json({
-      error: 'Failed to collect conversion path data',
-      details: error.message
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Failed to collect conversion path data',
+        details: error.message,
+      },
+      { status: 500 }
+    )
   } finally {
     await prisma.$disconnect()
   }
@@ -251,25 +260,29 @@ export async function POST(request: NextRequest) {
 async function fetchConversionDataFromGA4(propertyId: string, goalIds?: string[]) {
   const fs = require('fs')
   const path = require('path')
-  
+
   const serviceAccountPath = path.join(process.cwd(), 'secrets/ga-auto-464002-672370fda082.json')
   const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
   const serviceAccount = JSON.parse(serviceAccountData)
 
   const jwt = require('jsonwebtoken')
   const now = Math.floor(Date.now() / 1000)
-  const token = jwt.sign({
-    iss: serviceAccount.client_email,
-    scope: 'https://www.googleapis.com/auth/analytics.readonly',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600
-  }, serviceAccount.private_key, { algorithm: 'RS256' })
+  const token = jwt.sign(
+    {
+      iss: serviceAccount.client_email,
+      scope: 'https://www.googleapis.com/auth/analytics.readonly',
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600,
+    },
+    serviceAccount.private_key,
+    { algorithm: 'RS256' }
+  )
 
   const authResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`,
   })
 
   const tokenData = await authResponse.json()
@@ -283,8 +296,8 @@ async function fetchConversionDataFromGA4(propertyId: string, goalIds?: string[]
     {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${tokenData.access_token}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
@@ -294,25 +307,25 @@ async function fetchConversionDataFromGA4(propertyId: string, goalIds?: string[]
           { name: 'pagePath' },
           { name: 'eventName' },
           { name: 'sessionSource' },
-          { name: 'sessionMedium' }
+          { name: 'sessionMedium' },
         ],
         metrics: [
           { name: 'screenPageViews' },
           { name: 'eventCount' },
           { name: 'conversions' },
-          { name: 'totalRevenue' }
+          { name: 'totalRevenue' },
         ],
         dimensionFilter: {
           filter: {
             fieldName: 'eventName',
             stringFilter: {
               matchType: 'PARTIAL_REGEXP',
-              value: '소개서 다운로드|문의하기'
-            }
-          }
+              value: '소개서 다운로드|문의하기',
+            },
+          },
         },
-        limit: 1000
-      })
+        limit: 1000,
+      }),
     }
   )
 
@@ -328,13 +341,13 @@ async function fetchConversionDataFromGA4(propertyId: string, goalIds?: string[]
     where: {
       propertyId,
       isActive: true,
-      ...(goalIds && { id: { in: goalIds } })
-    }
+      ...(goalIds && { id: { in: goalIds } }),
+    },
   })
 
   // GA4 데이터를 전환 경로로 변환
   const sessionGroups = new Map()
-  
+
   for (const row of gaData.rows || []) {
     const sessionId = row.dimensionValues[0].value
     const date = row.dimensionValues[1].value
@@ -342,7 +355,7 @@ async function fetchConversionDataFromGA4(propertyId: string, goalIds?: string[]
     const eventName = row.dimensionValues[3].value
     const source = row.dimensionValues[4].value
     const medium = row.dimensionValues[5].value
-    
+
     const pageViews = Number(row.metricValues[0].value)
     const eventCount = Number(row.metricValues[1].value)
     const conversions = Number(row.metricValues[2].value)
@@ -359,7 +372,7 @@ async function fetchConversionDataFromGA4(propertyId: string, goalIds?: string[]
         totalPageViews: 0,
         totalEvents: 0,
         conversions,
-        revenue
+        revenue,
       })
     }
 
@@ -367,13 +380,13 @@ async function fetchConversionDataFromGA4(propertyId: string, goalIds?: string[]
     session.pages.push({
       page: pagePath,
       timestamp: date,
-      pageViews
+      pageViews,
     })
     session.events.push({
       event: eventName,
       page: pagePath,
       timestamp: date,
-      count: eventCount
+      count: eventCount,
     })
     session.totalPageViews += pageViews
     session.totalEvents += eventCount
@@ -383,11 +396,9 @@ async function fetchConversionDataFromGA4(propertyId: string, goalIds?: string[]
   for (const session of sessionGroups.values()) {
     if (session.conversions > 0) {
       // 매칭되는 Goal 찾기
-      const matchingGoal = activeGoals.find(goal => {
+      const matchingGoal = activeGoals.find((goal) => {
         if (goal.goalType === 'EVENT') {
-          return session.events.some(event => 
-            event.event.includes(goal.eventName || '')
-          )
+          return session.events.some((event) => event.event.includes(goal.eventName || ''))
         }
         return false
       })
@@ -407,7 +418,7 @@ async function fetchConversionDataFromGA4(propertyId: string, goalIds?: string[]
           sessionDuration: 0, // 계산 로직 추가 필요
           pageViews: session.totalPageViews,
           totalEvents: session.totalEvents,
-          revenue: session.revenue
+          revenue: session.revenue,
         })
       }
     }

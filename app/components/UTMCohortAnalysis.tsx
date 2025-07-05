@@ -4,10 +4,12 @@ import {
   ArrowPathIcon,
   FunnelIcon,
   UserGroupIcon,
-  CodeBracketIcon
+  CodeBracketIcon,
 } from '@heroicons/react/24/outline'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
+import ReactMarkdown from 'react-markdown'
+import AIInsightCard from './AIInsightCard'
 
 interface UTMCohortAnalysisProps {
   propertyId?: string
@@ -28,7 +30,10 @@ interface CohortData {
   conversions: number
 }
 
-export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode = 'database' }: UTMCohortAnalysisProps) {
+export default function UTMCohortAnalysis({
+  propertyId = '464147982',
+  dataMode = 'database',
+}: UTMCohortAnalysisProps) {
   const [cohortData, setCohortData] = useState<CohortData[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<string>('all')
   const [dateRange, setDateRange] = useState('7daysAgo')
@@ -47,16 +52,16 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
     loadCohortData()
     fetchLatestInsight()
     fetch('/api/ai-insight/models')
-      .then(res => res.json())
-      .then(result => {
+      .then((res) => res.json())
+      .then((result) => {
         if (result.success) {
           setAvailableModels(result.models)
           if (result.models.length > 0) setSelectedModel(result.models[0].id)
         }
       })
     fetch('/api/settings/prompt-templates?type=utm-cohort-insight')
-      .then(res => res.json())
-      .then(result => {
+      .then((res) => res.json())
+      .then((result) => {
         if (result.success) {
           setPromptTemplates(result.templates)
           const defaultTemplate = result.templates.find((t: any) => t.isDefault)
@@ -65,7 +70,7 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
       })
   }, [propertyId, dateRange, selectedCampaign])
 
-  const loadCohortData = async () => {
+  const loadCohortData = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await fetch(
@@ -80,57 +85,18 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
       setCohortData(result.cohorts || [])
       setCampaigns(result.campaigns || [])
 
-      toast.success(`UTM 코호트 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`)
+      toast.success(
+        `UTM 코호트 데이터 로드 완료 (${dataMode === 'realtime' ? '실시간' : 'DB'} 모드)`
+      )
     } catch (error) {
       console.error('Cohort data error:', error)
       toast.error('코호트 데이터 로드 실패')
-
-      // 데모 데이터 사용
-      generateDemoData()
+      setCohortData([])
+      setCampaigns(['all'])
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const generateDemoData = () => {
-    const demoCampaigns = [
-      { name: 'summer_sale_facebook', source: 'facebook', medium: 'social' },
-      { name: 'google_ads_search', source: 'google', medium: 'cpc' },
-      { name: 'email_newsletter', source: 'email', medium: 'email' },
-      { name: 'naver_organic', source: 'naver', medium: 'organic' },
-      { name: 'youtube_video', source: 'youtube', medium: 'social' }
-    ]
-
-    const demoData: CohortData[] = []
-    const weeks = 8
-
-    for (let week = 0; week < weeks; week++) {
-      demoCampaigns.forEach((campaign, index) => {
-        const cohortDate = new Date()
-        cohortDate.setDate(cohortDate.getDate() - (week * 7))
-
-        const initialUsers = Math.floor(Math.random() * 500) + 100
-        const baseRetention = 0.7 - (week * 0.05) // 감소하는 리텐션
-
-        demoData.push({
-          cohortDate: cohortDate.toISOString().split('T')[0],
-          campaignName: campaign.name,
-          source: campaign.source,
-          medium: campaign.medium,
-          initialUsers,
-          retentionWeek1: Math.floor(initialUsers * (baseRetention - 0.2 + Math.random() * 0.1)),
-          retentionWeek2: Math.floor(initialUsers * (baseRetention - 0.3 + Math.random() * 0.1)),
-          retentionWeek4: Math.floor(initialUsers * (baseRetention - 0.4 + Math.random() * 0.1)),
-          retentionWeek8: Math.floor(initialUsers * (baseRetention - 0.5 + Math.random() * 0.1)),
-          ltv: Math.floor((Math.random() * 50 + 10) * 100) / 100,
-          conversions: Math.floor(initialUsers * (0.02 + Math.random() * 0.08))
-        })
-      })
-    }
-
-    setCohortData(demoData)
-    setCampaigns(['all', ...demoCampaigns.map(c => c.name)])
-  }
+  }, [propertyId, dateRange, selectedCampaign, dataMode])
 
   const getRetentionColor = (rate: number) => {
     if (rate >= 0.6) return 'bg-green-500'
@@ -139,9 +105,10 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
     return 'bg-red-500'
   }
 
-  const filteredData = selectedCampaign === 'all'
-    ? cohortData
-    : cohortData.filter(item => item.campaignName === selectedCampaign)
+  const filteredData =
+    selectedCampaign === 'all'
+      ? cohortData
+      : cohortData.filter((item) => item.campaignName === selectedCampaign)
 
   const campaignSummary = filteredData.reduce((acc, item) => {
     const key = `${item.campaignName}-${item.source}-${item.medium}`
@@ -155,7 +122,7 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
         avgLTV: 0,
         avgRetentionWeek1: 0,
         avgRetentionWeek4: 0,
-        count: 0
+        count: 0,
       }
     }
 
@@ -176,12 +143,12 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
   })
 
   // 인사이트 조회
-  const fetchLatestInsight = async () => {
+  const fetchLatestInsight = useCallback(async () => {
     const res = await fetch(`/api/ai-insight?type=utm-cohort&propertyId=${propertyId}`)
     const result = await res.json()
     if (result.success && result.insight) setLatestInsight(result.insight)
     else setLatestInsight(null)
-  }
+  }, [propertyId])
 
   const handleGenerateInsight = async () => {
     setInsightLoading(true)
@@ -189,17 +156,18 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
       const requestBody: any = {
         model: selectedModel,
         type: 'utm-cohort',
-        propertyId
+        propertyId,
       }
 
       if (selectedTemplate) {
         requestBody.templateId = selectedTemplate
         requestBody.variables = {
           dateRange,
-          selectedCampaign
+          selectedCampaign,
         }
       } else {
-        requestBody.prompt = `다음은 UTM 코호트 분석 주요 데이터입니다.\n\n` +
+        requestBody.prompt =
+          `다음은 UTM 코호트 분석 주요 데이터입니다.\n\n` +
           `기간: ${dateRange}\n` +
           `캠페인: ${selectedCampaign}\n` +
           `주요 리텐션, 전환, LTV 등 지표를 바탕으로 3가지 인사이트와 2가지 개선 제안을 한국어로 요약해줘.`
@@ -208,7 +176,7 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
       const res = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
       const result = await res.json()
       if (result.success) {
@@ -216,7 +184,7 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
       } else {
         toast.error('AI 인사이트 생성 실패: ' + (result.error || ''))
       }
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error('AI 인사이트 생성 중 오류: ' + (e.message || ''))
     } finally {
       setInsightLoading(false)
@@ -238,7 +206,8 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
         <div>
           <h1 className="text-2xl font-bold text-gray-900">UTM 캠페인 코호트 분석</h1>
           <p className="text-sm text-gray-600 mt-1">
-            UTM 캠페인별 사용자 리텐션 및 생애가치 분석 | {dataMode === 'realtime' ? '실시간' : 'DB'} 데이터 모드
+            UTM 캠페인별 사용자 리텐션 및 생애가치 분석 |{' '}
+            {dataMode === 'realtime' ? '실시간' : 'DB'} 데이터 모드
             {dataMode === 'database' && cohortData.length > 0 && (
               <span className="ml-2 text-gray-500">
                 (데이터 시점: {new Date().toLocaleString('ko-KR')})
@@ -265,9 +234,13 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
             className="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
           >
             <option value="all">모든 캠페인</option>
-            {campaigns.filter(c => c !== 'all').map((campaign) => (
-              <option key={campaign} value={campaign}>{campaign}</option>
-            ))}
+            {campaigns
+              .filter((c) => c !== 'all')
+              .map((campaign) => (
+                <option key={campaign} value={campaign}>
+                  {campaign}
+                </option>
+              ))}
           </select>
 
           <button
@@ -368,62 +341,92 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((cohort, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {cohort.cohortDate}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{cohort.campaignName}</div>
-                      <div className="text-sm text-gray-500">{cohort.source} / {cohort.medium}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {cohort.initialUsers.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className={`w-3 h-3 rounded-full mr-2 ${getRetentionColor(cohort.retentionWeek1 / cohort.initialUsers)}`}></div>
-                        <span className="text-sm text-gray-900">
-                          {((cohort.retentionWeek1 / cohort.initialUsers) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className={`w-3 h-3 rounded-full mr-2 ${getRetentionColor(cohort.retentionWeek2 / cohort.initialUsers)}`}></div>
-                        <span className="text-sm text-gray-900">
-                          {((cohort.retentionWeek2 / cohort.initialUsers) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className={`w-3 h-3 rounded-full mr-2 ${getRetentionColor(cohort.retentionWeek4 / cohort.initialUsers)}`}></div>
-                        <span className="text-sm text-gray-900">
-                          {((cohort.retentionWeek4 / cohort.initialUsers) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className={`w-3 h-3 rounded-full mr-2 ${getRetentionColor(cohort.retentionWeek8 / cohort.initialUsers)}`}></div>
-                        <span className="text-sm text-gray-900">
-                          {((cohort.retentionWeek8 / cohort.initialUsers) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${cohort.ltv.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
+                {filteredData
+                  .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+                  .map((cohort, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {cohort.cohortDate}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{cohort.campaignName}</div>
+                        <div className="text-sm text-gray-500">
+                          {cohort.source} / {cohort.medium}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {cohort.initialUsers.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div
+                            className={`w-3 h-3 rounded-full mr-2 ${getRetentionColor(cohort.retentionWeek1 / cohort.initialUsers)}`}
+                          ></div>
+                          <span className="text-sm text-gray-900">
+                            {((cohort.retentionWeek1 / cohort.initialUsers) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div
+                            className={`w-3 h-3 rounded-full mr-2 ${getRetentionColor(cohort.retentionWeek2 / cohort.initialUsers)}`}
+                          ></div>
+                          <span className="text-sm text-gray-900">
+                            {((cohort.retentionWeek2 / cohort.initialUsers) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div
+                            className={`w-3 h-3 rounded-full mr-2 ${getRetentionColor(cohort.retentionWeek4 / cohort.initialUsers)}`}
+                          ></div>
+                          <span className="text-sm text-gray-900">
+                            {((cohort.retentionWeek4 / cohort.initialUsers) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div
+                            className={`w-3 h-3 rounded-full mr-2 ${getRetentionColor(cohort.retentionWeek8 / cohort.initialUsers)}`}
+                          ></div>
+                          <span className="text-sm text-gray-900">
+                            {((cohort.retentionWeek8 / cohort.initialUsers) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${cohort.ltv.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
             {/* Pagination */}
             <div className="flex justify-end items-center mt-4 space-x-2">
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-2 py-1 text-sm border rounded disabled:opacity-50">이전</button>
-              <span className="text-sm">{currentPage} / {Math.ceil(filteredData.length / rowsPerPage)}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredData.length / rowsPerPage), p + 1))} disabled={currentPage === Math.ceil(filteredData.length / rowsPerPage)} className="px-2 py-1 text-sm border rounded disabled:opacity-50">다음</button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+              >
+                이전
+              </button>
+              <span className="text-sm">
+                {currentPage} / {Math.ceil(filteredData.length / rowsPerPage)}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(Math.ceil(filteredData.length / rowsPerPage), p + 1)
+                  )
+                }
+                disabled={currentPage === Math.ceil(filteredData.length / rowsPerPage)}
+                className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+              >
+                다음
+              </button>
             </div>
           </div>
         </div>
@@ -440,9 +443,7 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
                 return (
                   <div className="border-l-4 border-gray-400 pl-4">
                     <h4 className="text-sm font-medium text-gray-900">데이터 없음</h4>
-                    <p className="mt-1 text-sm text-gray-600">
-                      분석할 코호트 데이터가 없습니다.
-                    </p>
+                    <p className="mt-1 text-sm text-gray-600">분석할 코호트 데이터가 없습니다.</p>
                   </div>
                 )
               }
@@ -455,25 +456,33 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
               })
 
               // 최고 LTV 캠페인 찾기
-              const bestLTV = filteredData.reduce((best, current) => 
+              const bestLTV = filteredData.reduce((best, current) =>
                 current.ltv > best.ltv ? current : best
               )
 
               // 평균 LTV 계산
-              const avgLTV = filteredData.reduce((sum, item) => sum + item.ltv, 0) / filteredData.length
+              const avgLTV =
+                filteredData.reduce((sum, item) => sum + item.ltv, 0) / filteredData.length
 
               return (
                 <>
                   <div className="border-l-4 border-blue-400 pl-4">
                     <h4 className="text-sm font-medium text-gray-900">최고 성과 캠페인</h4>
                     <p className="mt-1 text-sm text-gray-600">
-                      {bestRetention.campaignName} ({bestRetention.source}/{bestRetention.medium})이 가장 높은 4주 리텐션률({((bestRetention.retentionWeek4 / bestRetention.initialUsers) * 100).toFixed(1)}%)을 기록
+                      {bestRetention.campaignName} ({bestRetention.source}/{bestRetention.medium})이
+                      가장 높은 4주 리텐션률(
+                      {((bestRetention.retentionWeek4 / bestRetention.initialUsers) * 100).toFixed(
+                        1
+                      )}
+                      %)을 기록
                     </p>
                   </div>
                   <div className="border-l-4 border-green-400 pl-4">
                     <h4 className="text-sm font-medium text-gray-900">LTV 최적화 기회</h4>
                     <p className="mt-1 text-sm text-gray-600">
-                      {bestLTV.campaignName}의 LTV(${bestLTV.ltv.toFixed(2)})가 평균(${avgLTV.toFixed(2)}) 대비 {((bestLTV.ltv / avgLTV - 1) * 100).toFixed(1)}% 높아 추가 투자 권장
+                      {bestLTV.campaignName}의 LTV(${bestLTV.ltv.toFixed(2)})가 평균($
+                      {avgLTV.toFixed(2)}) 대비 {((bestLTV.ltv / avgLTV - 1) * 100).toFixed(1)}%
+                      높아 추가 투자 권장
                     </p>
                   </div>
                 </>
@@ -489,31 +498,37 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
           <CodeBracketIcon className="h-5 w-5 mr-2 text-primary-600" />
           <span className="font-bold text-primary-700 text-lg">AI 자동 인사이트</span>
           {latestInsight?.createdAt && (
-            <span className="ml-3 text-xs text-gray-500">{new Date(latestInsight.createdAt).toLocaleString('ko-KR')}</span>
+            <span className="ml-3 text-xs text-gray-500">
+              {new Date(latestInsight.createdAt).toLocaleString('ko-KR')}
+            </span>
           )}
           <div className="ml-auto flex items-center space-x-2">
             {availableModels.length > 0 && (
               <select
                 value={selectedModel}
-                onChange={e => setSelectedModel(e.target.value)}
+                onChange={(e) => setSelectedModel(e.target.value)}
                 className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
                 title="사용할 Gemini 모델 선택"
               >
-                {availableModels.map(m => (
-                  <option key={m.id} value={m.id}>{m.displayName}</option>
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.displayName}
+                  </option>
                 ))}
               </select>
             )}
             {promptTemplates.length > 0 && (
               <select
                 value={selectedTemplate}
-                onChange={e => setSelectedTemplate(e.target.value)}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
                 className="rounded-md border border-primary-300 text-sm px-2 py-1 focus:ring-primary-500"
                 title="사용할 프롬프트 템플릿 선택"
               >
                 <option value="">기본 프롬프트</option>
-                {promptTemplates.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                {promptTemplates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
                 ))}
               </select>
             )}
@@ -526,8 +541,12 @@ export default function UTMCohortAnalysis({ propertyId = '464147982', dataMode =
             </button>
           </div>
         </div>
-        <div className="whitespace-pre-line text-gray-800 text-sm min-h-[60px]">
-          {latestInsight?.result ? latestInsight.result : '아직 생성된 인사이트가 없습니다.'}
+        <div className="min-h-[60px]">
+          {latestInsight?.result ? (
+            <AIInsightCard result={latestInsight.result} />
+          ) : (
+            '아직 생성된 인사이트가 없습니다.'
+          )}
         </div>
         {latestInsight?.model && (
           <div className="mt-2 text-xs text-gray-500">모델: {latestInsight.model}</div>

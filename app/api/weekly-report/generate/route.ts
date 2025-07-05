@@ -10,25 +10,25 @@ const FREE_MODELS = [
   'gemini-1.5-pro-exp',
   'gemini-1.5-pro',
   'gemini-pro-exp',
-  'gemini-pro'
+  'gemini-pro',
 ]
 
 // 사용 가능한 모델 조회 및 무료 모델 선택
 async function getAvailableModel(apiKey: string): Promise<string> {
   try {
     const genAI = new GoogleGenerativeAI(apiKey)
-    
+
     console.log('🔍 무료 Gemini 모델 테스트 중...')
-    
+
     // 무료 모델 중 사용 가능한 첫 번째 모델 선택
     for (const modelName of FREE_MODELS) {
       try {
         console.log(`  테스트 중: ${modelName}`)
-        
+
         // 모델 생성 및 간단한 테스트
         const model = genAI.getGenerativeModel({ model: modelName })
         const testResult = await model.generateContent('안녕하세요')
-        
+
         if (testResult.response && testResult.response.text()) {
           console.log(`✅ 선택된 무료 모델: ${modelName}`)
           return modelName
@@ -38,11 +38,10 @@ async function getAvailableModel(apiKey: string): Promise<string> {
         continue
       }
     }
-    
+
     // 모든 무료 모델이 실패하면 기본값 반환
     console.log('⚠️ 무료 모델을 찾을 수 없어 기본 모델 사용')
     return 'gemini-1.5-flash'
-    
   } catch (error) {
     console.error('모델 조회 중 오류:', error)
     return 'gemini-1.5-flash' // 기본값
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
     const endDate = new Date(now)
     endDate.setDate(now.getDate() - now.getDay()) // 이번 주 일요일
     endDate.setHours(0, 0, 0, 0)
-    
+
     const startDate = new Date(endDate)
     startDate.setDate(endDate.getDate() - 7) // 7일 전
 
@@ -70,10 +69,12 @@ export async function POST(request: NextRequest) {
 
     // 1. 기본 메트릭 데이터 수집
     const basicMetrics = await collectBasicMetrics(propertyId, startDate, endDate)
-    
+
     // 2. 주요 변동 이슈 분석
-    const issues = schedule?.includeIssues ? await analyzeIssues(propertyId, startDate, endDate) : []
-    
+    const issues = schedule?.includeIssues
+      ? await analyzeIssues(propertyId, startDate, endDate)
+      : []
+
     // 3. Gemini AI 분석
     let aiAnalysis = null
     let selectedModel = null
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
       issues: issues,
       aiAnalysis: aiAnalysis,
       selectedModel: selectedModel,
-      metrics: basicMetrics
+      metrics: basicMetrics,
     }
 
     // 데이터베이스에 저장
@@ -112,8 +113,8 @@ export async function POST(request: NextRequest) {
           totalImpressions: basicMetrics.totalImpressions || 0,
           avgCtr: basicMetrics.avgCtr || 0,
           avgPosition: basicMetrics.avgPosition || 0,
-          reportData: JSON.stringify(reportData)
-        }
+          reportData: JSON.stringify(reportData),
+        },
       })
     }
 
@@ -122,15 +123,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       report: reportData,
-      message: isTest ? '테스트 보고서가 생성되었습니다.' : '주간 보고서가 생성되었습니다.'
+      message: isTest ? '테스트 보고서가 생성되었습니다.' : '주간 보고서가 생성되었습니다.',
     })
-
   } catch (error) {
     console.error('Weekly report generation error:', error)
-    return NextResponse.json({
-      success: false,
-      error: '주간 보고서 생성에 실패했습니다.'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: '주간 보고서 생성에 실패했습니다.',
+      },
+      { status: 500 }
+    )
   }
 }
 
@@ -138,7 +141,7 @@ async function collectBasicMetrics(propertyId: string, startDate: Date, endDate:
   // Service Account 기반 실제 데이터 가져오기
   const fs = require('fs')
   const path = require('path')
-  
+
   let serviceAccount
   try {
     const serviceAccountPath = path.join(process.cwd(), 'secrets/ga-auto-464002-672370fda082.json')
@@ -151,14 +154,14 @@ async function collectBasicMetrics(propertyId: string, startDate: Date, endDate:
 
   // JWT 토큰으로 Google API 인증
   const jwt = require('jsonwebtoken')
-  
+
   const now = Math.floor(Date.now() / 1000)
   const tokenPayload = {
     iss: serviceAccount.client_email,
     scope: 'https://www.googleapis.com/auth/analytics.readonly',
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
-    exp: now + 3600
+    exp: now + 3600,
   }
 
   const token = jwt.sign(tokenPayload, serviceAccount.private_key, { algorithm: 'RS256' })
@@ -166,7 +169,7 @@ async function collectBasicMetrics(propertyId: string, startDate: Date, endDate:
   const authResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`,
   })
 
   if (!authResponse.ok) {
@@ -181,23 +184,25 @@ async function collectBasicMetrics(propertyId: string, startDate: Date, endDate:
     {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${tokenData.access_token}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        dateRanges: [{ 
-          startDate: startDate.toISOString().split('T')[0], 
-          endDate: endDate.toISOString().split('T')[0] 
-        }],
+        dateRanges: [
+          {
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0],
+          },
+        ],
         metrics: [
           { name: 'sessions' },
           { name: 'activeUsers' },
           { name: 'conversions' },
           { name: 'totalRevenue' },
           { name: 'averageSessionDuration' },
-          { name: 'screenPageViews' }
-        ]
-      })
+          { name: 'screenPageViews' },
+        ],
+      }),
     }
   )
 
@@ -207,7 +212,7 @@ async function collectBasicMetrics(propertyId: string, startDate: Date, endDate:
 
   const metricsData = await metricsResponse.json()
   const row = metricsData.rows?.[0]?.metricValues || []
-  
+
   return {
     totalSessions: Number(row[0]?.value || 0),
     totalUsers: Number(row[1]?.value || 0),
@@ -219,14 +224,14 @@ async function collectBasicMetrics(propertyId: string, startDate: Date, endDate:
     avgCtr: 0.02, // 기본값
     avgPosition: 15.5, // 기본값
     totalClicks: 0, // 기본값
-    totalImpressions: 0 // 기본값
+    totalImpressions: 0, // 기본값
   }
 }
 
 async function analyzeIssues(propertyId: string, startDate: Date, endDate: Date) {
   // 주요 변동 이슈 분석 로직
   const issues = []
-  
+
   // 예시 이슈들 (실제로는 데이터 분석을 통해 도출)
   const sampleIssues = [
     {
@@ -234,15 +239,15 @@ async function analyzeIssues(propertyId: string, startDate: Date, endDate: Date)
       title: '트래픽 감소',
       description: '지난 주 대비 세션 수가 15% 감소했습니다.',
       severity: 'medium',
-      impact: '전환율에 영향을 줄 수 있습니다.'
+      impact: '전환율에 영향을 줄 수 있습니다.',
     },
     {
       type: 'conversion_improvement',
       title: '전환율 개선',
       description: '전환율이 8% 향상되었습니다.',
       severity: 'positive',
-      impact: '매출 증가에 긍정적인 영향을 미쳤습니다.'
-    }
+      impact: '매출 증가에 긍정적인 영향을 미쳤습니다.',
+    },
   ]
 
   return sampleIssues
@@ -259,7 +264,7 @@ async function generateAIAnalysis(metrics: any, issues: any[], prompt: string) {
 
     // 사용 가능한 무료 모델 선택
     const selectedModel = await getAvailableModel(apiKey)
-    
+
     // Gemini AI 초기화
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ model: selectedModel })
@@ -275,9 +280,9 @@ async function generateAIAnalysis(metrics: any, issues: any[], prompt: string) {
         totalPageViews: metrics.totalPageViews,
         avgEngagementRate: metrics.avgEngagementRate,
         avgCtr: metrics.avgCtr,
-        avgPosition: metrics.avgPosition
+        avgPosition: metrics.avgPosition,
       },
-      issues: issues
+      issues: issues,
     }
 
     // 프롬프트 구성
@@ -298,7 +303,7 @@ ${prompt}
 - 평균 검색 순위: ${metrics.avgPosition.toFixed(1)}
 
 **주요 이슈:**
-${issues.map(issue => `- ${issue.title}: ${issue.description}`).join('\n')}
+${issues.map((issue) => `- ${issue.title}: ${issue.description}`).join('\n')}
 
 다음 형식으로 분석 결과를 제공해주세요:
 
@@ -331,7 +336,7 @@ ${issues.map(issue => `- ${issue.title}: ${issue.description}`).join('\n')}
 
     return {
       analysis: analysis,
-      model: selectedModel
+      model: selectedModel,
     }
   } catch (error) {
     console.error('AI analysis error:', error)
@@ -374,8 +379,9 @@ function parseAIAnalysis(text: string) {
 
     return {
       insights: insights.length > 0 ? insights : ['데이터 분석을 통해 인사이트를 도출했습니다.'],
-      recommendations: recommendations.length > 0 ? recommendations : ['개선을 위한 권장사항을 제시합니다.'],
-      trends: trends.length > 0 ? trends : ['트렌드 분석을 수행했습니다.']
+      recommendations:
+        recommendations.length > 0 ? recommendations : ['개선을 위한 권장사항을 제시합니다.'],
+      trends: trends.length > 0 ? trends : ['트렌드 분석을 수행했습니다.'],
     }
   } catch (error) {
     console.error('AI analysis parsing error:', error)
@@ -389,19 +395,19 @@ function getSampleAnalysis() {
       insights: [
         '트래픽은 감소했지만 전환율이 개선되어 효율성이 향상되었습니다.',
         '모바일 사용자 비율이 높아 모바일 최적화가 중요합니다.',
-        '유기 검색 트래픽이 주요 소스이므로 SEO 전략을 강화해야 합니다.'
+        '유기 검색 트래픽이 주요 소스이므로 SEO 전략을 강화해야 합니다.',
       ],
       recommendations: [
         '모바일 사용자 경험 개선을 위한 페이지 로딩 속도 최적화',
         '전환율이 높은 페이지들의 콘텐츠 전략 강화',
-        '유기 검색 키워드 타겟팅 확대'
+        '유기 검색 키워드 타겟팅 확대',
       ],
       trends: [
         '전환율 상승 추세가 지속되고 있습니다.',
-        '모바일 트래픽 비중이 점진적으로 증가하고 있습니다.'
-      ]
+        '모바일 트래픽 비중이 점진적으로 증가하고 있습니다.',
+      ],
     },
-    model: 'sample-analysis'
+    model: 'sample-analysis',
   }
 }
 
@@ -410,6 +416,6 @@ function generateSummary(metrics: any) {
     overview: `${metrics.totalSessions.toLocaleString()}개의 세션에서 ${metrics.totalUsers.toLocaleString()}명의 사용자가 방문했습니다.`,
     conversions: `총 ${metrics.totalConversions.toLocaleString()}건의 전환이 발생했습니다.`,
     revenue: `총 매출은 ${new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(metrics.totalRevenue)}입니다.`,
-    engagement: `평균 세션 시간은 ${Math.round(metrics.avgSessionDuration / 60)}분입니다.`
+    engagement: `평균 세션 시간은 ${Math.round(metrics.avgSessionDuration / 60)}분입니다.`,
   }
-} 
+}

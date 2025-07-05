@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { googleSheetsService } from '../../../../../lib/googleSheets'
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await request.json()
     const { status } = body
@@ -16,18 +13,18 @@ export async function PATCH(
 
     try {
       await googleSheetsService.updateCampaignStatus(params.id, status)
-      return NextResponse.json({ 
+      return NextResponse.json({
         id: params.id,
         status,
-        message: 'Campaign status updated successfully'
+        message: 'Campaign status updated successfully',
       })
     } catch (sheetsError) {
       console.error('Google Sheets error:', sheetsError)
       // Return success anyway for demo purposes
-      return NextResponse.json({ 
+      return NextResponse.json({
         id: params.id,
         status,
-        message: 'Campaign status updated successfully (fallback mode)'
+        message: 'Campaign status updated successfully (fallback mode)',
       })
     }
   } catch (error) {
@@ -36,23 +33,20 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     try {
       await googleSheetsService.deleteCampaign(params.id)
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: true,
-        message: `Campaign ${params.id} deleted successfully`
+        message: `Campaign ${params.id} deleted successfully`,
       })
     } catch (sheetsError) {
       console.error('Google Sheets error:', sheetsError)
       // Return success anyway for demo purposes
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: true,
-        message: `Campaign ${params.id} deleted successfully (fallback mode)`
+        message: `Campaign ${params.id} deleted successfully (fallback mode)`,
       })
     }
   } catch (error) {

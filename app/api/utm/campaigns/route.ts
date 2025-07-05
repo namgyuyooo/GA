@@ -24,9 +24,12 @@ export async function POST(request: NextRequest) {
 
     // 필수 필드 검증
     if (!name || !url || !source || !medium || !campaign) {
-      return NextResponse.json({
-        error: 'Missing required fields: name, url, source, medium, campaign'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: 'Missing required fields: name, url, source, medium, campaign',
+        },
+        { status: 400 }
+      )
     }
 
     const newCampaign = await prisma.utmCampaign.create({
@@ -46,9 +49,12 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('UTM campaign creation error:', error)
     if (error.code === 'P2002') {
-      return NextResponse.json({
-        error: 'Campaign with the same source, medium, and campaign name already exists'
-      }, { status: 409 })
+      return NextResponse.json(
+        {
+          error: 'Campaign with the same source, medium, and campaign name already exists',
+        },
+        { status: 409 }
+      )
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

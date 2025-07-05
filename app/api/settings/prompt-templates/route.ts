@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 const { PrismaClient } = require('@prisma/client')
 
+// Ensure DATABASE_URL is set correctly
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./prisma/dev.db'
+}
+
 // 기본 프롬프트 템플릿 데이터
 const DEFAULT_TEMPLATES = [
   {
@@ -55,9 +60,20 @@ const DEFAULT_TEMPLATES = [
 - 구체적인 수치 포함
 - 마케터 관점에서 실무적 조언
 - ROI와 비용 효율성 고려`,
-    variables: JSON.stringify(['startDate', 'endDate', 'totalSessions', 'totalUsers', 'totalConversions', 'avgEngagementRate', 'totalClicks', 'totalImpressions', 'avgCtr', 'avgPosition']),
+    variables: JSON.stringify([
+      'startDate',
+      'endDate',
+      'totalSessions',
+      'totalUsers',
+      'totalConversions',
+      'avgEngagementRate',
+      'totalClicks',
+      'totalImpressions',
+      'avgCtr',
+      'avgPosition',
+    ]),
     isDefault: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     name: '월간보고서 - 전략적 분석',
@@ -124,9 +140,23 @@ const DEFAULT_TEMPLATES = [
 - 실행 가능한 전략 제시
 - 리스크 관리 방안 포함
 - ROI 중심의 의사결정 지원`,
-    variables: JSON.stringify(['currentMonth', 'sessionsChange', 'usersChange', 'conversionsChange', 'engagementChange', 'totalSessions', 'totalUsers', 'totalConversions', 'avgEngagementRate', 'totalClicks', 'totalImpressions', 'avgCtr', 'avgPosition']),
+    variables: JSON.stringify([
+      'currentMonth',
+      'sessionsChange',
+      'usersChange',
+      'conversionsChange',
+      'engagementChange',
+      'totalSessions',
+      'totalUsers',
+      'totalConversions',
+      'avgEngagementRate',
+      'totalClicks',
+      'totalImpressions',
+      'avgCtr',
+      'avgPosition',
+    ]),
     isDefault: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     name: '트래픽분석 - 채널 최적화',
@@ -180,7 +210,7 @@ const DEFAULT_TEMPLATES = [
 - 마케터 관점의 실무적 조언`,
     variables: JSON.stringify(['dateRange']),
     isDefault: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     name: 'UTM코호트 - 캠페인 최적화',
@@ -240,7 +270,7 @@ const DEFAULT_TEMPLATES = [
 - 실무적 실행 가이드`,
     variables: JSON.stringify(['dateRange', 'selectedCampaign']),
     isDefault: true,
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     name: '키워드코호트 - SEO 전략',
@@ -301,8 +331,164 @@ const DEFAULT_TEMPLATES = [
 - 예상 성과와 투자 대비 효과`,
     variables: JSON.stringify(['dateRange']),
     isDefault: true,
-    sortOrder: 1
-  }
+    sortOrder: 1,
+  },
+  {
+    name: '제조업 B2B 주간보고서 - 전문가 분석',
+    type: 'weekly-report',
+    description: '10년차 제조 B2B 마케팅 전문가 & 트렌드 심리학 박사 관점의 종합 분석',
+    prompt: `당신은 10년차 제조 B2B 마케팅 전문가이자 트렌드 심리학 박사입니다. 
+
+**전문 배경:**
+- 반도체, 디스플레이, 정밀기계 등 제조업 마케팅 10년 경험
+- B2B 구매 심리와 의사결정 프로세스 전문가
+- 데이터 기반 마케팅 전략 수립 및 실행 경험
+- 제조업 디지털 전환 컨설팅 경험
+
+**분석 원칙:**
+1. 제조업 B2B 특성을 반영한 데이터 해석
+2. 긴 구매 주기와 복잡한 의사결정 과정 고려
+3. 기술적 복잡성과 비즈니스 가치의 균형
+4. 실행 가능하고 측정 가능한 권장사항 제시
+
+**분석할 데이터:**
+- 기간: {startDate} ~ {endDate}
+- 총 세션: {totalSessions}
+- 총 사용자: {totalUsers}
+- 전환: {totalConversions}건
+- 전환율: {conversionRate}%
+- 페이지뷰: {totalPageViews}
+- 주요 채널별 성과
+- 핵심 페이지별 성과
+
+**종합 분석 요청사항:**
+
+## 🎯 **1. 제조업 B2B 관점 성과 평가**
+- 제조업 평균 대비 성과 벤치마킹
+- B2B 구매 깔때기 단계별 전환율 분석
+- 기술적 콘텐츠 vs 비즈니스 콘텐츠 성과 비교
+
+## 🧠 **2. 트렌드 심리학 기반 고객 행동 분석**
+- 제조업 고객의 정보 탐색 패턴 분석
+- 기술적 의사결정자 vs 비즈니스 의사결정자 행동 차이
+- 계절성/산업 사이클이 고객 행동에 미치는 영향
+
+## 📊 **3. 채널별 효과성 및 고객 품질 분석**
+- 각 채널의 리드 품질과 전환 가능성 평가
+- 제조업 특성을 고려한 채널 믹스 최적화
+- 긴 구매 주기를 고려한 어트리뷰션 분석
+
+## 🔍 **4. 콘텐츠 및 사용자 경험 분석**
+- 기술 사양 vs 비즈니스 가치 콘텐츠 성과
+- 제조업 고객의 콘텐츠 소비 패턴
+- 모바일 vs 데스크톱 사용 패턴 (제조업 특성 반영)
+
+## ⚡ **5. 즉시 실행 권장사항 (1주 내)**
+- 전환율 개선을 위한 즉시 조치사항
+- A/B 테스트 가능한 요소들
+- 콘텐츠 개선 우선순위
+
+## 🚀 **6. 중장기 전략 권고 (1-3개월)**
+- 제조업 마케팅 믹스 최적화 방향
+- 신규 채널 진입 기회 평가
+- 브랜드 포지셔닝 강화 전략
+
+## 📈 **7. 성과 예측 및 목표 설정**
+- 다음 주 예상 성과와 목표 설정
+- 주요 지표별 개선 가능성 평가
+- 위험 요소 및 기회 요소 식별
+
+## 🎪 **8. 경쟁사 벤치마킹 및 시장 포지셔닝**
+- 제조업 AI 솔루션 시장에서의 포지션
+- 경쟁 우위 요소와 차별화 포인트
+- 시장 확장 기회 영역
+
+**출력 형식:**
+- 각 섹션별 핵심 포인트 3-5개
+- 구체적인 수치와 근거 제시
+- 실행 가능한 액션 아이템 명시
+- 예상 효과와 소요 시간 포함
+- 제조업 전문 용어와 맥락 활용
+
+**중요 고려사항:**
+- 제조업의 긴 의사결정 주기 반영
+- 기술적 정확성과 비즈니스 가치의 균형
+- 복잡한 구매 조직 구조 고려
+- 규제 환경과 품질 기준의 중요성`,
+    variables: JSON.stringify([
+      'startDate',
+      'endDate',
+      'totalSessions',
+      'totalUsers',
+      'totalConversions',
+      'conversionRate',
+      'totalPageViews',
+    ]),
+    isDefault: false,
+    sortOrder: 2,
+  },
+  {
+    name: '제조업 블로그 콘텐츠 전략 - 고전환율 최적화',
+    type: 'content-strategy',
+    description: '제조업 B2B 타겟 고객을 위한 고전환율 블로그 콘텐츠 기획',
+    prompt: `당신은 10년차 제조업 B2B 마케팅 전문가이자 트렌드 심리학 박사입니다.
+
+**미션:** 현재 마케팅 성과 데이터를 바탕으로 고전환율 블로그 콘텐츠 전략을 수립해주세요.
+
+**현재 상황 분석:**
+- 마케팅 성과: {currentPerformance}
+- 주요 키워드: {topKeywords}
+- 트래픽 소스: {trafficSources}
+- 콘텐츠 성과: {contentPerformance}
+
+**제조업 B2B 콘텐츠 전략 수립:**
+
+## 🎯 **1. 타겟 오디언스 세분화**
+- 기술적 의사결정자 (엔지니어, R&D팀)
+- 비즈니스 의사결정자 (구매팀, 경영진)
+- 최종 사용자 (현장 운영진)
+
+## 📝 **2. 고전환율 콘텐츠 주제 제안**
+**즉시 작성 우선순위 (1-2주 내):**
+- [구체적인 콘텐츠 제목 3개]
+- 각 콘텐츠의 타겟 키워드와 예상 전환율
+- 콘텐츠 구조와 핵심 메시지
+
+**중기 콘텐츠 계획 (1개월 내):**
+- [시리즈 콘텐츠 기획]
+- 업계 트렌드 연계 콘텐츠
+- 기술적 깊이와 비즈니스 가치의 균형
+
+## 🧠 **3. 심리학 기반 전환 최적화**
+- 제조업 구매 심리 특성 반영
+- 신뢰성과 전문성 구축 전략
+- 사회적 증명과 권위 활용 방법
+
+## 📊 **4. SEO 및 키워드 전략**
+- 제조업 특화 롱테일 키워드
+- 기술 검색어 vs 비즈니스 검색어 균형
+- 경쟁사 대비 키워드 포지셔닝
+
+## 🎪 **5. 콘텐츠 포맷 및 배포 전략**
+- 기술 문서, 케이스 스터디, 가이드북
+- 인포그래픽, 비디오, 웨비나 활용
+- 채널별 콘텐츠 최적화
+
+## 📈 **6. 성과 측정 및 최적화**
+- 콘텐츠별 전환율 목표 설정
+- A/B 테스트 가능한 요소들
+- 지속적 개선을 위한 데이터 추적
+
+각 섹션별로 구체적이고 실행 가능한 권장사항을 제시해주세요.`,
+    variables: JSON.stringify([
+      'currentPerformance',
+      'topKeywords',
+      'trafficSources',
+      'contentPerformance',
+    ]),
+    isDefault: false,
+    sortOrder: 3,
+  },
 ]
 
 export async function GET(request: NextRequest) {
@@ -310,17 +496,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
-    
+
     const where = type ? { type, isActive: true } : { isActive: true }
-    
+
     const templates = await prisma.promptTemplate.findMany({
       where,
-      orderBy: [
-        { sortOrder: 'asc' },
-        { name: 'asc' }
-      ]
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     })
-    
+
     return NextResponse.json({ success: true, templates })
   } catch (error: any) {
     console.error('프롬프트 템플릿 조회 오류:', error)
@@ -334,62 +517,62 @@ export async function POST(request: NextRequest) {
   const prisma = new PrismaClient()
   try {
     const { action, template } = await request.json()
-    
+
     switch (action) {
       case 'create':
         const created = await prisma.promptTemplate.create({
-          data: template
+          data: template,
         })
         return NextResponse.json({ success: true, template: created })
-        
+
       case 'update':
         const { id, ...updateData } = template
         const updated = await prisma.promptTemplate.update({
           where: { id },
-          data: updateData
+          data: updateData,
         })
         return NextResponse.json({ success: true, template: updated })
-        
+
       case 'delete':
         await prisma.promptTemplate.delete({
-          where: { id: template.id }
+          where: { id: template.id },
         })
         return NextResponse.json({ success: true })
-        
+
       case 'toggle-active':
         const toggled = await prisma.promptTemplate.update({
           where: { id: template.id },
-          data: { isActive: !template.isActive }
+          data: { isActive: !template.isActive },
         })
         return NextResponse.json({ success: true, template: toggled })
-        
+
       case 'set-default':
         // 같은 타입의 다른 템플릿들의 isDefault를 false로 설정
         await prisma.promptTemplate.updateMany({
           where: { type: template.type },
-          data: { isDefault: false }
+          data: { isDefault: false },
         })
         // 선택된 템플릿을 기본으로 설정
         const defaultSet = await prisma.promptTemplate.update({
           where: { id: template.id },
-          data: { isDefault: true }
+          data: { isDefault: true },
         })
         return NextResponse.json({ success: true, template: defaultSet })
-        
+
       case 'seed-defaults':
         // 기본 템플릿이 없으면 생성
         for (const defaultTemplate of DEFAULT_TEMPLATES) {
           const existing = await prisma.promptTemplate.findFirst({
-            where: { name: defaultTemplate.name, type: defaultTemplate.type }
+            where: { name: defaultTemplate.name, type: defaultTemplate.type },
           })
           if (!existing) {
             await prisma.promptTemplate.create({
-              data: defaultTemplate
+              data: defaultTemplate,
             })
           }
         }
         return NextResponse.json({ success: true, message: '기본 템플릿이 생성되었습니다.' })
-        
+
       default:
         return NextResponse.json({ success: false, error: '잘못된 액션입니다.' }, { status: 400 })
     }
@@ -399,4 +582,4 @@ export async function POST(request: NextRequest) {
   } finally {
     await prisma.$disconnect()
   }
-} 
+}
