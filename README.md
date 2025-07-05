@@ -95,12 +95,42 @@ SUPER_USER_NAME=Super Admin
 
 ### 4. 데이터베이스 설정
 
+#### **프로덕션 (Supabase)**
+
 ```bash
 # 데이터베이스 스키마 생성
 npx prisma db push
 
 # Prisma 클라이언트 생성
 npx prisma generate
+```
+
+#### **로컬 개발환경 (PostgreSQL)**
+
+로컬 개발을 위해 PostgreSQL을 설정하세요:
+
+```bash
+# PostgreSQL 설치 (macOS)
+brew install postgresql@14
+brew services start postgresql@14
+
+# 로컬 개발용 데이터베이스 생성
+createdb ga_analytics_dev
+
+# 로컬 데이터베이스로 스키마 적용
+DATABASE_URL="postgresql://$(whoami)@localhost:5432/ga_analytics_dev" npx prisma db push
+
+# Prisma 클라이언트 생성
+npx prisma generate
+```
+
+**로컬 개발용 환경변수 설정:**
+
+로컬 개발 시 `.env.local` 파일을 생성하여 로컬 데이터베이스를 사용하세요:
+
+```bash
+# .env.local
+DATABASE_URL=postgresql://$(whoami)@localhost:5432/ga_analytics_dev
 ```
 
 ### 5. 슈퍼유저 초기화
@@ -112,11 +142,49 @@ curl -X POST http://localhost:3000/api/auth/init-superuser-direct
 
 ### 6. 개발 서버 실행
 
+#### **프로덕션 환경 (.env 사용)**
+
 ```bash
 npm run dev
 ```
 
+#### **로컬 개발 환경 (로컬 PostgreSQL 사용)**
+
+```bash
+# 로컬 환경으로 개발 서버 실행
+npm run dev:local
+
+# 또는 .env.local 파일을 생성한 후
+npm run dev
+```
+
 서버가 [http://localhost:3000](http://localhost:3000)에서 실행됩니다.
+
+### 7. 추가 개발 도구
+
+#### **데이터베이스 관리**
+
+```bash
+# Prisma Studio (데이터베이스 GUI)
+npm run db:studio:local     # 로컬 DB
+npm run db:studio          # 프로덕션 DB
+
+# 스키마 변경 적용
+npm run db:push:local      # 로컬 DB
+npm run db:push           # 프로덕션 DB
+```
+
+#### **로컬 환경 초기 설정**
+
+```bash
+# 로컬 PostgreSQL 데이터베이스를 한 번에 설정
+npm run setup:local
+```
+
+이 명령어는 다음을 자동으로 실행합니다:
+1. `ga_analytics_dev` 데이터베이스 생성
+2. Prisma 스키마 적용
+3. 초기 데이터 시드
 
 ## 🔑 인증 및 권한
 
