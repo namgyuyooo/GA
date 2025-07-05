@@ -45,7 +45,11 @@ export default function SessionsAnalysis() {
           if (result.models.length > 0) setSelectedModel(result.models[0].id)
         }
       })
-  }, [period, propertyId, loadSessionsData, fetchLatestInsight])
+  }, [period, propertyId, fetchLatestInsight])
+
+  useEffect(() => {
+    loadSessionsData()
+  }, [loadSessionsData])
 
   const loadSessionsData = useCallback(async () => {
     setIsLoading(true)
