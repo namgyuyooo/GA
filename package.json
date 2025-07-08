@@ -11,7 +11,12 @@
     "import-utm": "node scripts/import-utm-campaigns.js",
     "import-utm-api": "node scripts/import-utm-campaigns.js api",
     "import-utm-csv": "node scripts/import-utm-campaigns.js csv",
-    "scheduler": "node scripts/scheduler.js"
+    "scheduler": "node scripts/scheduler.js",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:local": "DATABASE_URL=postgresql://postgres:password@localhost:5432/ga_analytics_test tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.0.0",
@@ -63,6 +68,7 @@
     "eslint-config-next": "14.0.4",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.1",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.3"
   }
 }
