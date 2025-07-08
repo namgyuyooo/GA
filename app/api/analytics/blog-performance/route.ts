@@ -19,7 +19,7 @@ interface BlogPostPerformance {
 
 // GA4에서 데이터 가져오기
 async function fetchDataFromGA4(propertyId: string, period: string) {
-  const serviceAccountPath = path.join(process.cwd(), 'secrets/ga-auto-464002-672370fda082.json')
+  const serviceAccountPath = path.join(process.cwd(), 'config/ga-auto-464002-f4628b785d39.json')
   const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
   const serviceAccount = JSON.parse(serviceAccountData)
 

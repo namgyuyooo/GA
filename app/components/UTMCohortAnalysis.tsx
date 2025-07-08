@@ -6,7 +6,7 @@ import {
   UserGroupIcon,
   CodeBracketIcon,
 } from '@heroicons/react/24/outline'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import ReactMarkdown from 'react-markdown'
 import AIInsightCard from './AIInsightCard'

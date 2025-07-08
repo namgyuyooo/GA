@@ -260,9 +260,9 @@ async function fetchKeywordDataFromGSC(propertyId: string) {
 
   // Try multiple possible paths for service account file
   const possiblePaths = [
-    path.join(process.cwd(), 'secrets', 'ga-auto-464002-672370fda082.json'),
-    path.join(process.cwd(), '..', 'GA', 'secrets', 'ga-auto-464002-672370fda082.json'),
-    path.join('/Users/rtm/Documents/GitHub/GA/secrets', 'ga-auto-464002-672370fda082.json'),
+    path.join(process.cwd(), 'config/ga-auto-464002-f4628b785d39.json'),
+    path.join(process.cwd(), '..', 'GA', 'config', 'ga-auto-464002-f4628b785d39.json'),
+    path.join('/Users/rtm/Documents/GitHub/GA/config', 'ga-auto-464002-f4628b785d39.json'),
   ]
 
   let serviceAccountPath = ''

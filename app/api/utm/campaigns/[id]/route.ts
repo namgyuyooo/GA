@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { googleSheetsService } from '../../../../../lib/googleSheets'
+// import { googleSheetsService } from '../../../../../lib/googleSheets' // Removed
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {

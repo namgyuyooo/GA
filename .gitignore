@@ -30,6 +30,11 @@ secrets/
 secrets/*.json
 uploads/
 uploads/*.json
+config/ga-auto-464002-f4628b785d39.json
+config/secret.json
+config/env-config.json
+
+
 
 # 기타
 coverage/
@@ -44,6 +49,4 @@ clean-build.sh
 clean-dist.sh
 clean-out.sh
 .vercel
-config/ga-auto-464002-f4628b785d39.json
-config/secret.json
-config/env-config.json
+

@@ -10,8 +10,7 @@ async function getAnalyticsClient() {
   try {
     const serviceAccountPath = path.join(
       process.cwd(),
-      'secrets',
-      'ga-auto-464002-672370fda082.json'
+      'config/ga-auto-464002-f4628b785d39.json'
     )
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
 

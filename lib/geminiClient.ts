@@ -39,7 +39,7 @@ export function getGeminiApiKey() {
   const possiblePaths = [
     path.join(process.cwd(), 'secrets', '.env'),
     path.join(process.cwd(), '..', 'GA', 'secrets', '.env'),
-    path.join('/Users/rtm/Documents/GitHub/GA/secrets', '.env'),
+    path.join('/Users/rtm/Documents/GitHub/GA/config', '.env'),
   ]
 
   let envPath = ''

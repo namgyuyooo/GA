@@ -37,6 +37,7 @@ interface NavigationItem {
   href: string
   icon: React.ComponentType<any>
   id: string
+  description?: string
 }
 
 interface NavigationGroup {
@@ -77,31 +78,26 @@ const navigation: NavigationEntry[] = [
     name: '통합 분석',
     icon: ChartBarIcon,
     children: [
-      { name: 'GA 핵심 분석', href: '#', icon: ChartBarIcon, id: 'dashboard' },
-      { name: '세션', href: '/analytics/sessions', icon: ChartBarIcon, id: 'sessions' },
-      { name: '사용자', href: '/analytics/users', icon: UsersIcon, id: 'users' },
-      { name: '페이지뷰', href: '/analytics/pageviews', icon: EyeIcon, id: 'pageviews' },
-      { name: '전환', href: '/analytics/conversions', icon: CurrencyDollarIcon, id: 'conversions' },
-      { name: '키워드 코호트 분석', href: '#', icon: MagnifyingGlassIcon, id: 'keyword-cohort' },
-      { name: '트래픽 소스 분석', href: '#', icon: GlobeAltIcon, id: 'traffic-analysis' },
-      { name: 'GTM 분석', href: '#', icon: TagIcon, id: 'gtm-analysis' },
-      {
-        name: '사용자 여정 분석',
-        href: '/analytics/user-journey',
-        icon: UserIcon,
-        id: 'user-journey',
+      { 
+        name: '트래픽 & 사용자', 
+        href: '/analytics/traffic-audience', 
+        icon: UsersIcon, 
+        id: 'traffic-audience',
+        description: '세션, 사용자, 페이지뷰, 트래픽 소스 통합 분석'
       },
-      {
-        name: '전환 퍼널 분석',
-        href: '/analytics/conversion-funnel',
-        icon: FunnelIcon,
-        id: 'conversion-funnel',
+      { 
+        name: '전환 & 성과', 
+        href: '/analytics/conversion-performance', 
+        icon: CurrencyDollarIcon, 
+        id: 'conversion-performance',
+        description: 'GA 핵심, 전환, 퍼널, 캠페인 성과 분석'
       },
-      {
-        name: '블로그 성과 분석',
-        href: '/analytics/blog-performance',
-        icon: BookOpenIcon,
-        id: 'blog-performance',
+      { 
+        name: '콘텐츠 & 여정', 
+        href: '/analytics/content-journey', 
+        icon: BookOpenIcon, 
+        id: 'content-journey',
+        description: '블로그, 사용자 여정, 키워드, GTM 분석'
       },
     ],
   },

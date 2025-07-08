@@ -144,7 +144,7 @@ async function collectBasicMetrics(propertyId: string, startDate: Date, endDate:
 
   let serviceAccount
   try {
-    const serviceAccountPath = path.join(process.cwd(), 'secrets/ga-auto-464002-672370fda082.json')
+    const serviceAccountPath = path.join(process.cwd(), 'config/ga-auto-464002-f4628b785d39.json')
     const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
     serviceAccount = JSON.parse(serviceAccountData)
   } catch (fileError) {

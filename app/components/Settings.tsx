@@ -24,6 +24,7 @@ import { toast } from 'react-hot-toast'
 import EnvManagerTab from './settings/EnvManagerTab'
 import JsonValidatorTab from './settings/JsonValidatorTab'
 import UserManagementTab from './settings/UserManagementTab'
+import AIModelsTab from './settings/AIModelsTab'
 
 interface SettingsData {
   [key: string]: string
@@ -59,10 +60,6 @@ interface PromptTemplate {
   updatedAt: string
 }
 
-interface GeminiModel {
-  id: string
-  displayName: string
-}
 
 export default function Settings() {
   const [settings, setSettings] = useState<SettingsData>({
@@ -104,17 +101,11 @@ export default function Settings() {
     isDefault: false,
     sortOrder: 0,
   })
-  const [availableModels, setAvailableModels] = useState<GeminiModel[]>([])
-  const [selectedGeminiModel, setSelectedGeminiModel] = useState<string>('')
-  const [selectedDefaultPromptTemplateId, setSelectedDefaultPromptTemplateId] = useState<string>('')
-  const [geminiModelPriority, setGeminiModelPriority] = useState<string>('')
 
   useEffect(() => {
     fetchSettings()
     fetchWeeklySchedule()
     fetchPromptTemplates()
-    fetchGeminiConfig()
-    fetchAvailableModels()
   }, [])
 
   const fetchSettings = async () => {
@@ -161,31 +152,6 @@ export default function Settings() {
     }
   }
 
-  const fetchAvailableModels = async () => {
-    try {
-      const response = await fetch('/api/ai-insight/models')
-      const data = await response.json()
-      if (data.success) {
-        setAvailableModels(data.models)
-      }
-    } catch (error) {
-      console.error('사용 가능한 모델 조회 오류:', error)
-    }
-  }
-
-  const fetchGeminiConfig = async () => {
-    try {
-      const response = await fetch('/api/settings/gemini-config')
-      const data = await response.json()
-      if (data.success && data.config) {
-        setSelectedGeminiModel(data.config.selectedGeminiModel || '')
-        setSelectedDefaultPromptTemplateId(data.config.selectedDefaultPromptTemplateId || '')
-        setGeminiModelPriority(data.config.geminiModelPriority || '')
-      }
-    } catch (error) {
-      console.error('Gemini 설정 조회 오류:', error)
-    }
-  }
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -245,30 +211,6 @@ export default function Settings() {
     }
   }
 
-  const handleSaveGeminiSettings = async () => {
-    setIsSaving(true)
-    try {
-      const response = await fetch('/api/settings/gemini-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          selectedGeminiModel,
-          selectedDefaultPromptTemplateId,
-          geminiModelPriority,
-        }),
-      })
-
-      if (response.ok) {
-        toast.success('Gemini 설정이 성공적으로 저장되었습니다!')
-      } else {
-        toast.error('Gemini 설정 저장에 실패했습니다.')
-      }
-    } catch (error) {
-      toast.error('Gemini 설정 저장 중 오류가 발생했습니다.')
-    } finally {
-      setIsSaving(false)
-    }
-  }
 
   const handleBackup = async () => {
     setIsBackingUp(true)
@@ -1146,109 +1088,8 @@ export default function Settings() {
 
       {/* AI 설정 탭 */}
       {activeTab === 'ai' && (
-        <div className="space-y-6 bg-white p-6 rounded-lg shadow">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <CpuChipIcon className="h-5 w-5 mr-2" />
-            Gemini AI 설정
-          </h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <div className="flex">
-                <InformationCircleIcon className="h-5 w-5 text-blue-400" />
-                <div className="ml-3">
-                  <h4 className="text-sm font-medium text-blue-800 mb-1">Gemini AI 설정</h4>
-                  <p className="text-sm text-blue-700">
-                    AI 분석에 사용할 기본 모델과 프롬프트 템플릿을 설정합니다. 
-                    Google의 최신 Gemini 모델을 활용하여 데이터 분석의 품질을 향상시킬 수 있습니다.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-purple-50 border border-purple-200 rounded-md p-4">
-              <h4 className="text-sm font-medium text-purple-800 mb-2">🤖 지원 모델</h4>
-              <ul className="text-sm text-purple-700 space-y-1">
-                <li>• <strong>Gemini 1.5 Flash:</strong> 빠른 응답</li>
-                <li>• <strong>Gemini 1.5 Pro:</strong> 고급 분석</li>
-                <li>• <strong>Gemini 1.0 Pro:</strong> 안정적 성능</li>
-                <li>• <strong>자동 선택:</strong> 최적 모델 자동 선택</li>
-              </ul>
-            </div>
-          </div>
-
-          <div>
-            <label className="label">기본 Gemini 모델 선택</label>
-            <select
-              value={selectedGeminiModel}
-              onChange={(e) => setSelectedGeminiModel(e.target.value)}
-              className="input-field"
-            >
-              <option value="">자동 선택 (권장)</option>
-              {availableModels.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.displayName}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              AI 분석에 사용할 기본 Gemini 모델을 선택합니다. '자동 선택' 시 시스템이 최적의 모델을
-              선택합니다.
-            </p>
-          </div>
-
-          <div>
-            <label className="label">기본 프롬프트 템플릿 선택</label>
-            <select
-              value={selectedDefaultPromptTemplateId}
-              onChange={(e) => setSelectedDefaultPromptTemplateId(e.target.value)}
-              className="input-field"
-            >
-              <option value="">기본 프롬프트 사용</option>
-              {promptTemplates
-                .filter((t) => t.isActive)
-                .map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name} ({template.type})
-                  </option>
-                ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              AI 분석 시 기본으로 사용할 프롬프트 템플릿을 선택합니다. 특정 유형의 템플릿만
-              표시됩니다.
-            </p>
-          </div>
-
-          <div>
-            <label className="label">Gemini 모델 우선순위 (쉼표로 구분)</label>
-            <textarea
-              value={geminiModelPriority}
-              onChange={(e) => setGeminiModelPriority(e.target.value)}
-              className="input-field min-h-[80px]"
-              placeholder="예: gemini-1.5-flash-exp, gemini-1.5-pro-exp, gemini-1.0-pro"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              AI 분석에 사용할 Gemini 모델의 우선순위를 쉼표로 구분하여 입력합니다. 목록의 첫 번째
-              모델부터 사용 가능한지 확인합니다.
-            </p>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              onClick={handleSaveGeminiSettings}
-              disabled={isSaving}
-              className="btn-primary flex items-center gap-2 disabled:opacity-50"
-            >
-              {isSaving ? (
-                '저장 중...'
-              ) : (
-                <>
-                  <CheckCircleIcon className="h-5 w-5" />
-                  Gemini 설정 저장
-                </>
-              )}
-            </button>
-          </div>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <AIModelsTab />
         </div>
       )}
 

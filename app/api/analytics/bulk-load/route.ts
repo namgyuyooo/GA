@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     try {
       const serviceAccountPath = path.join(
         process.cwd(),
-        'secrets/ga-auto-464002-672370fda082.json'
+        'config/ga-auto-464002-f4628b785d39.json'
       )
       const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
       serviceAccount = JSON.parse(serviceAccountData)
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Service account file not found',
-          message: 'ga-auto-464002-672370fda082.json 파일을 secrets 폴더에 배치해주세요.',
+          message: 'ga-auto-464002-f4628b785d39.json 파일을 config 폴더에 배치해주세요.',
         },
         { status: 500 }
       )
