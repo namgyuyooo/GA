@@ -19,8 +19,7 @@ async function main() {
         medium: 'cpc',
         campaign: 'rtm-ai-launch',
         description: 'RTM AI 서비스 공식 런칭 캠페인',
-        tags: ['ai', 'launch', 'google-ads'],
-        isActive: true,
+        status: 'ACTIVE',
       }
     }),
     prisma.utmCampaign.upsert({
@@ -34,8 +33,7 @@ async function main() {
         medium: 'blog',
         campaign: 'content-marketing',
         description: '네이버 블로그를 통한 콘텐츠 마케팅',
-        tags: ['naver', 'blog', 'content'],
-        isActive: true,
+        status: 'ACTIVE',
       }
     }),
     prisma.utmCampaign.upsert({
@@ -49,8 +47,7 @@ async function main() {
         medium: 'social',
         campaign: 'fb-ads-q4',
         description: '4분기 페이스북 소셜 미디어 광고',
-        tags: ['facebook', 'social', 'q4'],
-        isActive: true,
+        status: 'ACTIVE',
       }
     })
   ])
@@ -65,8 +62,8 @@ async function main() {
         id: 'goal-1',
         name: '회원가입 완료',
         description: '사용자가 회원가입을 완료한 경우',
-        type: 'destination',
-        value: '/signup/complete',
+        goalType: 'PAGE_VIEW',
+        pagePath: '/signup/complete',
         isActive: true,
         priority: 1,
         propertyId: '464147982',
@@ -79,8 +76,8 @@ async function main() {
         id: 'goal-2',
         name: '서비스 구독',
         description: '유료 서비스 구독 완료',
-        type: 'event',
-        value: 'purchase',
+        goalType: 'EVENT',
+        eventName: 'purchase',
         isActive: true,
         priority: 1,
         propertyId: '464147982',
@@ -93,8 +90,8 @@ async function main() {
         id: 'goal-3',
         name: '문의하기',
         description: '고객 문의 양식 제출',
-        type: 'event',
-        value: 'contact_submit',
+        goalType: 'EVENT',
+        eventName: 'contact_submit',
         isActive: true,
         priority: 2,
         propertyId: '464147982',
@@ -155,7 +152,7 @@ async function main() {
         id: 'template-1',
         name: '트래픽 분석 기본 템플릿',
         type: 'traffic-insight',
-        content: `다음은 {{dateRange}} 기간의 트래픽 소스 분석 데이터입니다.
+        prompt: `다음은 {{dateRange}} 기간의 트래픽 소스 분석 데이터입니다.
 
 주요 지표:
 - 총 세션: {{totalSessions}}
@@ -178,7 +175,7 @@ async function main() {
         id: 'template-2',
         name: '대시보드 종합 분석 템플릿',
         type: 'dashboard-insight',
-        content: `{{dateRange}} 기간의 종합 분석 리포트:
+        prompt: `{{dateRange}} 기간의 종합 분석 리포트:
 
 핵심 지표:
 - 페이지뷰: {{pageviews}}
@@ -325,17 +322,17 @@ async function main() {
   const cachedData = await Promise.all([
     prisma.cachedAnalyticsData.upsert({
       where: {
-        propertyId_dataType_cacheKey: {
+        propertyId_dataType_period: {
           propertyId: '464147982',
           dataType: 'overview',
-          cacheKey: 'overview_7days'
+          period: '7daysAgo'
         }
       },
       update: {},
       create: {
         propertyId: '464147982',
         dataType: 'overview',
-        cacheKey: 'overview_7days',
+        period: '7daysAgo',
         data: {
           totalUsers: 2534,
           totalSessions: 3421,
@@ -436,24 +433,50 @@ async function main() {
       create: {
         id: 'behavior-1',
         propertyId: '464147982',
-        analysisDate: yesterday,
-        patternType: 'conversion_path',
-        patternData: {
+        patternDate: yesterday,
+        patternType: 'GOAL_CONVERSION',
+        segmentName: 'High Converting Users',
+        entryPatterns: {
+          sources: ['google', 'direct', 'facebook'],
+          topKeywords: ['AI 도구', 'RTM AI', '분석 서비스']
+        },
+        entryPagePatterns: {
+          topPages: ['/', '/services', '/blog']
+        },
+        journeyPatterns: {
           commonPaths: [
             { path: '/ → /services → /signup', frequency: 234, conversionRate: 0.78 },
             { path: '/ → /about → /contact', frequency: 156, conversionRate: 0.45 },
             { path: '/blog → /services → /signup', frequency: 89, conversionRate: 0.82 }
           ],
-          avgPathLength: 3.2,
+          avgPathLength: 3.2
+        },
+        durationPatterns: {
+          avgSessionDuration: 156,
+          avgPageDuration: 45
+        },
+        scrollPatterns: {
+          avgScrollDepth: 0.75
+        },
+        conversionPatterns: {
+          topConvertingPages: ['/services', '/signup']
+        },
+        dropoffPatterns: {
           dropoffPoints: ['/pricing', '/terms']
         },
+        sessionCount: 234,
+        conversionRate: 0.78,
+        avgInterestScore: 8.5,
+        avgDuration: 156,
         insights: {
           keyFindings: [
             '서비스 페이지를 거친 경로의 전환율이 높음',
             '가격 페이지에서 이탈률이 높아 개선 필요',
             '블로그 유입 사용자의 전환 품질이 우수함'
-          ],
-          recommendations: [
+          ]
+        },
+        recommendations: {
+          actions: [
             '가격 페이지 UI/UX 개선',
             '블로그 콘텐츠 마케팅 확대',
             '서비스 소개 페이지 CTA 최적화'
@@ -471,8 +494,7 @@ async function main() {
       update: {},
       create: {
         key: 'GTM_ACCOUNT_ID',
-        value: '6000000000',
-        description: 'Google Tag Manager 계정 ID'
+        value: '6000000000'
       }
     }),
     prisma.setting.upsert({
@@ -480,8 +502,7 @@ async function main() {
       update: {},
       create: {
         key: 'GTM_PUBLIC_ID',
-        value: 'GTM-N99ZMP6T',
-        description: 'Google Tag Manager 컨테이너 Public ID'
+        value: 'GTM-N99ZMP6T'
       }
     }),
     prisma.setting.upsert({
@@ -489,8 +510,7 @@ async function main() {
       update: {},
       create: {
         key: 'DEFAULT_PROPERTY_ID',
-        value: '464147982',
-        description: '기본 GA4 속성 ID'
+        value: '464147982'
       }
     })
   ])

@@ -34,6 +34,13 @@ export default function SessionsAnalysis() {
     }
   }, [])
 
+  const fetchLatestInsight = useCallback(async () => {
+    const res = await fetch(`/api/ai-insight?type=sessions&propertyId=${propertyId}`)
+    const result = await res.json()
+    if (result.success && result.insight) setLatestInsight(result.insight)
+    else setLatestInsight(null)
+  }, [propertyId])
+
   useEffect(() => {
     loadSessionsData()
     fetchLatestInsight()
@@ -50,33 +57,6 @@ export default function SessionsAnalysis() {
   useEffect(() => {
     loadSessionsData()
   }, [loadSessionsData])
-
-  const loadSessionsData = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(
-        `/api/analytics/sessions-detail?period=${period}&propertyId=${propertyId}`
-      )
-      const result = await response.json()
-      setData(result)
-
-      if (response.ok) {
-        toast.success('세션 분석 데이터 로드 완료')
-      }
-    } catch (error) {
-      toast.error('세션 데이터 로드 실패')
-      console.error('Sessions analysis error:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [period, propertyId])
-
-  const fetchLatestInsight = useCallback(async () => {
-    const res = await fetch(`/api/ai-insight?type=sessions&propertyId=${propertyId}`)
-    const result = await res.json()
-    if (result.success && result.insight) setLatestInsight(result.insight)
-    else setLatestInsight(null)
-  }, [propertyId])
 
   const handleGenerateInsight = async () => {
     setInsightLoading(true)

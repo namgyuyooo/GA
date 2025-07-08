@@ -1,0 +1,179 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "env-config.schema.json",
+  "title": "Environment Configuration Schema",
+  "description": "UTM Analytics Dashboard 환경변수 설정을 위한 JSON 스키마",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "스키마 파일 경로"
+    },
+    "name": {
+      "type": "string",
+      "description": "설정 파일 이름"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "버전 (semver 형식)"
+    },
+    "description": {
+      "type": "string",
+      "description": "설정 파일 설명"
+    },
+    "categories": {
+      "type": "object",
+      "description": "환경변수 카테고리",
+      "properties": {
+        "database": {
+          "$ref": "#/definitions/category"
+        },
+        "google_analytics": {
+          "$ref": "#/definitions/category"
+        },
+        "ai_gemini": {
+          "$ref": "#/definitions/category"
+        },
+        "authentication": {
+          "$ref": "#/definitions/category"
+        },
+        "optional": {
+          "$ref": "#/definitions/category"
+        }
+      },
+      "required": ["database", "google_analytics", "ai_gemini", "authentication"],
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "description": "검증 규칙",
+      "properties": {
+        "required_categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "필수 카테고리 목록"
+        },
+        "total_variables": {
+          "type": "number",
+          "description": "총 환경변수 개수"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "메타데이터",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "생성일"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "수정일"
+        },
+        "version": {
+          "type": "string",
+          "description": "설정 버전"
+        }
+      }
+    }
+  },
+  "required": ["name", "version", "categories"],
+  "additionalProperties": false,
+  "definitions": {
+    "category": {
+      "type": "object",
+      "description": "환경변수 카테고리",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "카테고리 제목"
+        },
+        "description": {
+          "type": "string",
+          "description": "카테고리 설명"
+        },
+        "variables": {
+          "type": "object",
+          "description": "환경변수 목록",
+          "patternProperties": {
+            "^[A-Z_]+$": {
+              "$ref": "#/definitions/variable"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["title", "description", "variables"],
+      "additionalProperties": false
+    },
+    "variable": {
+      "type": "object",
+      "description": "환경변수 정의",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "환경변수 값"
+        },
+        "description": {
+          "type": "string",
+          "description": "환경변수 설명"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "필수 여부"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean", "email", "json", "url"],
+          "description": "데이터 타입"
+        },
+        "sensitive": {
+          "type": "boolean",
+          "description": "민감한 정보 여부"
+        },
+        "minLength": {
+          "type": "number",
+          "description": "최소 길이"
+        },
+        "maxLength": {
+          "type": "number",
+          "description": "최대 길이"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "정규표현식 패턴"
+        },
+        "validation": {
+          "type": "string",
+          "description": "검증 규칙"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "허용된 값 목록"
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "예시 값들"
+        },
+        "default": {
+          "type": ["string", "number", "boolean"],
+          "description": "기본값"
+        }
+      },
+      "required": ["value", "description", "required", "type"],
+      "additionalProperties": false
+    }
+  }
+}

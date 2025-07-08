@@ -1,14 +1,16 @@
 import { PrismaClient } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
-
-// Ensure DATABASE_URL is set correctly
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'file:./prisma/dev.db'
-}
+import { google } from 'googleapis'
 
 const DEFAULT_PROPERTIES = ['464147982', '482625214', '483589217', '462871516']
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
+})
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,70 +18,28 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || '30daysAgo'
     const propertyId = searchParams.get('propertyId') || DEFAULT_PROPERTIES[0]
 
-    // 서비스 계정 정보 가져오기 (환경 변수 또는 파일에서)
-    const fs = require('fs')
-    const path = require('path')
+    // Service Account based authentication
+    const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL
+    const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
 
-    let serviceAccount
-    try {
-      // 먼저 환경 변수에서 서비스 계정 정보 확인
-      if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
-        serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
-      } else {
-        // 환경 변수가 없으면 파일에서 읽기
-        const serviceAccountPath = path.join(
-          process.cwd(),
-          'secrets/ga-auto-464002-672370fda082.json'
-        )
-        const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
-        serviceAccount = JSON.parse(serviceAccountData)
-      }
-    } catch (fileError) {
-      console.error('서비스 계정 정보 오류:', fileError)
+    if (!clientEmail || !privateKey) {
       return NextResponse.json(
         {
-          error: '서비스 계정 정보를 찾을 수 없습니다',
-          message: 'GOOGLE_SERVICE_ACCOUNT_KEY 환경 변수 또는 secrets/ga-auto-464002-672370fda082.json 파일을 확인해주세요.',
+          error: 'Google Service Account credentials not set',
+          message: 'GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY environment variables must be set.',
         },
         { status: 500 }
       )
     }
 
-    // JWT 토큰으로 Google API 인증
-    const jwt = require('jsonwebtoken')
-
-    const now = Math.floor(Date.now() / 1000)
-    const token = jwt.sign(
-      {
-        iss: serviceAccount.client_email,
-        scope: 'https://www.googleapis.com/auth/analytics.readonly',
-        aud: 'https://oauth2.googleapis.com/token',
-        exp: now + 3600,
-        iat: now,
-      },
-      serviceAccount.private_key,
-      { algorithm: 'RS256' }
+    const jwt = new google.auth.JWT(
+      clientEmail,
+      undefined,
+      privateKey.replace(/\n/g, '\n'), // Ensure newlines are correct
+      ['https://www.googleapis.com/auth/analytics.readonly']
     )
 
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`,
-    })
-
-    const tokenData = await tokenResponse.json()
-
-    if (!tokenData.access_token) {
-      return NextResponse.json(
-        {
-          error: 'Failed to get access token',
-          details: tokenData,
-        },
-        { status: 401 }
-      )
-    }
+    await jwt.authorize()
 
     // 등록된 UTM 캠페인 목록 가져오기 (Prisma)
     const registeredUTMs = await prisma.utmCampaign.findMany()
@@ -90,7 +50,7 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${tokenData.access_token}`,
+          Authorization: `Bearer ${jwt.credentials.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -99,10 +59,7 @@ export async function GET(request: NextRequest) {
             { name: 'sessions' },
             { name: 'activeUsers' },
             { name: 'screenPageViews' },
-            { name: 'averageSessionDuration' },
-            { name: 'bounceRate' },
             { name: 'conversions' },
-            { name: 'totalRevenue' },
           ],
           dimensions: [
             { name: 'sessionSource' },
@@ -123,7 +80,7 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${tokenData.access_token}`,
+          Authorization: `Bearer ${jwt.credentials.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -149,7 +106,7 @@ export async function GET(request: NextRequest) {
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${tokenData.access_token}`,
+          Authorization: `Bearer ${jwt.credentials.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

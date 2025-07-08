@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { google } from 'googleapis'
+import * as fs from 'fs'
+import * as path from 'path'
 
 const DEFAULT_PROPERTIES = ['464147982', '482625214', '483589217', '462871516']
 
@@ -18,51 +21,53 @@ export async function GET(request: NextRequest) {
       console.log(`DB UTM 코호트 데이터 시점: ${lastUpdateTime}`)
     }
 
-    // Service Account 기반 실제 데이터 가져오기 (파일에서 직접 읽기)
-    const fs = require('fs')
-    const path = require('path')
+    // Service Account based authentication
+    const serviceAccountPath = path.join(
+      process.cwd(),
+      'config/ga-auto-464002-f4628b785d39.json'
+    )
 
     let serviceAccount
     try {
-      const serviceAccountPath = path.join(
-        process.cwd(),
-        'secrets/ga-auto-464002-672370fda082.json'
-      )
       const serviceAccountData = fs.readFileSync(serviceAccountPath, 'utf8')
       serviceAccount = JSON.parse(serviceAccountData)
-    } catch (fileError) {
-      console.error('Service account file error:', fileError)
+      // Ensure private_key has correct newlines if read from file
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n')
+      }
+      console.log('📝 Using service account from file:', serviceAccountPath)
+    } catch (fileError: any) {
+      console.error('❌ Error reading service account file:', fileError.message)
       return NextResponse.json(
         {
           error: 'Service account file not found',
-          message: 'ga-auto-464002-672370fda082.json 파일을 secrets 폴더에 배치해주세요.',
+          message: `Service account file not found at ${serviceAccountPath}. Please ensure it exists and is accessible.`,
         },
         { status: 500 }
       )
     }
 
-    // JWT 토큰으로 Google API 인증
+    // Create JWT assertion manually
     const jwt = require('jsonwebtoken')
-
     const now = Math.floor(Date.now() / 1000)
-    const token = jwt.sign(
-      {
-        iss: serviceAccount.client_email,
-        scope: 'https://www.googleapis.com/auth/analytics.readonly',
-        aud: 'https://oauth2.googleapis.com/token',
-        exp: now + 3600,
-        iat: now,
-      },
-      serviceAccount.private_key,
-      { algorithm: 'RS256' }
-    )
+    const tokenPayload = {
+      iss: serviceAccount.client_email,
+      scope: 'https://www.googleapis.com/auth/analytics.readonly',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now,
+    }
+    
+    const assertion = jwt.sign(tokenPayload, serviceAccount.private_key, {
+      algorithm: 'RS256',
+      header: { alg: 'RS256', typ: 'JWT' }
+    })
 
+    console.log('🔐 Getting access token...')
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${assertion}`,
     })
 
     const tokenData = await tokenResponse.json()
@@ -76,6 +81,8 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       )
     }
+    
+    console.log('✅ Google Auth successful')
 
     // UTM 캠페인별 코호트 데이터 수집
     const cohortResponse = await fetch(

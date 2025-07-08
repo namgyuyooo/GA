@@ -492,7 +492,13 @@ const DEFAULT_TEMPLATES = [
 ]
 
 export async function GET(request: NextRequest) {
-  const prisma = new PrismaClient()
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL
+      }
+    }
+  })
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')

@@ -44,3 +44,6 @@ clean-build.sh
 clean-dist.sh
 clean-out.sh
 .vercel
+config/ga-auto-464002-f4628b785d39.json
+config/secret.json
+config/env-config.json

@@ -1,0 +1,151 @@
+{
+  "$schema": "./env-config.schema.json",
+  "name": "UTM Analytics Dashboard Configuration",
+  "version": "1.0.0",
+  "description": "환경변수 설정 파일 - 이 파일을 복사해서 실제 값으로 변경하세요",
+  "categories": {
+    "database": {
+      "title": "데이터베이스 설정",
+      "description": "PostgreSQL 또는 Supabase 데이터베이스 연결 설정",
+      "variables": {
+        "DATABASE_URL": {
+          "value": "postgresql://username:password@localhost:5432/database_name",
+          "description": "PostgreSQL 연결 URL",
+          "required": true,
+          "type": "string",
+          "examples": [
+            "postgresql://postgres:password@localhost:5432/ga_analytics",
+            "postgresql://user:pass@supabase.co:5432/postgres"
+          ]
+        },
+        "NEXT_PUBLIC_SUPABASE_URL": {
+          "value": "https://your-project.supabase.co",
+          "description": "Supabase 프로젝트 URL (Supabase 사용 시)",
+          "required": false,
+          "type": "string"
+        },
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY": {
+          "value": "your-supabase-anon-key",
+          "description": "Supabase 익명 키 (Supabase 사용 시)",
+          "required": false,
+          "type": "string",
+          "sensitive": true
+        }
+      }
+    },
+    "google_analytics": {
+      "title": "Google Analytics & Search Console",
+      "description": "Google 서비스 연동을 위한 인증 및 설정",
+      "variables": {
+        "GA4_PROPERTY_ID": {
+          "value": "123456789",
+          "description": "Google Analytics 4 속성 ID",
+          "required": true,
+          "type": "string",
+          "validation": "^[0-9]+$"
+        },
+        "GSC_SITE_URL": {
+          "value": "sc-domain:example.com",
+          "description": "Google Search Console 사이트 URL",
+          "required": true,
+          "type": "string",
+          "examples": [
+            "sc-domain:example.com",
+            "https://example.com/"
+          ]
+        },
+        "GOOGLE_SERVICE_ACCOUNT_KEY": {
+          "value": "{\\"type\\": \\"service_account\\", \\"project_id\\": \\"your-project\\", ...}",
+          "description": "Google Service Account JSON 키 (문자열 형태)",
+          "required": true,
+          "type": "json",
+          "sensitive": true
+        }
+      }
+    },
+    "ai_gemini": {
+      "title": "Gemini AI 설정",
+      "description": "Google Gemini AI API를 위한 설정",
+      "variables": {
+        "GEMINI_API_KEY": {
+          "value": "AIzaSy...",
+          "description": "Gemini API 키",
+          "required": true,
+          "type": "string",
+          "sensitive": true
+        },
+        "GEMINI_API_FREE_KEY": {
+          "value": "AIzaSy...",
+          "description": "Gemini 무료 API 키 (백업용)",
+          "required": false,
+          "type": "string",
+          "sensitive": true
+        },
+        "GEMINI_API_PROJECT_ID": {
+          "value": "your-google-cloud-project",
+          "description": "Google Cloud 프로젝트 ID",
+          "required": true,
+          "type": "string"
+        }
+      }
+    },
+    "authentication": {
+      "title": "인증 및 보안",
+      "description": "JWT 토큰 및 관리자 계정 설정",
+      "variables": {
+        "JWT_SECRET": {
+          "value": "your-super-secret-jwt-key-here",
+          "description": "JWT 토큰 서명을 위한 비밀 키",
+          "required": true,
+          "type": "string",
+          "sensitive": true,
+          "minLength": 32
+        },
+        "SUPER_USER_EMAIL": {
+          "value": "admin@example.com",
+          "description": "관리자 계정 이메일",
+          "required": true,
+          "type": "email"
+        },
+        "SUPER_USER_PASSWORD": {
+          "value": "secure-password-123",
+          "description": "관리자 계정 비밀번호",
+          "required": true,
+          "type": "string",
+          "sensitive": true,
+          "minLength": 8
+        },
+        "SUPER_USER_NAME": {
+          "value": "System Administrator",
+          "description": "관리자 계정 이름",
+          "required": true,
+          "type": "string"
+        }
+      }
+    },
+    "optional": {
+      "title": "선택적 설정",
+      "description": "추가 기능을 위한 선택적 환경변수",
+      "variables": {
+        "NODE_ENV": {
+          "value": "development",
+          "description": "Node.js 실행 환경",
+          "required": false,
+          "type": "string",
+          "options": ["development", "production", "test"]
+        },
+        "PORT": {
+          "value": "3000",
+          "description": "서버 포트 번호",
+          "required": false,
+          "type": "number",
+          "default": 3000
+        }
+      }
+    }
+  },
+  "validation": {
+    "required_categories": ["database", "google_analytics", "ai_gemini", "authentication"],
+    "total_variables": 12
+  }
+}

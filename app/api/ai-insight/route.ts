@@ -3,7 +3,13 @@ import { runGeminiPrompt, getBestFreeGeminiModel } from '../../../lib/geminiClie
 import { PrismaClient } from '@prisma/client'
 import { CacheService } from '../../../lib/cacheService'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
+})
 
 // 프롬프트 템플릿에서 변수를 실제 값으로 치환
 function replaceTemplateVariables(template: string, variables: any): string {
